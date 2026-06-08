@@ -566,6 +566,15 @@ public extension StackView {
         axisLayout.isActive = true
         return scrollView
     }
+    
+    @discardableResult
+    func assignToPtr(_ ptr: AutoreleasingUnsafeMutablePointer<StackView>?) -> StackView {
+        if let ptr = ptr {
+            ptr.pointee = self
+        }
+        return self
+    }
+     
 }
 
 ///兼容 Objective-C 链式调用
@@ -772,7 +781,16 @@ public extension StackView {
         }
     }
     
-
+    @objc(assignToPtr)
+    @available(swift, obsoleted: 1, renamed: "assignToPtr(_:)")
+    var assignToPtrObjc: (AutoreleasingUnsafeMutablePointer<StackView>?) -> StackView {
+        return { ptr in
+               if let ptr = ptr {
+                   ptr.pointee = self
+               }
+               return self
+        }
+   }
 }
 
 extension StackView {
