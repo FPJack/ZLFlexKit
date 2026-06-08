@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		172D06A9428B3123036F55F5 /* Pods_ZLFlexKit_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0876F9625ABF3C918050CAC1 /* Pods_ZLFlexKit_Tests.framework */; };
 		607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD51AFB9204008FA782 /* AppDelegate.swift */; };
 		607FACD81AFB9204008FA782 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD71AFB9204008FA782 /* ViewController.swift */; };
 		607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 607FACD91AFB9204008FA782 /* Main.storyboard */; };
@@ -30,7 +29,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0876F9625ABF3C918050CAC1 /* Pods_ZLFlexKit_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ZLFlexKit_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3AC438755ADE368F7482EF60 /* Pods-ZLFlexKit_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZLFlexKit_Example.release.xcconfig"; path = "Target Support Files/Pods-ZLFlexKit_Example/Pods-ZLFlexKit_Example.release.xcconfig"; sourceTree = "<group>"; };
 		41DA2794879788D1B9807A47 /* Pods_ZLFlexKit_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ZLFlexKit_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		56BA6DB99AC541D0C0C106DE /* Pods-ZLFlexKit_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZLFlexKit_Example.debug.xcconfig"; path = "Target Support Files/Pods-ZLFlexKit_Example/Pods-ZLFlexKit_Example.debug.xcconfig"; sourceTree = "<group>"; };
@@ -50,9 +48,7 @@
 		8482AF022FD69CF8003F549B /* ViewControllerObjc.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewControllerObjc.m; sourceTree = "<group>"; };
 		9D9F2FE1E1BF1220573CC744 /* ZLFlexKit.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = ZLFlexKit.podspec; path = ../ZLFlexKit.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		B13FD0F016148F50FAF3AAF6 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		D0F299F178EBD8F01DA67BAB /* Pods-ZLFlexKit_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZLFlexKit_Tests.debug.xcconfig"; path = "Target Support Files/Pods-ZLFlexKit_Tests/Pods-ZLFlexKit_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		D4F977E8231BFB89D0ABBE9D /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
-		DCC7DBD273EFA5573AD9DB93 /* Pods-ZLFlexKit_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZLFlexKit_Tests.release.xcconfig"; path = "Target Support Files/Pods-ZLFlexKit_Tests/Pods-ZLFlexKit_Tests.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,7 +64,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				172D06A9428B3123036F55F5 /* Pods_ZLFlexKit_Tests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,7 +74,6 @@
 			isa = PBXGroup;
 			children = (
 				41DA2794879788D1B9807A47 /* Pods_ZLFlexKit_Example.framework */,
-				0876F9625ABF3C918050CAC1 /* Pods_ZLFlexKit_Tests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -163,8 +157,6 @@
 			children = (
 				56BA6DB99AC541D0C0C106DE /* Pods-ZLFlexKit_Example.debug.xcconfig */,
 				3AC438755ADE368F7482EF60 /* Pods-ZLFlexKit_Example.release.xcconfig */,
-				D0F299F178EBD8F01DA67BAB /* Pods-ZLFlexKit_Tests.debug.xcconfig */,
-				DCC7DBD273EFA5573AD9DB93 /* Pods-ZLFlexKit_Tests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -195,11 +187,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 607FACF21AFB9204008FA782 /* Build configuration list for PBXNativeTarget "ZLFlexKit_Tests" */;
 			buildPhases = (
-				D47CD6260713D7A8E5B5B2EB /* [CP] Check Pods Manifest.lock */,
 				607FACE11AFB9204008FA782 /* Sources */,
 				607FACE21AFB9204008FA782 /* Frameworks */,
 				607FACE31AFB9204008FA782 /* Resources */,
-				3A7BFFA9DB1F6CFEFCD72A3D /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -273,24 +263,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		3A7BFFA9DB1F6CFEFCD72A3D /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ZLFlexKit_Tests/Pods-ZLFlexKit_Tests-frameworks.sh",
-				"${BUILT_PRODUCTS_DIR}/FBSnapshotTestCase/FBSnapshotTestCase.framework",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FBSnapshotTestCase.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ZLFlexKit_Tests/Pods-ZLFlexKit_Tests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		8D6977C9FAA3BB0DFC6A7EA3 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -327,28 +299,6 @@
 			);
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Pods-ZLFlexKit_Example-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		D47CD6260713D7A8E5B5B2EB /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-ZLFlexKit_Tests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -545,7 +495,6 @@
 		};
 		607FACF31AFB9204008FA782 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D0F299F178EBD8F01DA67BAB /* Pods-ZLFlexKit_Tests.debug.xcconfig */;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
@@ -567,7 +516,6 @@
 		};
 		607FACF41AFB9204008FA782 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = DCC7DBD273EFA5573AD9DB93 /* Pods-ZLFlexKit_Tests.release.xcconfig */;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PLATFORM_DIR)/Developer/Library/Frameworks",

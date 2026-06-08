@@ -1,20 +1,13 @@
 PODS:
-  - FBSnapshotTestCase (2.1.4):
-    - FBSnapshotTestCase/SwiftSupport (= 2.1.4)
-  - FBSnapshotTestCase/Core (2.1.4)
-  - FBSnapshotTestCase/SwiftSupport (2.1.4):
-    - FBSnapshotTestCase/Core
   - SnapKit (5.6.0)
-  - ZLFlexKit (0.1.0)
+  - ZLFlexKit (0.1.4)
 
 DEPENDENCIES:
-  - FBSnapshotTestCase (~> 2.1.4)
   - SnapKit (~> 5.0)
   - ZLFlexKit (from `../`)
 
 SPEC REPOS:
   trunk:
-    - FBSnapshotTestCase
     - SnapKit
 
 EXTERNAL SOURCES:
@@ -22,10 +15,9 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  FBSnapshotTestCase: 094f9f314decbabe373b87cc339bea235a63e07a
   SnapKit: e01d52ebb8ddbc333eefe2132acf85c8227d9c25
-  ZLFlexKit: b064ef77eb36c3da81ed5ecd8fb5bb93843ec532
+  ZLFlexKit: e56af822d60d2217bb81648f39bc95d010e4ce4c
 
-PODFILE CHECKSUM: e7e3f026cd5b1573cc6e8bd3adeced05c3214e96
+PODFILE CHECKSUM: 04350d9a00b4346bd4b35cbbe0a4b4a8dcca80d6
 
 COCOAPODS: 1.16.2

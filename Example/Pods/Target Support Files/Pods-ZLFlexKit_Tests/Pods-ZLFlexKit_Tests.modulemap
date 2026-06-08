@@ -1,6 +1,0 @@
-framework module Pods_ZLFlexKit_Tests {
-  umbrella header "Pods-ZLFlexKit_Tests-umbrella.h"
-
-  export *
-  module * { export * }
-}

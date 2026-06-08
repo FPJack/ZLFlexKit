@@ -568,7 +568,84 @@ public extension StackView {
     }
 }
 
+///兼容 Objective-C 链式调用
 public extension StackView {
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var justifyFillEqually: StackView {
+        self.justifyContent = .fillEqually
+        return self
+    }
+    
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var justifyFill: StackView {
+        self.justifyContent = .fill
+        return self
+    }
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var justifyStart: StackView {
+        self.justifyContent = .start
+        return self
+    }
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var justifyCenter: StackView {
+        self.justifyContent = .center
+        return self
+    }
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var justifyEnd: StackView {
+        self.justifyContent = .end
+        return self
+    }
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var justifySpaceBetween: StackView {
+        self.justifyContent = .spaceBetween
+        return self
+    }
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var justifySpaceAround: StackView {
+        self.justifyContent = .spaceAround
+        return self
+    }
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var justifySpaceEvenly: StackView {
+        self.justifyContent = .spaceEvenly
+        return self
+    }
+    
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var alignFill: StackView {
+        self.alignment = .fill
+        return self
+    }
+    
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var alignStart: StackView {
+        self.alignment = .start
+        return self
+    }
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var alignCenter: StackView {
+        self.alignment = .center
+        return self
+    }
+    @objc
+    @available(swift, obsoleted: 1, renamed: "axis(_:)")
+    var alignEnd: StackView {
+        self.alignment = .end
+        return self
+    }
+    
     @objc(setAxis)
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     var axisObjc: (_ axis: StackViewAxis) -> StackView {

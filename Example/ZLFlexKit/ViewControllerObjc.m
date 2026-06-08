@@ -156,7 +156,7 @@
         .addViewIf(showExtra,  [self box:UIColor.systemBlueColor  text:@"YES" w:70 h:36])
         .addViewIf(!showExtra, [self box:UIColor.systemGrayColor  text:@"NO"  w:70 h:36]);
     [box addArrangedSubview:sv7];
-    
+   
     
 
     // ── ⑧ addViewMake + addViewIfMake — 闭包创建 ──────────────────────────
