@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "summary": "A short description of ZLFlexKit.",
   "description": "TODO: Add long description of the pod here.",
-  "homepage": "https://github.com/fanpeng/ZLFlexKit",
+  "homepage": "https://github.com/FPJack/ZLFlexKit.git",
   "license": {
     "type": "MIT",
     "file": "LICENSE"
   },
   "authors": {
-    "fanpeng": "peng.fan@ukelink.com"
+    "fanpeng": "2551412939@qq.com"
   },
   "source": {
-    "git": "https://github.com/fanpeng/ZLFlexKit.git",
+    "git": "https://github.com/FPJack/ZLFlexKit.git",
     "tag": "0.1.0"
   },
   "platforms": {
