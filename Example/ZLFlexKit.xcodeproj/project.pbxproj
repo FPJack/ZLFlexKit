@@ -48,7 +48,7 @@
 		8482AF002FD69CF8003F549B /* FlexKitDemoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexKitDemoViewController.swift; sourceTree = "<group>"; };
 		8482AF012FD69CF8003F549B /* ViewControllerObjc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewControllerObjc.h; sourceTree = "<group>"; };
 		8482AF022FD69CF8003F549B /* ViewControllerObjc.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewControllerObjc.m; sourceTree = "<group>"; };
-		9D9F2FE1E1BF1220573CC744 /* ZLFlexKit.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = ZLFlexKit.podspec; path = ../ZLFlexKit.podspec; sourceTree = "<group>"; };
+		9D9F2FE1E1BF1220573CC744 /* ZLFlexKit.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = ZLFlexKit.podspec; path = ../ZLFlexKit.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		B13FD0F016148F50FAF3AAF6 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		D0F299F178EBD8F01DA67BAB /* Pods-ZLFlexKit_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZLFlexKit_Tests.debug.xcconfig"; path = "Target Support Files/Pods-ZLFlexKit_Tests/Pods-ZLFlexKit_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		D4F977E8231BFB89D0ABBE9D /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
