@@ -255,8 +255,6 @@
     l.textColor = UIColor.grayColor;
     l.numberOfLines = 0;
     return l;
-    
-    
 }
 
 @end

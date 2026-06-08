@@ -6,7 +6,7 @@
 //
 
 import UIKit
-
+@objc(ZLView)
 open class View: UIView {
     
     private var _backgroundShapeLayer: CAShapeLayer?
@@ -49,12 +49,12 @@ open class View: UIView {
     }
     
     
-   private var markedNeedUpdate = false
+    private var markedNeedUpdate = false
     
     var cornerRadiiValue:UIEdgeInsets = .init(top: -1, left: -1, bottom: -1, right: -1)
     
     private var observation: NSKeyValueObservation?
-
+    
     
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -74,7 +74,93 @@ open class View: UIView {
     }
     
 }
-
+public extension View {
+    @objc(gradColors)
+    @available(swift, obsoleted: 1, renamed: "gradColors(_:)")
+    var gradColorsObjc: (_ colors: [UIColor]?) -> View {
+        { colors in
+            self.gradColors(colors)
+        }
+    }
+    
+    @objc(gradDirection)
+    @available(swift, obsoleted: 1, renamed: "gradDirection(start:end:)")
+    var gradDirectionObjc: (_ start: CGPoint, _ end: CGPoint) -> View {
+        { start, end in
+            self.gradDirection(start: start, end: end)
+        }
+    }
+    
+    @objc(borderColor)
+    @available(swift, obsoleted: 1, renamed: "borderColor(_:)")
+    var borderColorObjc: (_ color: UIColor?) -> View {
+        { color in
+            self.borderColor(color: color)
+        }
+    }
+    
+    @objc(borderWidth)
+    @available(swift, obsoleted: 1, renamed: "borderWidth(_:)")
+    var borderWidthObjc: (_ width: CGFloat) -> View {
+        { width in
+            self.borderWidth(w: width)
+        }
+    }
+    
+    @objc(border)
+    @available(swift, obsoleted: 1, renamed: "border(color:width:)")
+    var borderObjc: (_ color: UIColor?, _ width: CGFloat) -> View {
+        { color, width in
+            self.border(color: color, w: width)
+        }
+    }
+    @objc(shadowColor)
+    @available(swift, obsoleted: 1, renamed: "shadowColor(_:)")
+    var shadowColorObjc: (_ color: UIColor?) -> View {
+        { color in
+            self.shadowColor(color: color)
+        }
+    }
+    
+    @objc(shadowOffset)
+    @available(swift, obsoleted: 1, renamed: "shadowOffset(_:_:)")
+    var shadowOffsetObjc: (_ width: CGFloat, _ height: CGFloat) -> View {
+        { w, h in
+            self.shadowOffset(w: w, h: h)
+        }
+    }
+    
+    @objc(shadowRadius)
+    @available(swift, obsoleted: 1, renamed: "shadowRadius(_:)")
+    var shadowRadiusObjc: (_ radius: CGFloat) -> View {
+        { radius in
+            self.shadowRadius(radius: radius)
+        }
+    }
+    
+    @objc(shadowOpacity)
+    @available(swift, obsoleted: 1, renamed: "shadowOpacity(_:)")
+    var shadowOpacityObjc: (_ opacity: Float) -> View {
+        { opacity in
+            self.shadowOpacity(opacity: opacity)
+        }
+    }
+    @objc(cornerRadii)
+    @available(swift, obsoleted: 1, renamed: "cornerRadii(_:_:_:_:)")
+    var cornerRadiiObjc: (_ tl: CGFloat, _ tr: CGFloat, _ bl: CGFloat, _ br: CGFloat) -> View {
+        { tl, tr, bl, br in
+        self.cornerRadii(tl, tr, bl, br)
+        }
+    }
+    
+    @objc(radius)
+    @available(swift, obsoleted: 1, renamed: "radius(_:)")
+    var radiusObjc: (_ radius: CGFloat) -> View {
+        { r in
+            self.radius(r)
+        }
+    }
+}
 extension View {
     @discardableResult
     public func gradColors(_ colors: [UIColor]?) -> Self {
@@ -146,9 +232,9 @@ extension View {
     
     @discardableResult
     public func cornerRadii(_ topLeading: CGFloat,
-                     _ topTrailing: CGFloat,
-                     _ bottomLeading: CGFloat,
-                     _ bottomTrailing: CGFloat) -> Self {
+                            _ topTrailing: CGFloat,
+                            _ bottomLeading: CGFloat,
+                            _ bottomTrailing: CGFloat) -> Self {
         let newValue = UIEdgeInsets(top: topLeading,
                                     left: topTrailing,
                                     bottom: bottomLeading,
@@ -178,17 +264,17 @@ extension View {
         bl: CGFloat,
         br: CGFloat
     ) -> UIBezierPath {
-
+        
         let minX = rect.minX
         let minY = rect.minY
         let maxX = rect.maxX
         let maxY = rect.maxY
-
+        
         let path = UIBezierPath()
-
+        
         path.move(to: CGPoint(x: minX + tl, y: minY))
         path.addLine(to: CGPoint(x: maxX - tr, y: minY))
-
+        
         path.addArc(
             withCenter: CGPoint(x: maxX - tr, y: minY + tr),
             radius: tr,
@@ -196,9 +282,9 @@ extension View {
             endAngle: 0,
             clockwise: true
         )
-
+        
         path.addLine(to: CGPoint(x: maxX, y: maxY - br))
-
+        
         path.addArc(
             withCenter: CGPoint(x: maxX - br, y: maxY - br),
             radius: br,
@@ -206,9 +292,9 @@ extension View {
             endAngle: .pi / 2,
             clockwise: true
         )
-
+        
         path.addLine(to: CGPoint(x: minX + bl, y: maxY))
-
+        
         path.addArc(
             withCenter: CGPoint(x: minX + bl, y: maxY - bl),
             radius: bl,
@@ -216,9 +302,9 @@ extension View {
             endAngle: .pi,
             clockwise: true
         )
-
+        
         path.addLine(to: CGPoint(x: minX, y: minY + tl))
-
+        
         path.addArc(
             withCenter: CGPoint(x: minX + tl, y: minY + tl),
             radius: tl,
@@ -226,9 +312,9 @@ extension View {
             endAngle: -.pi / 2,
             clockwise: true
         )
-
+        
         path.close()
-
+        
         return path
     }
     
@@ -241,19 +327,19 @@ extension View {
     }
     
     private func _updateLayer() {
-
+        
         var tl: CGFloat = 0
         var tr: CGFloat = 0
         var bl: CGFloat = 0
         var br: CGFloat = 0
-
+        
         let isRTL = self.isRTL
-
+        
         let topLeft: CGFloat
         let topRight: CGFloat
         let bottomLeft: CGFloat
         let bottomRight: CGFloat
-
+        
         if isRTL {
             topLeft = cornerRadiiValue.left
             topRight = cornerRadiiValue.top
@@ -265,20 +351,20 @@ extension View {
             bottomLeft = cornerRadiiValue.bottom
             bottomRight = cornerRadiiValue.right
         }
-
+        
         tl = max(topLeft, 0)
         tr = max(topRight, 0)
         bl = max(bottomLeft, 0)
         br = max(bottomRight, 0)
-
+        
         let path = bezierPath(rect: bounds, tl: tl, tr: tr, bl: bl, br: br)
-
+        
         // MARK: - background shape layer
         if let shapeLayer = _backgroundShapeLayer {
-
+            
             shapeLayer.frame = bounds
             shapeLayer.path = path.cgPath
-
+            
             if let bgColor = _bgColor {
                 shapeLayer.fillColor = bgColor.cgColor
                 super.backgroundColor = .clear
@@ -286,24 +372,24 @@ extension View {
                 shapeLayer.fillColor = UIColor.white.cgColor
             }
         }
-
+        
         // MARK: - gradient layer
         if let gradLayer = _gradLayer {
-
+            
             gradLayer.frame = bounds
-
+            
             let maskLayer = CAShapeLayer()
             maskLayer.frame = gradLayer.bounds
             maskLayer.path = path.cgPath
             gradLayer.mask = maskLayer
             layer.insertSublayer(gradLayer, at: 0)
         }
-
+        
         // MARK: - shadow
         if layer.shadowColor != nil {
             layer.shadowPath = path.cgPath
         }
-
+        
         if let shapeLayer = _backgroundShapeLayer {
             layer.insertSublayer(shapeLayer, at: 0)
         }
