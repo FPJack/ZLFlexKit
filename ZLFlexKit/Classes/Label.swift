@@ -72,3 +72,4 @@ open class Label: UILabel {
         
     }
 }
+

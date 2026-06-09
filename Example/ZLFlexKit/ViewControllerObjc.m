@@ -20,6 +20,54 @@
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.whiteColor;
     self.title = @"StackView OC 链式 Demo";
+    
+    
+    ZLButtonSwift *button = [ZLButtonSwift buttonWithType:UIButtonTypeCustom];
+    [self.view addSubview:button];
+    [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    button.backgroundColor = UIColor.redColor;
+    button.insets = UIEdgeInsetsMake(8, 12, 8, 12);
+   // button.contentOrder = ButtonOrderTitleFirst;
+    button.axis = ButtonAxisHorizontal;
+    button.spacing = 20;
+//    button.flexibleSpacing = YES;
+//    button.horizontalAlign = ZLButtonAlignFill;
+    [button setTitle:@"Button" forState:UIControlStateNormal];
+    [button setImage:[UIImage systemImageNamed:@"star.fill"] forState:UIControlStateNormal];
+    button.axis = ButtonAxisVertical;
+
+    button.layout.centerOffset(0, 0);
+//    button.layout.width(50);
+//    return;
+//    [button titleMargeWithStart:100 end:20];
+//    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+//        button.axis = ButtonAxisVertical;
+//        [button setImage:[UIImage systemImageNamed:@"star.fill"] forState:UIControlStateNormal];
+//
+//    });
+    return;
+    [button setImage:[UIImage systemImageNamed:@"star.fill"] forState:UIControlStateNormal];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        
+        [button setImage:[UIImage imageNamed:@"头像-手机"] forState:UIControlStateNormal];
+
+    });
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [button setImage:[UIImage systemImageNamed:@"star.fill"] forState:UIControlStateNormal];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [button setImage:nil forState:UIControlStateNormal];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                button.axis = ButtonAxisVertical;
+                [button setImage:[UIImage systemImageNamed:@"star.fill"] forState:UIControlStateNormal];
+
+            });
+        });
+    });
+    
+    
+
+    return;
 
     // ── 滚动容器 ──────────────────────────────────────────────────────────
     UIScrollView *scroll = [[UIScrollView alloc] init];
@@ -213,6 +261,7 @@
         .setInsets(8, 12, 8, 12)
         .addView(v1).addView(v2).addView(v3);
     [box addArrangedSubview:sv10];
+    
     
 }
 

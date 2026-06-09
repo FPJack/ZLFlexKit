@@ -25,7 +25,8 @@ public final class FlexItem: NSObject {
         ///添加kvo 监听view的hidden属性变化
         didSet {
             guard observation == nil else { return }
-            observation = view?.observe(\.isHidden, options: [.new, .old]) { view, change in
+            observation = view?.observe(\.isHidden, options: [.new, .old]) {[weak self] view, change in
+                guard let self = self else { return }
                 if let newValue = change.newValue,
                     let oldValue = change.oldValue,
                     newValue != oldValue {
