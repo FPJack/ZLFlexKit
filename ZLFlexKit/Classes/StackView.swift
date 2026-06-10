@@ -59,6 +59,7 @@ open class StackView: UIView {
     public var insets: UIEdgeInsets = .zero {
         didSet {
             if oldValue != insets {
+                isRelativeLayout = true
                 layoutManager.updateInsets(insets)
             }
         }
@@ -87,7 +88,7 @@ open class StackView: UIView {
     }
     
     ///是否相对内边距布局,如果要设置内边距布局isRelativeLayout = true
-    public var isRelativeLayout: Bool = false
+    var isRelativeLayout: Bool = false
     
     
     lazy var layoutManager: FlexManager = {
