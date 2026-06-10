@@ -22,7 +22,7 @@
     self.title = @"StackView OC 链式 Demo";
     
     
-    ZLButtonSwift *button = [ZLButtonSwift buttonWithType:UIButtonTypeCustom];
+    ZLButton *button = [ZLButton buttonWithType:UIButtonTypeCustom];
     [self.view addSubview:button];
     [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
     button.backgroundColor = UIColor.redColor;
@@ -49,6 +49,8 @@
 //
 //    });
     return;
+    ZLPairImageView *view;
+    
     
     [button setImage:[UIImage systemImageNamed:@"star.fill"] forState:UIControlStateNormal];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -318,3 +320,5 @@
 //
 //   open class STackView: StackView { ... }   ← Swift
 //   STackView *sv = [[STackView alloc] init]; ← ObjC 使用
+
+

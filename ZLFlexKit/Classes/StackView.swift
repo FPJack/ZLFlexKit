@@ -118,7 +118,7 @@ open class StackView: UIView {
     
     
     
-     func markedUpdateConstraints() {
+    func markedUpdateConstraints() {
         if markedDirty { return }
         markedDirty = true
         setNeedsUpdateConstraints()
@@ -149,6 +149,126 @@ open class StackView: UIView {
         let stackView = Self.init()
         stackView.axis = .horizontal
         return stackView
+    }
+    
+    
+    ///链式API
+    
+    @discardableResult
+   public func axis(_ axis: StackViewAxis) -> Self {
+        self.axis = axis
+        return self
+    }
+    
+    @discardableResult
+    public func align(_ alignment: FlexItemCrossAlign) -> Self {
+        self.alignment = alignment
+        return self
+    }
+    
+    @discardableResult
+    public func justify(_ justifyContent: Justify) -> Self {
+        self.justifyContent = justifyContent
+        return self
+    }
+    
+    @discardableResult
+    public func insets(_ insets: UIEdgeInsets) -> Self {
+        self.insets = insets
+        return self
+    }
+    
+    @discardableResult
+    public func spacing(_ spacing: NumberConvertible) -> Self {
+        self.spacing = spacing.cgFloat
+        return self
+    }
+    
+    @discardableResult
+    public func insertSpacing(_ spacing: NumberConvertible) -> Self {
+        allViews.last?.flex.spacing = spacing.cgFloat
+        return self
+    }
+    
+    @discardableResult
+    public func insertSpacing(min: NumberConvertible) -> Self {
+        allViews.last?.flex.minSpacing = min.cgFloat
+        return self
+    }
+    
+    @discardableResult
+    public func insertSpacing(max: NumberConvertible) -> Self {
+        allViews.last?.flex.maxSpacing = max.cgFloat
+        return self
+    }
+    
+    @discardableResult
+    public func insertSpacing(flexible: Bool) -> Self {
+        allViews.last?.flex.isFlexibleSpace = flexible
+        return self
+    }
+    
+    @discardableResult
+    public func addView(_ flexType: FlexType?) -> Self {
+        addArrangedSubview(flexType?.view)
+        return self
+    }
+    
+    @discardableResult
+    public func addView(if condition: Bool, _ view: FlexType?) -> Self {
+        if condition {
+            addArrangedSubview(view?.view)
+        }
+        return self
+    }
+    
+    @discardableResult
+    public func addView<T>(make: @escaping (T) -> (any FlexType)?) -> Self where T: StackView {
+        let blockView = make(self as! T)
+        addArrangedSubview(blockView?.view)
+        return self
+    }
+    
+    
+    @discardableResult
+    func addView<T>(if condition: Bool, make: @escaping (T) -> FlexType?) -> Self where T: StackView {
+        if condition {
+            let blockView = make(self as! T)
+            addArrangedSubview(blockView?.view)
+        }
+        return self
+    }
+    
+    @objc
+    @discardableResult
+    public func wrapScrollView() -> ScrollView {
+        let scrollView = ScrollView()
+        scrollView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        scrollView.addSubview(self)
+        self.translatesAutoresizingMaskIntoConstraints = false
+        self.layout.edgesZero()
+        let axisLayout: NSLayoutConstraint
+        if self.axis == .horizontal {
+            axisLayout = self.heightAnchor.constraint(equalTo: scrollView.heightAnchor)
+            let equalWidth = scrollView.widthAnchor.constraint(equalTo: self.widthAnchor)
+            equalWidth.priority = .defaultLow
+            equalWidth.isActive = true
+        } else {
+            axisLayout = self.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+            let equalHeight = scrollView.heightAnchor.constraint(equalTo: self.heightAnchor)
+            equalHeight.priority = .defaultLow
+            equalHeight.isActive = true
+        }
+        axisLayout.isActive = true
+        return scrollView
+    }
+    
+    @discardableResult
+    func assignToPtr(_ ptr: AutoreleasingUnsafeMutablePointer<StackView>?) -> StackView {
+        if let ptr = ptr {
+            ptr.pointee = self
+        }
+        return self
     }
     
 }
@@ -331,6 +451,7 @@ public extension StackView {
     }
     
     /// 是否弹性空间（仅 ZLJustify.fill 生效）
+    @objc(setFlexibleSpacing:forView:)
     func setFlexibleSpacing(_ flexible: Bool, after view: UIView?) {
         guard let view = view,view.isKind(of: UIView.self) else { return }
 
@@ -458,122 +579,7 @@ extension UIView: FlexType {}
 ///链式API
 public extension StackView {
     
-    @discardableResult
-    func axis(_ axis: StackViewAxis) -> Self {
-        self.axis = axis
-        return self
-    }
     
-    @discardableResult
-    func align(_ alignment: FlexItemCrossAlign) -> Self {
-        self.alignment = alignment
-        return self
-    }
-    
-    @discardableResult
-    func justify(_ justifyContent: Justify) -> Self {
-        self.justifyContent = justifyContent
-        return self
-    }
-    
-    @discardableResult
-    func insets(_ insets: UIEdgeInsets) -> Self {
-        self.insets = insets
-        return self
-    }
-    
-    @discardableResult
-    func spacing(_ spacing: NumberConvertible) -> Self {
-        self.spacing = spacing.cgFloat
-        return self
-    }
-    
-    @discardableResult
-    func insertSpacing(_ spacing: NumberConvertible) -> Self {
-        allViews.last?.flex.spacing = spacing.cgFloat
-        return self
-    }
-    
-    @discardableResult
-    func insertSpacing(min: NumberConvertible) -> Self {
-        allViews.last?.flex.minSpacing = min.cgFloat
-        return self
-    }
-    
-    @discardableResult
-    func insertSpacing(max: NumberConvertible) -> Self {
-        allViews.last?.flex.maxSpacing = max.cgFloat
-        return self
-    }
-    
-    @discardableResult
-    func insertSpacing(flexible: Bool) -> Self {
-        allViews.last?.flex.isFlexibleSpace = flexible
-        return self
-    }
-    
-    @discardableResult
-    func addView(_ flexType: FlexType?) -> Self {
-        addArrangedSubview(flexType?.view)
-        return self
-    }
-    
-    @discardableResult
-    func addView(if condition: Bool, _ view: FlexType?) -> Self {
-        if condition {
-            addArrangedSubview(view?.view)
-        }
-        return self
-    }
-    
-    @discardableResult
-    func addView(make: @escaping (Self) -> FlexType?) -> Self {
-        let blockView = make(self)
-        addArrangedSubview(blockView?.view)
-        return self
-    }
-    
-    
-    @discardableResult
-    func addView(if condition: Bool, make: @escaping (Self) -> FlexType?) -> Self {
-        if condition {
-            let blockView = make(self)
-            addArrangedSubview(blockView?.view)
-        }
-        return self
-    }
-    
-    @objc
-    @discardableResult
-    func wrapScrollView() -> ScrollView {
-        let scrollView = ScrollView()
-        scrollView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        scrollView.addSubview(self)
-        self.translatesAutoresizingMaskIntoConstraints = false
-        self.layout.edgesZero()
-        let axisLayout: NSLayoutConstraint
-        if self.axis == .horizontal {
-            axisLayout = self.heightAnchor.constraint(equalTo: scrollView.heightAnchor)
-            let equalWidth = scrollView.widthAnchor.constraint(equalTo: self.widthAnchor)
-            equalWidth.priority = .defaultLow
-            equalWidth.isActive = true
-        } else {
-            axisLayout = self.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
-            let equalHeight = scrollView.heightAnchor.constraint(equalTo: self.heightAnchor)
-            equalHeight.priority = .defaultLow
-            equalHeight.isActive = true
-        }
-        axisLayout.isActive = true
-        return scrollView
-    }
-    
-    @discardableResult
-    func assignToPtr(_ ptr: AutoreleasingUnsafeMutablePointer<StackView>?) -> StackView {
-        if let ptr = ptr {
-            ptr.pointee = self
-        }
-        return self
-    }
      
 }
 

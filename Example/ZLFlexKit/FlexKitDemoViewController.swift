@@ -1139,11 +1139,14 @@ class DSLDemoVC: UIViewController {
         sv6.layer.cornerRadius = 6
         sv6.translatesAutoresizingMaskIntoConstraints = false
         sv6.heightAnchor.constraint(equalToConstant: 60).isActive = true
-
-        sv6
-            .addView(make: { _ in UIView.colored(colors[6], text: "make①", size: CGSize(width: 60, height: 36)) })
-            .addView(make: { _ in UIView.colored(colors[0], text: "make②", size: CGSize(width: 60, height: 36)) })
-            .addView(make: { _ in UIView.colored(colors[1], text: "make③", size: CGSize(width: 60, height: 36)) })
+        sv6.addView { _ in
+            UIView.colored(colors[6], text: "make①", size: CGSize(width: 60, height: 36))
+        }.addView { _ in
+            UIView.colored(colors[0], text: "make②", size: CGSize(width: 60, height: 36))
+        }.addView { _ in
+            UIView.colored(colors[1], text: "make③", size: CGSize(width: 60, height: 36))
+        }
+       
         container.addArrangedSubview(sv6)
 
         // ─── ⑦ 垂直 StackView + DSL + alignSelf ──────────────────────────────
