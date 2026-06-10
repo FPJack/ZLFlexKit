@@ -4,6 +4,7 @@ platform :ios, '10.0'
 
 target 'ZLFlexKit_Example' do
   pod 'ZLFlexKit', :path => '../'
+  pod 'ZLUIKitPlus', :path => '../../ZLUIKitPlus'
   pod 'SnapKit', '~> 5.0'
 
 end
