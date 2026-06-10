@@ -820,13 +820,13 @@ public extension UIView {
         
     }
     
-    //     var zl_wrapView: WrapperView {
-    //         let key = #function
-    //         if let view = zl_storage[key] as? WrapperView {return view}
-    //         let view = WrapperView.wrap(with: self)
-    //         zl_storage[key] = view
-    //         return view
-    //     }
+    var zl_wrapView: WrapperView {
+             let key = #function
+             if let view = zl_storage[key] as? WrapperView {return view}
+             let view = WrapperView.wrap(with: self)
+             zl_storage[key] = view
+             return view
+    }
 }
 
 

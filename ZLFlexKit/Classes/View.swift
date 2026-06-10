@@ -505,3 +505,84 @@ public extension View {
     }
 }
 
+
+
+
+@objc(ZLWrapperView)
+open class WrapperView: View {
+
+    // MARK: - Public
+    public private(set) weak var contentView: UIView?
+
+    public var insets: ((_ top: CGFloat,
+                         _ leading: CGFloat,
+                         _ bottom: CGFloat,
+                         _ trailing: CGFloat) -> WrapperView) {
+        return { [weak self] top, leading, bottom, trailing in
+            guard let self = self else { return WrapperView() }
+
+            let newInsets = UIEdgeInsets(top: top,
+                                         left: leading,
+                                         bottom: bottom,
+                                         right: trailing)
+
+            if let old = self._contentInsets,
+               old == newInsets {
+                return self
+            }
+
+            self._contentInsets = newInsets
+
+            if let constraints = self.constraintsArr {
+                NSLayoutConstraint.deactivate(constraints)
+            }
+
+            guard let contentView = self.contentView else { return self }
+
+            contentView.translatesAutoresizingMaskIntoConstraints = false
+
+            let cs = [
+                contentView.topAnchor.constraint(equalTo: self.topAnchor, constant: top),
+                contentView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: leading),
+                contentView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -bottom),
+                contentView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -trailing)
+            ]
+
+            self.constraintsArr = cs
+            self.setNeedsUpdateConstraints()
+
+            return self
+        }
+    }
+
+    // MARK: - Private
+    private var constraintsArr: [NSLayoutConstraint]?
+    private var _contentInsets: UIEdgeInsets?
+
+    // MARK: - Override
+    override open func updateConstraints() {
+        if constraintsArr == nil {
+            super.updateConstraints()
+            return
+        }
+        NSLayoutConstraint.activate(constraintsArr!)
+        self.constraintsArr!.removeAll()
+        self.constraintsArr = nil
+        super.updateConstraints()
+    }
+
+    // MARK: - Factory
+    public static func wrap(with view: UIView) -> WrapperView {
+        let wrap = WrapperView(frame: view.frame)
+        wrap.contentView = view
+        wrap.addSubview(view)
+        return wrap.insets(0, 0, 0, 0)
+    }
+
+    // MARK: - Convenience
+    @discardableResult
+    public func insetsZero() -> WrapperView {
+        return insets(0, 0, 0, 0)
+    }
+}
+
