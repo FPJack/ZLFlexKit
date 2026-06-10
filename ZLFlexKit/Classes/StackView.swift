@@ -273,7 +273,12 @@ open class StackView: UIView {
     }
     
     
-    // MARK: - OC链式API
+    
+    
+}
+
+// MARK: - OC链式API
+extension StackView {
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifyFillEqually: StackView {
@@ -486,9 +491,7 @@ open class StackView: UIView {
             return self
         }
     }
-    
 }
-
 
 extension StackView {
     
