@@ -1,13 +1,10 @@
 PODS:
   - SnapKit (5.6.0)
   - ZLFlexKit (0.1.4)
-  - ZLUIKitPlus (0.1.0):
-    - ZLFlexKit
 
 DEPENDENCIES:
   - SnapKit (~> 5.0)
   - ZLFlexKit (from `../`)
-  - ZLUIKitPlus (from `../../ZLUIKitPlus`)
 
 SPEC REPOS:
   trunk:
@@ -16,14 +13,11 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   ZLFlexKit:
     :path: "../"
-  ZLUIKitPlus:
-    :path: "../../ZLUIKitPlus"
 
 SPEC CHECKSUMS:
   SnapKit: e01d52ebb8ddbc333eefe2132acf85c8227d9c25
   ZLFlexKit: e56af822d60d2217bb81648f39bc95d010e4ce4c
-  ZLUIKitPlus: 5786c3cbea8708e9b0e7feaccef72c9dfc0bdafa
 
-PODFILE CHECKSUM: 4215c0185fd2774db9f50a5c5dc961e8f75efc07
+PODFILE CHECKSUM: 04350d9a00b4346bd4b35cbbe0a4b4a8dcca80d6
 
 COCOAPODS: 1.16.2
