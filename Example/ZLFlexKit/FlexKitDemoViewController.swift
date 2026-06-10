@@ -1146,7 +1146,7 @@ class DSLDemoVC: UIViewController {
         }.addView { _ in
             UIView.colored(colors[1], text: "make③", size: CGSize(width: 60, height: 36))
         }
-       
+        
         container.addArrangedSubview(sv6)
 
         // ─── ⑦ 垂直 StackView + DSL + alignSelf ──────────────────────────────

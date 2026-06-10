@@ -820,6 +820,7 @@ public extension UIView {
         
     }
     
+    @objc
     var zl_wrapView: WrapperView {
              let key = #function
              if let view = zl_storage[key] as? WrapperView {return view}

@@ -512,46 +512,18 @@ public extension View {
 open class WrapperView: View {
 
     // MARK: - Public
+    @objc
     public private(set) weak var contentView: UIView?
 
-    public var insets: ((_ top: CGFloat,
+    @objc(insets)
+    @available(swift, obsoleted: 1, renamed: "insets(_:_:_:_:)")
+    public var insetsObjc: ((_ top: CGFloat,
                          _ leading: CGFloat,
                          _ bottom: CGFloat,
                          _ trailing: CGFloat) -> WrapperView) {
         return { [weak self] top, leading, bottom, trailing in
             guard let self = self else { return WrapperView() }
-
-            let newInsets = UIEdgeInsets(top: top,
-                                         left: leading,
-                                         bottom: bottom,
-                                         right: trailing)
-
-            if let old = self._contentInsets,
-               old == newInsets {
-                return self
-            }
-
-            self._contentInsets = newInsets
-
-            if let constraints = self.constraintsArr {
-                NSLayoutConstraint.deactivate(constraints)
-            }
-
-            guard let contentView = self.contentView else { return self }
-
-            contentView.translatesAutoresizingMaskIntoConstraints = false
-
-            let cs = [
-                contentView.topAnchor.constraint(equalTo: self.topAnchor, constant: top),
-                contentView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: leading),
-                contentView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -bottom),
-                contentView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -trailing)
-            ]
-
-            self.constraintsArr = cs
-            self.setNeedsUpdateConstraints()
-
-            return self
+            return self.insets(top, leading, bottom, trailing)
         }
     }
 
@@ -581,8 +553,48 @@ open class WrapperView: View {
 
     // MARK: - Convenience
     @discardableResult
-    public func insetsZero() -> WrapperView {
+    public func insetsZero() -> Self {
         return insets(0, 0, 0, 0)
+    }
+    
+    
+    /// 设置内边距 - top, leading, bottom, trailing
+    @discardableResult
+    public func insets(_ top: CGFloat,
+                       _ leading: CGFloat,
+                       _ bottom: CGFloat,
+                       _ trailing: CGFloat) -> Self {
+        let newInsets = UIEdgeInsets(top: top,
+                                     left: leading,
+                                     bottom: bottom,
+                                     right: trailing)
+
+        if let old = self._contentInsets,
+           old == newInsets {
+            return self
+        }
+
+        self._contentInsets = newInsets
+
+        if let constraints = self.constraintsArr {
+            NSLayoutConstraint.deactivate(constraints)
+        }
+
+        guard let contentView = self.contentView else { return self }
+
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+
+        let cs = [
+            contentView.topAnchor.constraint(equalTo: self.topAnchor, constant: top),
+            contentView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: leading),
+            contentView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -bottom),
+            contentView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -trailing)
+        ]
+
+        self.constraintsArr = cs
+        self.setNeedsUpdateConstraints()
+
+        return self
     }
 }
 
