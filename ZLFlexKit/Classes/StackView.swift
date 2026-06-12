@@ -66,15 +66,7 @@ open class StackView: UIView {
     
     @objc
     public var arrangedViews: [UIView] {
-        
-        allViews.filter { view in
-            
-            if view.superview != self {
-                addSubview(view)
-            }
-            
-            return !view.isHidden
-        }
+        allViews.filter {!$0.isHidden}
     }
     
     @objc
@@ -795,18 +787,6 @@ extension FlexItem: FlexType {}
 extension UIView: FlexType {}
 
 
-///链式API
-public extension StackView {
-    
-    
-    
-}
-
-///兼容 Objective-C 链式调用
-public extension StackView {
-    
-}
-
 extension StackView {
     override public func updateConstraints() {
         
@@ -885,6 +865,7 @@ open class HStackView: StackView {
     }
     public override init(builder: () -> [any StackViewDSL]) {
         super.init(builder: builder)
+       
     }
     
     required public init?(coder: NSCoder) {

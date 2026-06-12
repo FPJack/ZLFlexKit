@@ -12,7 +12,7 @@ public protocol StackViewDSL {
 }
 extension StackViewDSL {
    public func getDslView() -> UIView? {
-        return nil
+        nil
     }
 }
 
