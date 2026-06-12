@@ -10,32 +10,6 @@ import ObjectiveC
 
 // MARK: - Utility Functions
 
-public func ZLColorFromStr(_ hexStr: String) -> UIColor {
-    var str = hexStr.trimmingCharacters(in: .whitespacesAndNewlines)
-    if str.hasPrefix("0x") { str = String(str.dropFirst(2)) }
-    if str.hasPrefix("#") { str = String(str.dropFirst()) }
-    let hexInt = UInt32(str, radix: 16) ?? 0
-    let r = CGFloat((hexInt >> 16) & 0xFF) / 255.0
-    let g = CGFloat((hexInt >> 8) & 0xFF) / 255.0
-    let b = CGFloat(hexInt & 0xFF) / 255.0
-    return UIColor(red: r, green: g, blue: b, alpha: 1.0)
-}
-
-public func ZLImageFromObj(_ image: AnyObject?) -> UIImage? {
-    if let img = image as? UIImage { return img }
-    if let name = image as? String { return UIImage(named: name) }
-    return nil
-}
-
-public func ZLColorFromObj(_ obj: AnyObject?) -> UIColor? {
-    if let color = obj as? UIColor { return color }
-    if let str = obj as? String { return ZLColorFromStr(str) }
-    return nil
-}
-
-
-
-
 // MARK: - Layout
 
 public protocol NumberConvertible {
