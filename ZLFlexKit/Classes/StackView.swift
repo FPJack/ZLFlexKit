@@ -782,7 +782,7 @@ extension FlexType {
         if let view = self as? UIView {
             return view
         } else if let item = self as? FlexItem {
-            return item.view
+            return item._view
         }
         return nil
     }

@@ -16,16 +16,14 @@ public enum FlexItemCrossAlign: Int {
     case fill
 }
 
+
 @objc(ZLFlexItem)
-public final class FlexItem: NSObject {
-    
+public  class FlexItem: NSObject {
     private var observation: NSKeyValueObservation?
-    
-    public weak var view: UIView? {
-        ///添加kvo 监听view的hidden属性变化
+    weak var _view: UIView? {
         didSet {
             guard observation == nil else { return }
-            observation = view?.observe(\.isHidden, options: [.new, .old]) {[weak self] view, change in
+            observation = _view?.observe(\.isHidden, options: [.new, .old]) {[weak self] view, change in
                 guard let self = self else { return }
                 if let newValue = change.newValue,
                     let oldValue = change.oldValue,
@@ -34,6 +32,12 @@ public final class FlexItem: NSObject {
                 }
             }
         }
+    }
+    
+    @objc(view)
+    @available(swift, obsoleted: 1, renamed: "view")
+    public weak var viewObjc: UIView? {
+        _view
     }
     
     public weak var stackView: StackView?
@@ -432,19 +436,52 @@ public extension FlexItem {
 }
 
 
-private var flexKey:      UInt8 = 0
+public class FlexItemSwift<T: UIView>: FlexItem {
+    public init(view: T) {
+        super.init()
+        self._view = view as UIView
+    }
+    public var view: T? {
+        _view as? T
+    }
+}
 
+
+private var flexSwiftKey:      UInt8 = 0
+public protocol FLexItemCompatible where Self: UIView {}
+extension UIView: FLexItemCompatible {}
+extension FLexItemCompatible {
+   public var flex: FlexItemSwift<Self> {
+        if let cfg = objc_getAssociatedObject(self, &flexSwiftKey) as? FlexItemSwift<Self> {
+            return cfg
+        }
+        let cfg = FlexItemSwift(view: self)
+        // 如需显式延长生命周期到自动释放池销毁，可用：
+        _ = Unmanaged.passRetained(self).autorelease()
+        objc_setAssociatedObject(
+            self,
+            &flexSwiftKey,
+            cfg,
+            .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+        )
+        return cfg
+    }
+}
+
+
+
+private var flexKey:      UInt8 = 0
 extension UIView {
-    @objc public var flex: FlexItem {
+    @objc(flex)
+    @available(swift, obsoleted: 1, renamed: "flex")
+    public var flexObjc: FlexItem {
         if let cfg = objc_getAssociatedObject(self, &flexKey) as? FlexItem {
             return cfg
         }
         let cfg = FlexItem()
-        cfg.view = self
-        
+        cfg._view = self
         // 如需显式延长生命周期到自动释放池销毁，可用：
         _ = Unmanaged.passRetained(self).autorelease()
-
         objc_setAssociatedObject(
             self,
             &flexKey,
@@ -453,5 +490,4 @@ extension UIView {
         )
         return cfg
     }
-    
 }
