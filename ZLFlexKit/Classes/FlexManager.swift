@@ -58,7 +58,7 @@ final class FlexManager {
         guard horizontal else { return }
         let views = self.views
         let count = views.count
-        var nextXAnchor: NSLayoutXAxisAnchor = stackEdgeInsets.jLeadingAnchor
+        var nextXAnchor:  NSLayoutXAxisAnchor = stackEdgeInsets.jLeadingAnchor
         var widthDim:     NSLayoutDimension?   // for spaceBetween/Around/Evenly
         var viewWidthDim: NSLayoutDimension?   // for fillEqually
         var flexWidthDim: NSLayoutDimension?   // for flex spaces
@@ -68,6 +68,8 @@ final class FlexManager {
         
         let noIntrinsic = CGSize(width: UIView.noIntrinsicMetric, height: UIView.noIntrinsicMetric)
         let insets = stackView?.insets ?? .zero
+        var leadingMarge = 0.0
+        var preTrailingMarge = 0.0
         for i in 0 ..< count {
             let view = views[i]
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -83,10 +85,11 @@ final class FlexManager {
             if cfg.flex > 0, justify != .fillEqually {
                 flexViews.append(view)
             }
-
-            let startSpacing = cfg.startMarge
-            let endSpacing   = cfg.endMarge
+            let marge = cfg.marge
+            let startSpacing = marge.top
+            let endSpacing   = marge.bottom
             let spacing      = cfg.spacing
+            leadingMarge = marge.leading
 
             // 交叉轴约束
             addCrossAxisConstraints(
@@ -100,19 +103,21 @@ final class FlexManager {
 
             // 主轴起始约束
             let leadingCon: NSLayoutConstraint
-            if justify == .end, i == 0 {
-                leadingCon = view.leadingAnchor.constraint(greaterThanOrEqualTo: nextXAnchor, constant: 0)
-            } else {
-                leadingCon = view.leadingAnchor.constraint(equalTo: nextXAnchor, constant: 0)
-            }
             
             if i == 0 {
-                leadingCon.constant = insets.left;
+                if justify == .end {
+                    leadingCon = view.leadingAnchor.constraint(greaterThanOrEqualTo: nextXAnchor, constant: insets.left + leadingMarge)
+                }else {
+                    leadingCon = view.leadingAnchor.constraint(equalTo: nextXAnchor, constant: insets.left + leadingMarge)
+                }
                 justifyFirstConstraints = leadingCon
+            }else {
+                leadingCon = view.leadingAnchor.constraint(equalTo: nextXAnchor, constant: preTrailingMarge + leadingMarge)
             }
             
             constraints.append(leadingCon)
             nextXAnchor = view.trailingAnchor
+            preTrailingMarge = marge.trailing
 
             // fillEqually: 宽度相等
             if justify == .fillEqually {
@@ -126,8 +131,13 @@ final class FlexManager {
             if (justify == .fill || justify == .fillEqually), cfg.isFlexibleSpace {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
-                constraints.append(guide.leadingAnchor.constraint(equalTo: nextXAnchor))
+                let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
                 nextXAnchor = guide.trailingAnchor
+                preTrailingMarge = 0.0
+                constraints.append(cons)
+
+                
+                
                 constraints.append(guide.widthAnchor.constraint(greaterThanOrEqualToConstant: 0))
                 if let dim = flexWidthDim {
                     constraints.append(dim.constraint(equalTo: guide.widthAnchor))
@@ -141,8 +151,10 @@ final class FlexManager {
                 if spacing >= 0 || cfg._minSpacing > 0 || cfg._maxSpacing > 0 {
                     let guide = LayoutGuide()
                     guide.stackView = stackView
-                    constraints.append(guide.leadingAnchor.constraint(equalTo: nextXAnchor))
+                    let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
+                    constraints.append(cons)
                     nextXAnchor = guide.trailingAnchor
+                    preTrailingMarge = 0.0
 
                     var spacingFlag = true
                     if cfg._minSpacing > 0 {
@@ -174,11 +186,13 @@ final class FlexManager {
             }
 
             // spaceBetween / spaceAround / spaceEvenly: 均等间距
-            if [Justify.spaceBetween, .spaceAround, .spaceEvenly].contains(justify), i < count - 1 {
+            if [.spaceBetween, .spaceAround, .spaceEvenly].contains(justify), i < count - 1 {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
-                constraints.append(guide.leadingAnchor.constraint(equalTo: nextXAnchor))
+                let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
+                constraints.append(cons)
                 nextXAnchor = guide.trailingAnchor
+                preTrailingMarge = 0.0
                 if let dim = widthDim {
                     constraints.append(guide.widthAnchor.constraint(equalTo: dim))
                 }
@@ -188,9 +202,9 @@ final class FlexManager {
 
         // 末尾约束
         if justify == .start {
-            constraints.append(nextXAnchor.constraint(lessThanOrEqualTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.right))
+            constraints.append(nextXAnchor.constraint(lessThanOrEqualTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.right - preTrailingMarge))
         } else {
-            constraints.append(nextXAnchor.constraint(equalTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.right))
+            constraints.append(nextXAnchor.constraint(equalTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.right - preTrailingMarge))
         }
         
         justifyLastConstraints = constraints.last
@@ -245,6 +259,8 @@ final class FlexManager {
         let fittingLow = UILayoutPriority(rawValue: UILayoutPriority.fittingSizeLevel.rawValue / 2.0)
         let noIntrinsic = CGSize(width: UIView.noIntrinsicMetric, height: UIView.noIntrinsicMetric)
         let insets = stackView?.insets ?? .zero
+        var topMarge = 0.0
+        var preBottomMarge = 0.0
         for i in 0 ..< count {
             let view = views[i]
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -260,10 +276,11 @@ final class FlexManager {
             if cfg.flex > 0, justify != .fillEqually {
                 flexViews.append(view)
             }
-
-            let startSpacing = cfg.startMarge
-            let endSpacing   = cfg.endMarge
+            let marge = cfg.marge
+            let startSpacing = marge.leading
+            let endSpacing   = marge.trailing
             let spacing      = cfg.spacing
+            topMarge = marge.top
 
             // 交叉轴约束
             addCrossAxisConstraints(
@@ -277,19 +294,21 @@ final class FlexManager {
 
             // 主轴起始约束
             let topCon: NSLayoutConstraint
-            if justify == .end, i == 0 {
-                topCon = view.topAnchor.constraint(greaterThanOrEqualTo: nextYAnchor, constant: 0)
-            } else {
-                topCon = view.topAnchor.constraint(equalTo: nextYAnchor, constant: 0)
-            }
             
             if i == 0 {
-                topCon.constant = insets.top;
+                if justify == .end {
+                    topCon = view.topAnchor.constraint(greaterThanOrEqualTo: nextYAnchor, constant: insets.top + topMarge)
+                }else {
+                    topCon = view.topAnchor.constraint(equalTo: nextYAnchor, constant: insets.top + topMarge)
+                }
                 justifyFirstConstraints = topCon
+            }else {
+                topCon = view.topAnchor.constraint(equalTo: nextYAnchor, constant: preBottomMarge + topMarge)
             }
             
             constraints.append(topCon)
             nextYAnchor = view.bottomAnchor
+            preBottomMarge = marge.bottom
 
             // fillEqually: 高度相等
             if justify == .fillEqually {
@@ -303,8 +322,9 @@ final class FlexManager {
             if (justify == .fill || justify == .fillEqually), cfg.isFlexibleSpace {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
-                constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor))
+                constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
                 nextYAnchor = guide.bottomAnchor
+                preBottomMarge = 0.0
                 constraints.append(guide.heightAnchor.constraint(greaterThanOrEqualToConstant: 0))
                 if let dim = flexHeightDim {
                     constraints.append(dim.constraint(equalTo: guide.heightAnchor))
@@ -318,8 +338,9 @@ final class FlexManager {
                 if spacing >= 0 || cfg._minSpacing > 0 || cfg._maxSpacing > 0 {
                     let guide = LayoutGuide()
                     guide.stackView = stackView
-                    constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor))
+                    constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
                     nextYAnchor = guide.bottomAnchor
+                    preBottomMarge = 0.0
 
                     var spacingFlag = true
                     if cfg._minSpacing > 0 {
@@ -354,8 +375,9 @@ final class FlexManager {
             if [Justify.spaceBetween, .spaceAround, .spaceEvenly].contains(justify), i < count - 1 {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
-                constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor))
+                constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
                 nextYAnchor = guide.bottomAnchor
+                preBottomMarge = 0.0
                 if let dim = heightDim {
                     constraints.append(guide.heightAnchor.constraint(equalTo: dim))
                 }
@@ -365,9 +387,9 @@ final class FlexManager {
 
         // 末尾约束
         if justify == .start {
-            constraints.append(nextYAnchor.constraint(lessThanOrEqualTo: stackEdgeInsets.jBottomAnchor, constant: -insets.bottom))
+            constraints.append(nextYAnchor.constraint(lessThanOrEqualTo: stackEdgeInsets.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
         } else {
-            constraints.append(nextYAnchor.constraint(equalTo: stackEdgeInsets.jBottomAnchor, constant: -insets.bottom))
+            constraints.append(nextYAnchor.constraint(equalTo: stackEdgeInsets.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
         }
         justifyLastConstraints = constraints.last
 
@@ -416,43 +438,51 @@ final class FlexManager {
     }
 
     // MARK: - Insets
-
-    func updateInsets(_ insets: UIEdgeInsets) {
-//        stackEdgeInsets.insets = insets
-        if let first = justifyFirstConstraints {
-            first.constant = horizontal ? insets.left : insets.top
-        }
-        if let last = justifyLastConstraints {
-            last.constant = horizontal ? -insets.right : -insets.bottom
-        }
-        
-        
-        constraints.forEach { cons in
-            guard let view = cons.item.view else { return }
-            let flexItem = view.flex
-            let startMarge = flexItem.startMarge
-            let endMarge = flexItem.endMarge
-            let type = cons.item.type
-            if type == .start {
-                if horizontal {
-                    cons.constant = startMarge + insets.top
-                } else {
-                    cons.constant = startMarge + insets.left
-                }
-            } else if type == .end {
-                if horizontal {
-                    cons.constant = -(endMarge + insets.bottom)
-                } else {
-                    cons.constant = -(endMarge + insets.right)
-                }
-            } else if type == .center {
-                let startSpacing = horizontal ? startMarge + insets.top : startMarge + insets.left
-                let endSpacing   = horizontal ? endMarge + insets.bottom : endMarge + insets.right
-                cons.constant = (startSpacing - endSpacing) * 0.5
+    func updateInsets(_ preInsets: UIEdgeInsets, _ insets: UIEdgeInsets) {
+        do { ///更新主轴起始/末尾约束常量
+            let preFirstInset = horizontal ? preInsets.left : preInsets.top
+            let preLastInset = horizontal ? preInsets.right : preInsets.bottom
+            let firstInset = horizontal ? insets.left : insets.top
+            let lastInset = horizontal ? insets.right : insets.bottom
+            
+            if let first = justifyFirstConstraints {
+                first.constant = first.constant - preFirstInset + firstInset
+            }
+            if let last = justifyLastConstraints {
+                last.constant = last.constant + preLastInset - lastInset
             }
         }
+        do {
+            let startMarge = horizontal ? insets.top : insets.left
+            let endMarge = horizontal ? insets.bottom : insets.right
+            constraints.forEach { cons in
+                guard let view = cons.item.view else { return }
+                let flexItem = view.flex
+                let marge = flexItem.marge
+                let type = cons.item.type
+                if type == .start {
+                    if horizontal {
+                        cons.constant = startMarge + marge.top
+                    } else {
+                        cons.constant = startMarge + marge.leading
+                    }
+                } else if type == .end {
+                    if horizontal {
+                        cons.constant = -(endMarge + marge.bottom)
+                    } else {
+                        cons.constant = -(endMarge + marge.trailing)
+                    }
+                } else if type == .center {
+                    let startSpacing = horizontal ? startMarge + marge.top : startMarge + marge.leading
+                    let endSpacing   = horizontal ? endMarge + marge.bottom : endMarge + marge.trailing
+                    cons.constant = (startSpacing - endSpacing) * 0.5
+                }
+            }
+        }
+        
     }
 
+   
     // MARK: - Private helpers
 
     /// 交叉轴方向对齐约束（horizontal 时处理垂直方向，vertical 时处理水平方向）

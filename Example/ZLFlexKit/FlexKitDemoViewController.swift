@@ -331,9 +331,9 @@ class AlignSelfDemoVC: UIViewController {
         let m1 = UIView.colored(colors[4], text: "start+0",  size: CGSize(width: 60, height: 28))
         let m2 = UIView.colored(colors[5], text: "start+10", size: CGSize(width: 60, height: 28))
         let m3 = UIView.colored(colors[6], text: "end+10",   size: CGSize(width: 60, height: 28))
-        m2.flex.startMarge = 10
+        m2.flex.marge(.init(top: 10, leading: 0, bottom: 0, trailing: 0))
         m3.flex.alignSelf = .end
-        m3.flex.endMarge   = 10
+        m3.flex.marge(.init(top: 0, leading: 0, bottom: 0, trailing: 10))
         for v in [m1, m2, m3] { sv2.addArrangedSubview(v) }
         container.addArrangedSubview(sv2)
     }
@@ -494,11 +494,10 @@ class MargeDemoVC: UIViewController {
         let v2 = UIView.colored(colors[1], text: "start+15", size: CGSize(width: 60, height: 30))
         let v3 = UIView.colored(colors[2], text: "end+15",   size: CGSize(width: 60, height: 30))
         let v4 = UIView.colored(colors[3], text: "两边+10",  size: CGSize(width: 60, height: 0))
-        v2.flex.startMarge = 15;
-        v3.flex.endMarge = 15;
+        v2.flex.marge(.init(top: 15, leading: 0, bottom: 0, trailing: 0))
+        v3.flex.marge(.init(top: 0, leading: 0, bottom: 15, trailing: 0))
         v3.flex.alignSelf = .end
-        v4.flex.startMarge = 10;
-        v4.flex.endMarge = 10
+        v4.flex.marge(.init(top: 10, leading: 0, bottom: 10, trailing: 0))
         for v in [v1, v2, v3, v4] { sv.addArrangedSubview(v) }
         container.addArrangedSubview(sv)
 
@@ -508,10 +507,8 @@ class MargeDemoVC: UIViewController {
         let c1 = UIView.colored(colors[4], text: "offset 0", size: CGSize(width: 60, height: 30))
         let c2 = UIView.colored(colors[5], text: "up 16",    size: CGSize(width: 60, height: 30))
         let c3 = UIView.colored(colors[6], text: "down 16",  size: CGSize(width: 60, height: 30))
-        c2.flex.startMarge = 0;
-        c2.flex.endMarge = 32
-        c3.flex.startMarge = 32;
-        c3.flex.endMarge = 0
+        c2.flex.marge(.init(top: 0, leading: 0, bottom: 32, trailing: 0))
+        c3.flex.marge(.init(top: 32, leading: 0, bottom: 0, trailing: 0))
         for v in [c1, c2, c3] { sv2.addArrangedSubview(v) }
         container.addArrangedSubview(sv2)
     }
@@ -578,7 +575,7 @@ class VerticalDemoVC: UIViewController {
         let container = makeScrollableContainerStack()
 
         container.addArrangedSubview(sectionLabel("vertical + .fill + flexValue — 按比例分配高度"))
-        let sv1 = makeVerticalStack(height: 150)
+        let sv1 = makeVerticalStack(height: -1)
         sv1.justifyContent = .fill; sv1.alignment = .fill
         for (i, f) in [1,2,1].enumerated() {
             let v = UIView.colored(colors[i], text: "flex:\(f)", size: .zero); v.flex.flex = f; sv1.addArrangedSubview(v)
@@ -586,13 +583,13 @@ class VerticalDemoVC: UIViewController {
         container.addArrangedSubview(sv1)
 
         container.addArrangedSubview(sectionLabel("vertical + .spaceEvenly — 均分间距"))
-        let sv2 = makeVerticalStack(height: 160)
+        let sv2 = makeVerticalStack(height: -1)
         sv2.justifyContent = .spaceEvenly; sv2.alignment = .center
         for i in 0..<4 { sv2.addArrangedSubview(UIView.colored(colors[i], text: "v\(i+1)", size: CGSize(width: 120, height: 28))) }
         container.addArrangedSubview(sv2)
 
         container.addArrangedSubview(sectionLabel("vertical + alignment = .end — 子 view 靠右"))
-        let sv3 = makeVerticalStack(height: 140)
+        let sv3 = makeVerticalStack(height: -1)
         sv3.justifyContent = .start; sv3.alignment = .end; sv3.spacing = 8
         for (i, w) in [60.0,100.0,80.0,130.0].enumerated() {
             sv3.addArrangedSubview(UIView.colored(colors[i], text: "w\(Int(w))", size: CGSize(width: w, height: 26)))
@@ -605,8 +602,10 @@ class VerticalDemoVC: UIViewController {
         sv.axis = .vertical
         sv.backgroundColor = .compatGray5
         sv.layer.cornerRadius = 6
-        sv.translatesAutoresizingMaskIntoConstraints = false
-        sv.heightAnchor.constraint(equalToConstant: height).isActive = true
+        if height > 0 {
+            sv.translatesAutoresizingMaskIntoConstraints = false
+            sv.heightAnchor.constraint(equalToConstant: height).isActive = true
+        }
         return sv
     }
 }

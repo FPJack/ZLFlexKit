@@ -189,7 +189,8 @@
     UIView *as4 = [self box:UIColor.systemOrangeColor text:@"fill"   w:60 h:0 ];
     as1.flex.alignSelf(ZLFlexItemCrossAlignStart);
     as2.flex.alignSelf(ZLFlexItemCrossAlignStart);
-    as2.flex.startMarge(15);                        // 距顶 15pt
+    as2.flex.marge(NSDirectionalEdgeInsetsMake(15, 0, 0, 0));
+    // 距顶 15pt
     as3.flex.alignSelf(ZLFlexItemCrossAlignEnd);
     as4.flex.alignSelf(ZLFlexItemCrossAlignFill);
     sv9

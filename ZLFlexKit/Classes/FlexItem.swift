@@ -42,6 +42,122 @@ public  class FlexItem: NSObject {
     
     public weak var stackView: StackView?
     
+    
+    
+    
+    private var _marge: NSDirectionalEdgeInsets = .zero
+    public var marge: NSDirectionalEdgeInsets {
+        get {
+            _marge
+        }
+        set {
+            guard _marge != newValue else { return }
+            if _marge.leading != newValue.leading {
+                updateTopMarge(_marge.leading, newValue.leading)
+            }
+            if _marge.trailing != newValue.trailing {
+                updateTrailMarge(_marge.trailing, newValue.trailing)
+            }
+            if _marge.top != newValue.top {
+                updateTopMarge(_marge.top, newValue.top)
+            }
+            if _marge.bottom != newValue.bottom {
+                updateBottomMarge(_marge.bottom, newValue.bottom)
+            }
+            _marge = newValue
+            updateCenterOffset()
+        }
+    }
+    private func updateLeadMarge(_ preMarge: CGFloat,_ marge: CGFloat) {
+        let arr = filterConstraint { constraint in
+            return constraint.firstItem === view && constraint.firstAttribute == .leading && (constraint.relation == .equal || constraint.relation == .greaterThanOrEqual)
+        }
+        if let cons = arr?.first {
+            cons.constant = cons.constant - preMarge + marge
+        }else {
+            setStackViewNeedsUpdateConstraints()
+        }
+    }
+    private func updateTrailMarge(_ preMarge: CGFloat,_ marge: CGFloat) {
+        var res2 = false
+        let arr = filterConstraint { constraint in
+            let relation = constraint.relation
+            let res1 = constraint.secondItem === view && constraint.secondAttribute == .trailing && (relation == .equal || relation == .greaterThanOrEqual)
+            if res1 {
+                return true
+            }
+            res2 = constraint.firstItem === view && constraint.firstAttribute == .trailing && (relation == .equal || relation == .lessThanOrEqual)
+            if res2 {
+                return true
+            }
+            return false
+        }
+        if let cons = arr?.first {
+            if res2 {
+                cons.constant = cons.constant + preMarge - marge
+            }else {
+                cons.constant = cons.constant - preMarge + marge
+            }
+        }else {
+            setStackViewNeedsUpdateConstraints()
+        }
+    }
+    private func updateTopMarge(_ preMarge: CGFloat,_ marge: CGFloat) {
+        let arr = filterConstraint { constraint in
+            return constraint.firstItem === view && constraint.firstAttribute == .top && (constraint.relation == .equal || constraint.relation == .greaterThanOrEqual)
+        }
+        if let cons = arr?.first {
+            cons.constant = cons.constant - preMarge + marge
+        }else {
+            setStackViewNeedsUpdateConstraints()
+        }
+    }
+    private func updateBottomMarge(_ preMarge: CGFloat,_ marge: CGFloat) {
+        var res2 = false
+        let arr = filterConstraint { constraint in
+            let relation = constraint.relation
+            let res1 = constraint.secondItem === view && constraint.secondAttribute == .bottom && (relation == .equal || relation == .greaterThanOrEqual)
+            if res1 {
+                return true
+            }
+            res2 = constraint.firstItem === view && constraint.firstAttribute == .bottom && (relation == .equal || relation == .lessThanOrEqual)
+            if res2 {
+                return true
+            }
+            return false
+        }
+        if let cons = arr?.first {
+            if res2 {
+                cons.constant = cons.constant + preMarge - marge
+            }else {
+                cons.constant = cons.constant - preMarge + marge
+            }
+        }else {
+            setStackViewNeedsUpdateConstraints()
+        }
+    }
+    private func updateCenterOffset() {
+        guard let axis = stackView?.axis,let align = stackView?.alignment else { return }
+        guard align == .center else { return }
+        if axis == .horizontal {
+            let arr = filterConstraint { cons in
+                return cons.firstItem === view && cons.firstAttribute == .centerY && cons.relation == .equal
+            }
+            if let cons = arr?.first {
+                cons.constant = (marge.top - marge.bottom) * 0.5
+            }
+        }else {
+            let arr = filterConstraint { cons in
+                return cons.firstItem === view && cons.firstAttribute == .centerX && cons.relation == .equal
+            }
+            if let cons = arr?.first {
+                cons.constant = (marge.leading - marge.trailing) * 0.5
+            }
+        }
+    }
+
+
+    
     private var startInset: CGFloat {
         guard let stackView = stackView else { return 0 }
         if stackView.axis == .horizontal {
@@ -59,65 +175,7 @@ public  class FlexItem: NSObject {
         }
     }
     
-    public var startMarge: CGFloat = 0 {
-        didSet {
-            guard startMarge != oldValue else { return }
-            let arr = filterConstraint { constraint in
-                let cfg = constraint.item
-                return cfg.view == view && cfg.type == .start
-            }
-            guard let cons = arr?.first else {
-                setStackViewNeedsUpdateConstraints()
-                return
-            }
-            
-            cons.constant = startMarge + startInset
-            
-            if alignSelf == .center {
-                
-                let centerCons = filterConstraint { constraint in
-                    
-                    let cfg = constraint.item
-                    
-                    return cfg.view == view && cfg.type == .center
-                    
-                }?.first
-                
-                centerCons?.constant = (startMarge + startInset - endMarge - endInset) * 0.5
-                
-            }
-        }
-    }
-    public var endMarge: CGFloat = 0 {
-        didSet {
-            guard endMarge != oldValue else { return }
-            let arr = filterConstraint { constraint in
-                let cfg = constraint.item
-                return cfg.view == view && cfg.type == .end
-            }
-            guard let cons = arr?.first else {
-                setStackViewNeedsUpdateConstraints()
-                return
-            }
-            
-            cons.constant = -endMarge - endInset
-            
-            if alignSelf == .center {
-                
-                let centerCons = filterConstraint { constraint in
-                    
-                    let cfg = constraint.item
-                    
-                    return cfg.view == view && cfg.type == .center
-                    
-                }?.first
-                
-                centerCons?.constant = (startMarge + startInset - endMarge - endInset) * 0.5
-                
-            }
-
-        }
-    }
+    
     
     var _spacing: CGFloat = 0
     public var spacing: CGFloat {
@@ -229,20 +287,10 @@ public  class FlexItem: NSObject {
         super.init()
         minSpacing = -2
         maxSpacing = -2
-        startMarge = 0
-        endMarge = 0
+      
     }
     
-    @discardableResult
-    public func startMarge(_ marge: NumberConvertible) -> Self {
-        self.startMarge = marge.cgFloat
-        return self
-    }
-    @discardableResult
-    public func endMarge(_ marge: NumberConvertible) -> Self {
-        self.endMarge = marge.cgFloat
-        return self
-    }
+   
     @discardableResult
     public func spacing(_ spacing: NumberConvertible) -> Self {
         self.spacing = spacing.cgFloat
@@ -253,7 +301,16 @@ public  class FlexItem: NSObject {
         self.alignSelf = align
         return self
     }
-    
+    @discardableResult
+    public func marge(_ marge: NSDirectionalEdgeInsets) -> Self {
+        self.marge = marge
+        return self
+    }
+    @discardableResult
+    public func marge(_ top: NumberConvertible,_ leading: NumberConvertible, _ bottom: NumberConvertible,_ trailing: NumberConvertible) -> Self {
+        self.marge = .init(top: top.cgFloat, leading: leading.cgFloat, bottom: bottom.cgFloat, trailing: trailing.cgFloat)
+        return self
+    }
     @discardableResult
     public func minSpacing(_ spacing: NumberConvertible) -> Self {
         self.minSpacing = spacing.cgFloat
@@ -343,18 +400,11 @@ extension FlexItem {
 
 public extension FlexItem {
     
-    @objc(startMarge)
-    @available(swift, obsoleted: 1, renamed: "startSpacing(_:)")
-    var startSpacingObjc: (_ marge: CGFloat) -> FlexItem {
-        { marge in self.startMarge = marge; return self }
+   @objc(marge)
+    @available(swift, obsoleted: 1, renamed: "marge(_:)")
+    var margeObjc: (_ marge: NSDirectionalEdgeInsets) -> FlexItem {
+        { marge in self.marge = marge; return self }
     }
-    
-    @objc(endMarge)
-    @available(swift, obsoleted: 1, renamed: "endSpacing(_:)")
-    var endSpacingObjc: (_ marge: CGFloat) -> FlexItem {
-        { marge in self.endMarge = marge; return self }
-    }
-    
     
     @objc(spacing)
     @available(swift, obsoleted: 1, renamed: "spacing(_:)")

@@ -59,7 +59,7 @@ open class StackView: UIView {
     public var insets: UIEdgeInsets = .zero {
         didSet {
             if oldValue != insets {
-                layoutManager.updateInsets(insets)
+                layoutManager.updateInsets(oldValue, insets)
             }
         }
     }
@@ -696,41 +696,9 @@ extension StackView {
         markedUpdateConstraints()
     }
     
-    /// alignment start 方向间距
-    @objc(startMarge:forView:)
-    open func startMarge(_ marge: CGFloat, for view: UIView?) {
-        guard let view = view,view.isKind(of: UIView.self) else { return }
-        
-        guard allViews.contains(view) else { return }
-        
-        let cfg = view.flex
-        
-        guard cfg.startMarge != marge else { return }
-        
-        cfg.startMarge = marge
-        
-        //            guard !view.isHidden else { return }
-        //
-        //            markedUpdateConstraints()
-    }
     
-    /// alignment end 方向间距
-    @objc(endMarge:forView:)
-    open func endMarge(_ marge: CGFloat, for view: UIView?) {
-        guard let view = view,view.isKind(of: UIView.self) else { return }
-        guard allViews.contains(view) else { return }
-        
-        let cfg = view.flex
-        
-        guard cfg.endMarge != marge else { return }
-        
-        cfg.endMarge = marge
-        
-        //           guard !view.isHidden else { return }
-        //
-        //            markedUpdateConstraints()
-        
-    }
+    
+    
 }
 
 ///DSL
