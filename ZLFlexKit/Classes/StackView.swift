@@ -28,6 +28,8 @@ public enum Justify: Int {
 @objc(ZLStackView)
 open class StackView: UIView {
     
+    
+    /// 布局轴向，默认为水平排列
     @objc
     public var axis: StackViewAxis = .horizontal {
         didSet {
@@ -37,6 +39,9 @@ open class StackView: UIView {
         }
     }
     
+    
+    
+    /// 交叉轴对齐方式，默认为 center
     @objc
     public var alignment: FlexItemCrossAlign = .center {
         didSet {
@@ -46,6 +51,9 @@ open class StackView: UIView {
         }
     }
     
+    
+    
+    ///  主轴对齐方式，默认为 fill
     @objc
     public var justifyContent: Justify = .fill {
         didSet {
@@ -55,6 +63,9 @@ open class StackView: UIView {
         }
     }
     
+    
+    
+    ///  内边距，默认为 .zero
     @objc
     public var insets: NSDirectionalEdgeInsets = .zero {
         didSet {
@@ -64,11 +75,17 @@ open class StackView: UIView {
         }
     }
     
+    
+    
+    /// 当前排列的 view 数组，隐藏的 view 不包含在内
     @objc
     public var arrangedViews: [UIView] {
         allViews.filter {!$0.isHidden}
     }
     
+    
+    
+    /// 主轴方向的间距，默认为 -1，表示使用默认间距（0）
     @objc
     public var spacing: CGFloat = -1 {
         didSet {
@@ -79,13 +96,18 @@ open class StackView: UIView {
     }
     
     
+    
+    /// 布局管理器，负责根据 stackView 的属性和子 view 的属性生成约束
     lazy var layoutManager: FlexManager = {
         let flexManager = FlexManager()
         flexManager.stackView = self
         return flexManager
     }()
     
+    
+    
     private var allViews: [UIView] = []
+    
     
     private var markedDirty: Bool = true
     
@@ -99,6 +121,10 @@ open class StackView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
+    
+    
+    /// 使用 DSL 构建 StackView，支持在 builder 中直接添加 view 或者设置间距
+    /// - Parameter builder: <#builder description#>
     public init(@StackViewBuilder builder: () -> [StackViewDSL]) {
         super.init(frame: .zero)
         addViews(builder: builder)
@@ -114,18 +140,29 @@ open class StackView: UIView {
     }
     
     
+    
+    
+    ///  设置 stackView 的轴向为垂直排列
+    /// - Returns: <#description#>
     @objc
     public func vertical() -> Self {
         axis = .vertical
         return self
     }
     
+    
+    /// 设置 stackView 的轴向为水平排列
+    /// - Returns: <#description#>
     @objc
     public func horizontal() -> Self {
         axis = .horizontal
         return self
     }
     
+    
+    
+    /// 创建一个垂直排列的 stackView
+    /// - Returns: <#description#>
     @objc
     public static func vertical() -> Self {
         let stackView = Self.init()
@@ -133,6 +170,10 @@ open class StackView: UIView {
         return stackView
     }
     
+    
+    
+    ///  创建一个水平排列的 stackView
+    /// - Returns: <#description#>
     @objc
     public static func horizontal() -> Self {
         let stackView = Self.init()
@@ -142,67 +183,123 @@ open class StackView: UIView {
     
     
     
+    
+    
     // MARK: - swift链式API
+    
+    
+    /// 设置 stackView 的轴向
+    /// - Parameter axis: <#axis description#>
+    /// - Returns: <#description#>
     @discardableResult
     public func axis(_ axis: StackViewAxis) -> Self {
         self.axis = axis
         return self
     }
     
+    
+    
+    ///  设置 stackView 的交叉轴对齐方式
+    /// - Parameter alignment: <#alignment description#>
+    /// - Returns: <#description#>
     @discardableResult
     public func align(_ alignment: FlexItemCrossAlign) -> Self {
         self.alignment = alignment
         return self
     }
     
+    
+    
+    ///   设置 stackView 的主轴对齐方式
+    /// - Parameter justifyContent: <#justifyContent description#>
+    /// - Returns: <#description#>
     @discardableResult
     public func justify(_ justifyContent: Justify) -> Self {
         self.justifyContent = justifyContent
         return self
     }
     
+    
+    
+    ///  设置 stackView 的内边距
+    /// - Parameter insets: <#insets description#>
+    /// - Returns: <#description#>
     @discardableResult
     public func insets(_ insets: NSDirectionalEdgeInsets) -> Self {
         self.insets = insets
         return self
     }
     
+    
+    
+    ///  设置 stackView 的内边距 - top, leading, bottom, trailing
+    /// - Parameter spacing: <#spacing description#>
+    /// - Returns: <#description#>
     @discardableResult
     public func spacing(_ spacing: NumberConvertible) -> Self {
         self.spacing = spacing.cgFloat
         return self
     }
     
+    
+    
+    ///  插入 一个间距 ，默认添加到最后
+    /// - Parameter spacing: <#spacing description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func insertSpacing(_ spacing: NumberConvertible) -> Self {
         allViews.last?.flex.spacing = spacing.cgFloat
         return self
     }
     
+    
+    /// 插入一个最小间距，默认添加到最后
+    /// - Parameter min: <#min description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func insertSpacing(min: NumberConvertible) -> Self {
         allViews.last?.flex.minSpacing = min.cgFloat
         return self
     }
     
+    
+    /// 插入一个最大间距，默认添加到最后
+    /// - Parameter max: <#max description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func insertSpacing(max: NumberConvertible) -> Self {
         allViews.last?.flex.maxSpacing = max.cgFloat
         return self
     }
     
+    
+    ///  插入一个弹性间距，默认添加到最后，仅 ZLJustify.fill 生效
+    /// - Parameter flexible: <#flexible description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func insertSpacing(flexible: Bool) -> Self {
         allViews.last?.flex.isFlexibleSpace = flexible
         return self
     }
     
+    
+    
+    ///  添加 view 到 stackView，默认添加到最后
+    /// - Parameter flexType: <#flexType description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func addView(_ flexType: FlexType?) -> Self {
         addArrangedSubview(flexType?.baseView)
         return self
     }
     
+    
+    
+    /// 添加 view 到 stackView，满足条件时才添加，默认添加到最后
+    /// - Parameters:
+    ///   - condition: <#condition description#>
+    ///   - view: <#view description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func addView(if condition: Bool, _ view: FlexType?) -> Self {
         if condition {
@@ -211,6 +308,11 @@ open class StackView: UIView {
         return self
     }
     
+    
+    
+    /// 添加 view 到 stackView，使用闭包创建 view，默认添加到最后
+    /// - Parameter make: <#make description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func addView<T>(make: @escaping (T) -> (any FlexType)?) -> Self where T: StackView {
         let blockView = make(self as! T)
@@ -219,6 +321,13 @@ open class StackView: UIView {
     }
     
     
+    
+    
+    ///  添加 view 到 stackView，满足条件时才添加，使用闭包创建 view，默认添加到最后
+    /// - Parameters:
+    ///   - condition: <#condition description#>
+    ///   - make: <#make description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func addView<T>(if condition: Bool, make: @escaping (T) -> FlexType?) -> Self where T: StackView {
         if condition {
@@ -228,12 +337,22 @@ open class StackView: UIView {
         return self
     }
     
+    
+    
+    /// 设置 特定view 的 margin，会与 stackView 的 insets(内边距) 叠加生效
+    /// - Parameters:
+    ///   - marge: <#marge description#>
+    ///   - view: <#view description#>
+    /// - Returns: <#description#>
     @discardableResult
     open func marge(_ marge: NSDirectionalEdgeInsets, for view: UIView?) -> Self {
         setMargin(marge, for: view)
         return self
     }
     
+    
+    ///  将 stackView 包裹在一个 UIScrollView 中，返回 UIScrollView，方便设置滚动相关属性
+    /// - Returns: <#description#>
     @objc
     @discardableResult
     open func wrapScrollView() -> ScrollView {
@@ -273,6 +392,8 @@ open class StackView: UIView {
 
 // MARK: - OC链式API
 extension StackView {
+    
+    /// 设置 stackView 的主轴对齐方式为 fillEqually
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifyFillEqually: StackView {
@@ -280,42 +401,62 @@ extension StackView {
         return self
     }
     
+    
+    /// 设置 stackView 的主轴对齐方式为 fill
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifyFill: StackView {
         self.justifyContent = .fill
         return self
     }
+    
+    
+    /// 设置 stackView 的主轴对齐方式为 start
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifyStart: StackView {
         self.justifyContent = .start
         return self
     }
+    
+    
+    /// 设置 stackView 的主轴对齐方式为 center
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifyCenter: StackView {
         self.justifyContent = .center
         return self
     }
+    
+    
+    /// 设置 stackView 的主轴对齐方式为 end
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifyEnd: StackView {
         self.justifyContent = .end
         return self
     }
+    
+    
+    ///  设置 stackView 的主轴对齐方式为 spaceBetween
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifySpaceBetween: StackView {
         self.justifyContent = .spaceBetween
         return self
     }
+    
+    
+    /// 设置 stackView 的主轴对齐方式为 spaceAround
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifySpaceAround: StackView {
         self.justifyContent = .spaceAround
         return self
     }
+    
+    
+    /// 设置 stackView 的主轴对齐方式为 spaceEvenly
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var justifySpaceEvenly: StackView {
@@ -323,6 +464,8 @@ extension StackView {
         return self
     }
     
+    
+    ///   设置 stackView 的交叉轴对齐方式为 fill
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var alignFill: StackView {
@@ -330,18 +473,27 @@ extension StackView {
         return self
     }
     
+    
+    
+    /// 设置 stackView 的交叉轴对齐方式为 start
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var alignStart: StackView {
         self.alignment = .start
         return self
     }
+    
+    
+    /// 设置 stackView 的交叉轴对齐方式为 center
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var alignCenter: StackView {
         self.alignment = .center
         return self
     }
+    
+    
+    /// 设置 stackView 的交叉轴对齐方式为 end
     @objc
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var alignEnd: StackView {
@@ -349,6 +501,9 @@ extension StackView {
         return self
     }
     
+    
+    
+    /// 设置 stackView 的轴向
     @objc(setAxis)
     @available(swift, obsoleted: 1, renamed: "axis(_:)")
     public var axisObjc: (_ axis: StackViewAxis) -> StackView {
@@ -358,6 +513,9 @@ extension StackView {
         }
     }
     
+    
+    
+    /// 设置 stackView 的交叉轴对齐方式
     @objc(setAlign)
     @available(swift, obsoleted: 1, renamed: "align(_:)")
     public var alignObjc: (_ alignment: FlexItemCrossAlign) -> StackView {
@@ -367,6 +525,9 @@ extension StackView {
         }
     }
     
+    
+    
+    /// 设置 stackView 的主轴对齐方式
     @objc(setJustify)
     @available(swift, obsoleted: 1, renamed: "justify(_:)")
     public var justifyObjc: (_ justifyContent: Justify) -> StackView{
@@ -376,6 +537,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///     stackView 的内边距 - top, leading, bottom, trailing
     @objc(setInsets)
     @available(swift, obsoleted: 1, renamed: "insets(_:)")
     public var insetsObjc: (_ top: CGFloat,_ leading: CGFloat,_ bottom: CGFloat, _ trailing: CGFloat) -> StackView {
@@ -385,6 +549,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///  设置 stackView 的主轴方向view之间的间距
     @objc(setSpacing)
     @available(swift, obsoleted: 1, renamed: "spacing(_:)")
     public var spacingObjc: (_ spacing: CGFloat) -> StackView {
@@ -394,6 +561,9 @@ extension StackView {
         }
     }
     
+    
+    
+    /// 插入一个间距，默认添加到最后
     @objc(insertSpacing)
     @available(swift, obsoleted: 1, renamed: "insertSpacing(_:)")
     open var insertSpacingObjc: (_ spacing: CGFloat) -> StackView {
@@ -403,6 +573,9 @@ extension StackView {
         }
     }
     
+    
+    
+    /// 插入一个最小间距，默认添加到最后
     @objc(insertMinSpacing)
     @available(swift, obsoleted: 1, renamed: "insertSpacing(min:)")
     open var insertMinSpacingObjc: (_ spacing: CGFloat) -> StackView {
@@ -413,6 +586,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///  插入一个最大间距，默认添加到最后
     @objc(insertMaxSpacing)
     @available(swift, obsoleted: 1, renamed: "insertSpacing(max:)")
     open var insertMaxSpacingObjc: (_ spacing: CGFloat) -> StackView {
@@ -422,6 +598,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///  插入一个弹性间距，默认添加到最后，仅 ZLJustify.fill 生效
     @objc(insertFlexibleSpacing)
     @available(swift, obsoleted: 1, renamed: "insertSpacing(flexible:)")
     open var insertFlexibleSpacingObjc: (_ flexible: Bool) -> StackView {
@@ -431,6 +610,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///  添加 view 到 stackView，默认添加到最后
     @objc(addView)
     @available(swift, obsoleted: 1, renamed: "addView(_:)")
     open var addViewObjc: (_ view: UIView?) -> StackView {
@@ -440,6 +622,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///   添加 view 到 stackView，满足条件时才添加，默认添加到最后
     @objc(addViewIf)
     @available(swift, obsoleted: 1, renamed: "addView(if:_:)")
     open var addViewIfObjc: (_ condition: Bool, _ view: UIView?) -> StackView {
@@ -452,6 +637,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///   添加 view 到 stackView，使用闭包创建 view，默认添加到最后
     @objc(addViewMake)
     @available(swift, obsoleted: 1, renamed: "addView(make:)")
     open var addViewMakeObjc: (_ make: @escaping (StackView) -> UIView?) -> StackView {
@@ -462,6 +650,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///   添加 view 到 stackView，满足条件时才添加，使用闭包创建 view，默认添加到最后
     @objc(addViewIfMake)
     @available(swift, obsoleted: 1, renamed: "addView(if:make:)")
     open var addViewIfMakeObjc: (_ condition: Bool, _ make: @escaping (StackView) -> UIView?) -> StackView {
@@ -475,6 +666,9 @@ extension StackView {
         }
     }
     
+    
+    
+    ///   设置 特定view 的 margin，会与 stackView 的 insets(内边距) 叠加生效
     @objc(setMarge)
     @available(swift, obsoleted: 1, renamed: "marge(_:forView:)")
     open var setMargeObjc: (_ top: CGFloat,_ leading: CGFloat,_ bottom: CGFloat, _ trailing: CGFloat, _ view: UIView?) -> StackView {
@@ -484,6 +678,8 @@ extension StackView {
             return self
         }
     }
+    
+    
     
     @objc(assignToPtr)
     @available(swift, obsoleted: 1, renamed: "assignToPtr(_:)")
@@ -852,6 +1048,9 @@ extension StackView {
     }
 }
 
+
+
+/// 垂直排列的 StackView，axis 固定为 .vertical
 open class VStackView: StackView {
     public override var axis: StackViewAxis {
         get { .vertical }
@@ -866,6 +1065,8 @@ open class VStackView: StackView {
     }
 }
 
+
+/// 水平排列的 StackView，axis 固定为 .horizontal
 open class HStackView: StackView {
     public override var axis: StackViewAxis {
         get { .horizontal }
