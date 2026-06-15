@@ -39,8 +39,6 @@ public  class FlexItem: NSObject {
     public weak var stackView: StackView?
     
     
-    
-    
     private var _marge: NSDirectionalEdgeInsets = .zero
     public var marge: NSDirectionalEdgeInsets {
         get {
@@ -142,43 +140,24 @@ public  class FlexItem: NSObject {
     }
     private func updateCenterOffset() {
         guard let axis = stackView?.axis,let align = stackView?.alignment else { return }
+        let inset = stackView?.insets ?? .zero
         guard align == .center else { return }
         if axis == .horizontal {
             let arr = filterConstraint { cons in
                 return cons.firstItem === view && cons.firstAttribute == .centerY && cons.relation == .equal
             }
             if let cons = arr?.first {
-                cons.constant = (marge.top - marge.bottom) * 0.5
+                cons.constant = (marge.top + inset.top - marge.bottom - inset.bottom) * 0.5
             }
         }else {
             let arr = filterConstraint { cons in
                 return cons.firstItem === view && cons.firstAttribute == .centerX && cons.relation == .equal
             }
             if let cons = arr?.first {
-                cons.constant = (marge.leading - marge.trailing) * 0.5
+                cons.constant = (marge.leading + inset.leading - marge.trailing - inset.trailing) * 0.5
             }
         }
     }
-
-
-    
-    private var startInset: CGFloat {
-        guard let stackView = stackView else { return 0 }
-        if stackView.axis == .horizontal {
-            return stackView.insets.top
-        } else {
-            return stackView.insets.leading
-        }
-    }
-    private var endInset: CGFloat {
-        guard let stackView = stackView else { return 0 }
-        if stackView.axis == .horizontal {
-            return stackView.insets.bottom
-        } else {
-            return stackView.insets.trailing
-        }
-    }
-    
     
     
     var _spacing: CGFloat = 0
@@ -311,8 +290,21 @@ public  class FlexItem: NSObject {
         return self
     }
     @discardableResult
-    public func marge(_ top: NumberConvertible,_ leading: NumberConvertible, _ bottom: NumberConvertible,_ trailing: NumberConvertible) -> Self {
-        self.marge = .init(top: top.cgFloat, leading: leading.cgFloat, bottom: bottom.cgFloat, trailing: trailing.cgFloat)
+    public func marge(top: NumberConvertible? = nil,leading: NumberConvertible? = nil,  bottom: NumberConvertible? = nil,trailing: NumberConvertible? = nil) -> Self {
+        var marge = _marge
+        if let top = top {
+            marge.top = top.cgFloat
+        }
+        if let leading = leading {
+            marge.leading = leading.cgFloat
+        }
+        if let bottom = bottom {
+            marge.bottom = bottom.cgFloat
+        }
+        if let trailing = trailing {
+            marge.trailing = trailing.cgFloat
+        }
+        self.marge = marge
         return self
     }
     @discardableResult
@@ -410,7 +402,7 @@ extension FlexItem {
 
 public extension FlexItem {
     
-   @objc(marge)
+    @objc(marge)
     @available(swift, obsoleted: 1, renamed: "marge(_:)")
     var margeObjc: (_ marge: NSDirectionalEdgeInsets) -> FlexItem {
         { marge in self.marge = marge; return self }
