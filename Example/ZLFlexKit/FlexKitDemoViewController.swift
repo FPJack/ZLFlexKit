@@ -502,7 +502,7 @@ class MargeDemoVC: UIViewController {
         v2.flex.margin(.init(top: 15, leading: 0, bottom: 0, trailing: 0))
         v3.flex.margin(.init(top: 0, leading: 0, bottom: 15, trailing: 0))
         v3.flex.alignSelf = .end
-        v4.flex.alignSelf(.fill).margin(.init(top: 10, leading: 0, bottom: 10, trailing: 0))
+        v4.flex.align(.fill).margin(.init(top: 10, leading: 0, bottom: 10, trailing: 0))
         for v in [v1, v2, v3, v4] { sv.addArrangedSubview(v) }
         container.addArrangedSubview(sv)
 

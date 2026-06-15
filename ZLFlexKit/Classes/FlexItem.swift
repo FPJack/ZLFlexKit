@@ -333,7 +333,7 @@ public  class FlexItem: NSObject {
     /// - Parameter align: <#align description#>
     /// - Returns: <#description#>
     @discardableResult
-    public func alignSelf(_ align: FlexItemCrossAlign) -> Self {
+    public func align(_ align: FlexItemCrossAlign) -> Self {
         self.alignSelf = align
         return self
     }
@@ -612,8 +612,8 @@ public extension FlexItem {
     
     
     /// 设置item的对齐方式，默认跟随StackView的alignment属性
-    @objc(alignSelf)
-    @available(swift, obsoleted: 1, renamed: "alignSelf")
+    @objc(align)
+    @available(swift, obsoleted: 1, renamed: "align")
     var alignSelfObjc: (_ align: FlexItemCrossAlign) -> FlexItem {
         { align in self.alignSelf = align; return self }
     }

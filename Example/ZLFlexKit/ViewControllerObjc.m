@@ -187,12 +187,12 @@
     UIView *as2 = [self box:UIColor.systemBlueColor   text:@"+top15" w:60 h:28];
     UIView *as3 = [self box:UIColor.systemGreenColor  text:@"end"    w:60 h:28];
     UIView *as4 = [self box:UIColor.systemOrangeColor text:@"fill"   w:60 h:0 ];
-    as1.flex.alignSelf(ZLFlexItemCrossAlignStart);
-    as2.flex.alignSelf(ZLFlexItemCrossAlignStart);
+    as1.flex.align(ZLFlexItemCrossAlignStart);
+    as2.flex.align(ZLFlexItemCrossAlignStart);
     as2.flex.margin(NSDirectionalEdgeInsetsMake(15, 0, 0, 0));
     // 距顶 15pt
-    as3.flex.alignSelf(ZLFlexItemCrossAlignEnd);
-    as4.flex.alignSelf(ZLFlexItemCrossAlignFill);
+    as3.flex.align(ZLFlexItemCrossAlignEnd);
+    as4.flex.align(ZLFlexItemCrossAlignFill);
     sv9
         .setJustify(ZLJustifySpaceEvenly)
         .setAlign(ZLFlexItemCrossAlignStart)
