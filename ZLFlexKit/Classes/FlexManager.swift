@@ -106,9 +106,9 @@ final class FlexManager {
             
             if i == 0 {
                 if justify == .end {
-                    leadingCon = view.leadingAnchor.constraint(greaterThanOrEqualTo: nextXAnchor, constant: insets.left + leadingMarge)
+                    leadingCon = view.leadingAnchor.constraint(greaterThanOrEqualTo: nextXAnchor, constant: insets.leading + leadingMarge)
                 }else {
-                    leadingCon = view.leadingAnchor.constraint(equalTo: nextXAnchor, constant: insets.left + leadingMarge)
+                    leadingCon = view.leadingAnchor.constraint(equalTo: nextXAnchor, constant: insets.leading + leadingMarge)
                 }
                 justifyFirstConstraints = leadingCon
             }else {
@@ -202,9 +202,9 @@ final class FlexManager {
 
         // 末尾约束
         if justify == .start {
-            constraints.append(nextXAnchor.constraint(lessThanOrEqualTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.right - preTrailingMarge))
+            constraints.append(nextXAnchor.constraint(lessThanOrEqualTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
         } else {
-            constraints.append(nextXAnchor.constraint(equalTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.right - preTrailingMarge))
+            constraints.append(nextXAnchor.constraint(equalTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
         }
         
         justifyLastConstraints = constraints.last
@@ -285,7 +285,7 @@ final class FlexManager {
             // 交叉轴约束
             addCrossAxisConstraints(
                 for: view, cfg: cfg,
-                startSpacing: startSpacing + insets.left, endSpacing: endSpacing + insets.right,
+                startSpacing: startSpacing + insets.leading, endSpacing: endSpacing + insets.trailing,
                 startAnchor: stackEdgeInsets.leadingAnchor,
                 endAnchor:   stackEdgeInsets.trailingAnchor,
                 centerAnchor: stackEdgeInsets.centerXAnchor,
@@ -438,12 +438,12 @@ final class FlexManager {
     }
 
     // MARK: - Insets
-    func updateInsets(_ preInsets: UIEdgeInsets, _ insets: UIEdgeInsets) {
+    func updateInsets(_ preInsets: NSDirectionalEdgeInsets, _ insets: NSDirectionalEdgeInsets) {
         do { ///更新主轴起始/末尾约束常量
-            let preFirstInset = horizontal ? preInsets.left : preInsets.top
-            let preLastInset = horizontal ? preInsets.right : preInsets.bottom
-            let firstInset = horizontal ? insets.left : insets.top
-            let lastInset = horizontal ? insets.right : insets.bottom
+            let preFirstInset = horizontal ? preInsets.leading : preInsets.top
+            let preLastInset = horizontal ? preInsets.trailing : preInsets.bottom
+            let firstInset = horizontal ? insets.leading : insets.top
+            let lastInset = horizontal ? insets.trailing : insets.bottom
             
             if let first = justifyFirstConstraints {
                 first.constant = first.constant - preFirstInset + firstInset
@@ -453,8 +453,8 @@ final class FlexManager {
             }
         }
         do {
-            let startMarge = horizontal ? insets.top : insets.left
-            let endMarge = horizontal ? insets.bottom : insets.right
+            let startMarge = horizontal ? insets.top : insets.leading
+            let endMarge = horizontal ? insets.bottom : insets.trailing
             constraints.forEach { cons in
                 guard let view = cons.item.view else { return }
                 let flexItem = view.flex

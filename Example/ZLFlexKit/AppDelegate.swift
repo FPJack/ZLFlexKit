@@ -8,11 +8,47 @@
 
 import UIKit
 
+protocol TestViewA where Self: UIView {
+    
+}
+
+extension UIView: TestViewA {
+    
+}
+
+protocol TestViewB where Self: UIView {
+    
+}
+
+extension UIView: TestViewB {
+}
+
+
+class TestObj<T: TestViewB> {
+    var view: T
+    init(view: T) {
+        self.view = view
+    }
+}
+func testView<T>(_ view: T) -> TestObj<T>? where T: TestViewA {
+    return TestObj(view: UILabel() as! T)
+}
+
+
+func testView2<T>() -> TestObj<T>? {
+    let v1 = TestObj(view: UIView())
+    let v2 = TestObj(view: UILabel())
+    
+    testView(UIView())
+    
+    return v2 as? TestObj<T>
+}
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.

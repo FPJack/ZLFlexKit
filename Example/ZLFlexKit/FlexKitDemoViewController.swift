@@ -235,7 +235,7 @@ class FillDemoVC: UIViewController {
         
         container.addArrangedSubview(sectionLabel(".fill — 子 view 可通过 flexValue 按比例占据空间"))
         let fill = demoStack()
-        fill.insets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        fill.insets = NSDirectionalEdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10)
         fill.justifyContent = .fill
         fill.alignment = .fill
         let f1 = UIView.colored(colors[0], text: "flex:1", size: .zero)
@@ -535,7 +535,7 @@ class InsetsDemoVC: UIViewController {
         sv.justifyContent = .fillEqually;
         sv.spacing = 50
         sv.alignment = .fill
-        sv.insets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+        sv.insets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
         for i in 0..<3 { sv.addArrangedSubview(UIView.colored(colors[i], text: "\(i+1)", size: .zero))
             
         }
@@ -557,10 +557,10 @@ class InsetsDemoVC: UIViewController {
         toggled.toggle()
         UIView.animate(withDuration: 0.3) {
             if self.toggled {
-                self.sv.insets = UIEdgeInsets(top: 20, left: 40, bottom: 20, right: 40)
+                self.sv.insets = NSDirectionalEdgeInsets(top: 20, leading: 40, bottom: 20, trailing: 40)
                 self.insetsLabel.text = "insets: top=20, left=40, bottom=20, right=40"
             } else {
-                self.sv.insets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
+                self.sv.insets = NSDirectionalEdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
                 self.insetsLabel.text = "insets: top=4, left=4, bottom=4, right=4"
             }
             self.view.layoutIfNeeded()
@@ -630,7 +630,7 @@ class DynamicDemoVC: UIViewController {
         stack.justifyContent = .start;
         stack.alignment = .center;
         stack.spacing = 8
-        container.addArrangedSubview(stack)
+        container.addArrangedSubview(stack.wrapScrollView())
         
         for _ in 0..<3 { addView() }
 
@@ -751,7 +751,7 @@ class WrapScrollHorizontalDemoVC: UIViewController {
         let hStack = StackView.horizontal()
         hStack.alignment = .center
         hStack.spacing = 10
-        hStack.insets  = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        hStack.insets  = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
         hStack.backgroundColor = .compatGray5
         hStack.layer.cornerRadius = 8
 
@@ -777,7 +777,7 @@ class WrapScrollHorizontalDemoVC: UIViewController {
         let tagStack = StackView.horizontal()
         tagStack.alignment = .center
         tagStack.spacing = 8
-        tagStack.insets  = UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
+        tagStack.insets  = NSDirectionalEdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10)
         tagStack.backgroundColor = .compatGray5
         tagStack.layer.cornerRadius = 8
 
@@ -826,7 +826,7 @@ class WrapScrollVerticalDemoVC: UIViewController {
         let vStack = StackView.vertical()
         vStack.alignment = .fill
         vStack.spacing   = 0
-        vStack.insets    = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+        vStack.insets    = NSDirectionalEdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
 
         // 添加说明 header
         let header = sectionLabel("场景 1：VStackView 有 20 行，内容超出屏幕，wrapScrollView() 使其可纵向滚动")
@@ -931,7 +931,7 @@ class WrapScrollVerticalDemoVC: UIViewController {
         let card = StackView.horizontal()
         card.alignment = .center
         card.spacing   = 12
-        card.insets    = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
+        card.insets    = NSDirectionalEdgeInsets(top: 10, leading:  0, bottom: 10, trailing:  0)
         card.translatesAutoresizingMaskIntoConstraints = false
 
         let thumb = UIView()
@@ -1022,7 +1022,7 @@ class DSLDemoVC: UIViewController {
         .axis(.vertical)
         .justify(.fill)
         .align(.fill)
-        .insets(UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12))
+        .insets(NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
         sv0v.backgroundColor = .compatGray5
         sv0v.layer.cornerRadius = 6
         sv0v.translatesAutoresizingMaskIntoConstraints = false
@@ -1140,7 +1140,7 @@ class DSLDemoVC: UIViewController {
         let sv6 = StackView()
         sv6.justifyContent = .spaceAround
         sv6.alignment      = .center
-        sv6.insets = UIEdgeInsets(top: 6, left: 12, bottom: 6, right: 12)
+        sv6.insets = NSDirectionalEdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12)
         sv6.backgroundColor = .compatGray5
         sv6.layer.cornerRadius = 6
         sv6.translatesAutoresizingMaskIntoConstraints = false
@@ -1163,7 +1163,7 @@ class DSLDemoVC: UIViewController {
         sv7.justifyContent = .fill
         sv7.alignment      = .start
         sv7.spacing        = 6
-        sv7.insets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        sv7.insets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
         sv7.backgroundColor = .compatGray5
         sv7.layer.cornerRadius = 6
         sv7.translatesAutoresizingMaskIntoConstraints = false
@@ -1385,7 +1385,7 @@ class PerfZLStackViewVC: UIViewController {
             outerSV = StackView.vertical()
             outerSV.alignment = .fill; outerSV.justifyContent = .start
             outerSV.spacing = 10
-            outerSV.insets = UIEdgeInsets(top: 12, left: 12, bottom: 20, right: 12)
+            outerSV.insets = NSDirectionalEdgeInsets(top: 12, leading: 12, bottom: 20, trailing: 12)
             outerSV.translatesAutoresizingMaskIntoConstraints = false
             scroll.addSubview(outerSV)
             NSLayoutConstraint.activate([
@@ -1409,7 +1409,7 @@ class PerfZLStackViewVC: UIViewController {
                     cellSV.justifyContent = .fill
                     cellSV.alignment = .center
                     cellSV.spacing = 4
-                    cellSV.insets = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
+                    cellSV.insets = NSDirectionalEdgeInsets(top: 8, leading: 4, bottom: 8, trailing: 4)
                     cellSV.backgroundColor = UIColor(white: 0.97, alpha: 1)
                     cellSV.layer.cornerRadius = 8; cellSV.flex.flex = 1
                     let icon = _bIcon(i * kBenchCols + j)

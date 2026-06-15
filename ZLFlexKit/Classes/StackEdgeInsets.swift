@@ -237,15 +237,15 @@ final class MargeGuide: UILayoutGuide {
     weak var bottom:   NSLayoutConstraint?
     weak var trailing: NSLayoutConstraint?
 
-    init(view: UIView, insets: UIEdgeInsets) {
+    init(view: UIView, insets: NSDirectionalEdgeInsets) {
         super.init()
         view.addLayoutGuide(self)
 
         let constraints = [
             topAnchor     .constraint(equalTo: view.topAnchor,      constant:  insets.top),
-            leadingAnchor .constraint(equalTo: view.leadingAnchor,  constant:  insets.left),
+            leadingAnchor .constraint(equalTo: view.leadingAnchor,  constant:  insets.leading),
             bottomAnchor  .constraint(equalTo: view.bottomAnchor,   constant: -insets.bottom),
-            trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -insets.right),
+            trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -insets.trailing),
         ]
         top      = constraints[0]
         leading  = constraints[1]

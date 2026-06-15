@@ -56,7 +56,7 @@ open class StackView: UIView {
     }
     
     @objc
-    public var insets: UIEdgeInsets = .zero {
+    public var insets: NSDirectionalEdgeInsets = .zero {
         didSet {
             if oldValue != insets {
                 layoutManager.updateInsets(oldValue, insets)
@@ -162,7 +162,7 @@ open class StackView: UIView {
     }
     
     @discardableResult
-    public func insets(_ insets: UIEdgeInsets) -> Self {
+    public func insets(_ insets: NSDirectionalEdgeInsets) -> Self {
         self.insets = insets
         return self
     }
@@ -225,6 +225,12 @@ open class StackView: UIView {
             let blockView = make(self as! T)
             addArrangedSubview(blockView?.view)
         }
+        return self
+    }
+    
+    @discardableResult
+    open func marge(_ marge: NSDirectionalEdgeInsets, for view: UIView?) -> Self {
+        setMarge(marge, for: view)
         return self
     }
     
@@ -374,7 +380,7 @@ extension StackView {
     @available(swift, obsoleted: 1, renamed: "insets(_:)")
     public var insetsObjc: (_ top: CGFloat,_ leading: CGFloat,_ bottom: CGFloat, _ trailing: CGFloat) -> StackView {
         {
-            top,leading,bottom,trailing in self.insets = .init(top: top, left: leading, bottom: bottom, right: trailing);
+            top,leading,bottom,trailing in self.insets = .init(top: top, leading: leading, bottom: bottom, trailing: trailing);
             return self
         }
     }
@@ -465,6 +471,16 @@ extension StackView {
                 let blockView = make(self);
                 self.addArrangedSubview(blockView)
             }
+            return self
+        }
+    }
+    
+    @objc(setMarge)
+    @available(swift, obsoleted: 1, renamed: "marge(_:forView:)")
+    open var setMargeObjc: (_ top: CGFloat,_ leading: CGFloat,_ bottom: CGFloat, _ trailing: CGFloat, _ view: UIView?) -> StackView {
+        {
+            top,leading,bottom,trailing,view in
+            self.setMarge(.init(top: top, leading: leading, bottom: bottom, trailing: trailing), for: view)
             return self
         }
     }
@@ -696,6 +712,29 @@ extension StackView {
         markedUpdateConstraints()
     }
     
+    
+    @objc(setMarge:forView:)
+    open func setMarge(_ marge: NSDirectionalEdgeInsets, for view: UIView?) {
+        guard let view = view,view.isKind(of: UIView.self) else { return }
+        
+        guard allViews.contains(view) else { return }
+        
+        let cfg = view.flex
+        
+        guard cfg.marge != marge else { return }
+        
+        cfg.marge = marge
+        
+        guard !view.isHidden else { return }
+        
+        markedUpdateConstraints()
+    }
+
+
+
+
+
+
     
     
     

@@ -167,7 +167,7 @@ public  class FlexItem: NSObject {
         if stackView.axis == .horizontal {
             return stackView.insets.top
         } else {
-            return stackView.insets.left
+            return stackView.insets.leading
         }
     }
     private var endInset: CGFloat {
@@ -175,7 +175,7 @@ public  class FlexItem: NSObject {
         if stackView.axis == .horizontal {
             return stackView.insets.bottom
         } else {
-            return stackView.insets.right
+            return stackView.insets.trailing
         }
     }
     
@@ -373,6 +373,12 @@ public  class FlexItem: NSObject {
     public func size(w: NumberConvertible,h: NumberConvertible) -> Self {
         self.size = CGSize(width: w.cgFloat, height: h.cgFloat)
         return self
+    }
+    
+    
+    @discardableResult
+    public func view<T>(as view: T.Type) -> T? where T: UIView {
+        return self.view as? T
     }
 }
 
