@@ -20,10 +20,10 @@ public enum FlexItemCrossAlign: Int {
 @objc(ZLFlexItem)
 public  class FlexItem: NSObject {
     private var observation: NSKeyValueObservation?
-    weak var _view: UIView? {
+    public  weak var view: UIView? {
         didSet {
             guard observation == nil else { return }
-            observation = _view?.observe(\.isHidden, options: [.new, .old]) {[weak self] view, change in
+            observation = view?.observe(\.isHidden, options: [.new, .old]) {[weak self] view, change in
                 guard let self = self else { return }
                 if let newValue = change.newValue,
                     let oldValue = change.oldValue,
@@ -34,11 +34,7 @@ public  class FlexItem: NSObject {
         }
     }
     
-    @objc(view)
-    @available(swift, obsoleted: 1, renamed: "view")
-    public weak var viewObjc: UIView? {
-        _view
-    }
+    
     
     public weak var stackView: StackView?
     
@@ -53,7 +49,7 @@ public  class FlexItem: NSObject {
         set {
             guard _marge != newValue else { return }
             if _marge.leading != newValue.leading {
-                updateTopMarge(_marge.leading, newValue.leading)
+                updateLeadMarge(_marge.leading, newValue.leading)
             }
             if _marge.trailing != newValue.trailing {
                 updateTrailMarge(_marge.trailing, newValue.trailing)
@@ -79,24 +75,28 @@ public  class FlexItem: NSObject {
         }
     }
     private func updateTrailMarge(_ preMarge: CGFloat,_ marge: CGFloat) {
-        var res2 = false
         let arr = filterConstraint { constraint in
             let relation = constraint.relation
             let res1 = constraint.secondItem === view && constraint.secondAttribute == .trailing && (relation == .equal || relation == .greaterThanOrEqual)
             if res1 {
                 return true
             }
-            res2 = constraint.firstItem === view && constraint.firstAttribute == .trailing && (relation == .equal || relation == .lessThanOrEqual)
+            let res2 = constraint.firstItem === view && constraint.firstAttribute == .trailing && (relation == .equal || relation == .lessThanOrEqual)
             if res2 {
                 return true
             }
             return false
         }
-        if let cons = arr?.first {
-            if res2 {
-                cons.constant = cons.constant + preMarge - marge
+        if let constraint = arr?.first {
+            let relation = constraint.relation
+            if constraint.firstItem === view && constraint.firstAttribute == .trailing && (relation == .equal || relation == .lessThanOrEqual) {
+                    constraint.constant = constraint.constant + preMarge - marge
             }else {
-                cons.constant = cons.constant - preMarge + marge
+                if stackView?.axis == .vertical {
+                    constraint.constant = constraint.constant + preMarge - marge
+                }else {
+                    constraint.constant = constraint.constant - preMarge + marge
+                }
             }
         }else {
             setStackViewNeedsUpdateConstraints()
@@ -113,24 +113,28 @@ public  class FlexItem: NSObject {
         }
     }
     private func updateBottomMarge(_ preMarge: CGFloat,_ marge: CGFloat) {
-        var res2 = false
         let arr = filterConstraint { constraint in
             let relation = constraint.relation
             let res1 = constraint.secondItem === view && constraint.secondAttribute == .bottom && (relation == .equal || relation == .greaterThanOrEqual)
             if res1 {
                 return true
             }
-            res2 = constraint.firstItem === view && constraint.firstAttribute == .bottom && (relation == .equal || relation == .lessThanOrEqual)
+            let res2 = constraint.firstItem === view && constraint.firstAttribute == .bottom && (relation == .equal || relation == .lessThanOrEqual)
             if res2 {
                 return true
             }
             return false
         }
-        if let cons = arr?.first {
-            if res2 {
-                cons.constant = cons.constant + preMarge - marge
+        if let constraint = arr?.first {
+            let relation = constraint.relation
+            if constraint.firstItem === view && constraint.firstAttribute == .bottom && (relation == .equal || relation == .lessThanOrEqual) {
+                constraint.constant = constraint.constant + preMarge - marge
             }else {
-                cons.constant = cons.constant - preMarge + marge
+                if stackView?.axis == .horizontal {
+                    constraint.constant = constraint.constant + preMarge - marge
+                }else {
+                    constraint.constant = constraint.constant - preMarge + marge
+                }
             }
         }else {
             setStackViewNeedsUpdateConstraints()
@@ -486,50 +490,22 @@ public extension FlexItem {
 }
 
 
-public class FlexItemSwift<T: UIView>: FlexItem {
-    public init(view: T) {
-        super.init()
-        self._view = view as UIView
-    }
-    public var view: T? {
-        _view as? T
-    }
-}
 
 
-private var flexSwiftKey:      UInt8 = 0
-public protocol FLexItemCompatible where Self: UIView {}
-extension UIView: FLexItemCompatible {}
-extension FLexItemCompatible {
-   public var flex: FlexItemSwift<Self> {
-        if let cfg = objc_getAssociatedObject(self, &flexSwiftKey) as? FlexItemSwift<Self> {
-            return cfg
-        }
-        let cfg = FlexItemSwift(view: self)
-        // 如需显式延长生命周期到自动释放池销毁，可用：
-        _ = Unmanaged.passRetained(self).autorelease()
-        objc_setAssociatedObject(
-            self,
-            &flexSwiftKey,
-            cfg,
-            .OBJC_ASSOCIATION_RETAIN_NONATOMIC
-        )
-        return cfg
-    }
-}
+
+
 
 
 
 private var flexKey:      UInt8 = 0
 extension UIView {
-    @objc(flex)
-    @available(swift, obsoleted: 1, renamed: "flex")
-    public var flexObjc: FlexItem {
+    @objc
+    public var flex: FlexItem {
         if let cfg = objc_getAssociatedObject(self, &flexKey) as? FlexItem {
             return cfg
         }
         let cfg = FlexItem()
-        cfg._view = self
+        cfg.view = self
         // 如需显式延长生命周期到自动释放池销毁，可用：
         _ = Unmanaged.passRetained(self).autorelease()
         objc_setAssociatedObject(

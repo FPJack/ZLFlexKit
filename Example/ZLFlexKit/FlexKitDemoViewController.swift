@@ -235,6 +235,7 @@ class FillDemoVC: UIViewController {
         
         container.addArrangedSubview(sectionLabel(".fill — 子 view 可通过 flexValue 按比例占据空间"))
         let fill = demoStack()
+        fill.insets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         fill.justifyContent = .fill
         fill.alignment = .fill
         let f1 = UIView.colored(colors[0], text: "flex:1", size: .zero)
@@ -244,6 +245,7 @@ class FillDemoVC: UIViewController {
         f2.flex.flex = 2
         for v in [f1, f2, f3] { fill.addArrangedSubview(v) }
         container.addArrangedSubview(fill)
+        
         
 
         container.addArrangedSubview(sectionLabel(".fillEqually — 所有子 view 宽度完全相等"))
