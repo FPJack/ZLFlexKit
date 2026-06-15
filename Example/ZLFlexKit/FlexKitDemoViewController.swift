@@ -235,17 +235,19 @@ class FillDemoVC: UIViewController {
         
         container.addArrangedSubview(sectionLabel(".fill — 子 view 可通过 flexValue 按比例占据空间"))
         let fill = demoStack()
-        fill.insets = NSDirectionalEdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10)
-        fill.justifyContent = .start
-        fill.alignment = .end
-        let f1 = UIView.colored(colors[0], text: "flex:1", size: .init(width: 0, height: 36))
-        let f2 = UIView.colored(colors[1], text: "flex:2", size: .init(width: 0, height: 36))
+        fill.insets = .init(top: 8, leading: 8, bottom: 8, trailing: 8)
+        fill.justifyContent = .fill
+        fill.alignment = .fill
+        let f1 = UIView.colored(colors[0], text: "flex:1", size: .zero)
+        let f2 = UIView.colored(colors[1], text: "flex:2", size: .zero)
         let f3 = UIView.colored(colors[2], text: "固定60", size: CGSize(width: 60, height: 40))
         f1.flex.flex = 1
         f2.flex.flex = 2
         for v in [f1, f2, f3] { fill.addArrangedSubview(v) }
         container.addArrangedSubview(fill)
-        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            
+        }
         
         
 
@@ -500,7 +502,7 @@ class MargeDemoVC: UIViewController {
         v2.flex.margin(.init(top: 15, leading: 0, bottom: 0, trailing: 0))
         v3.flex.margin(.init(top: 0, leading: 0, bottom: 15, trailing: 0))
         v3.flex.alignSelf = .end
-        v4.flex.margin(.init(top: 10, leading: 0, bottom: 10, trailing: 0))
+        v4.flex.alignSelf(.fill).margin(.init(top: 10, leading: 0, bottom: 10, trailing: 0))
         for v in [v1, v2, v3, v4] { sv.addArrangedSubview(v) }
         container.addArrangedSubview(sv)
 
@@ -578,7 +580,7 @@ class VerticalDemoVC: UIViewController {
         let container = makeScrollableContainerStack()
 
         container.addArrangedSubview(sectionLabel("vertical + .fill + flexValue — 按比例分配高度"))
-        let sv1 = makeVerticalStack(height: -1)
+        let sv1 = makeVerticalStack(height: 100)
         sv1.justifyContent = .fill; sv1.alignment = .fill
         for (i, f) in [1,2,1].enumerated() {
             let v = UIView.colored(colors[i], text: "flex:\(f)", size: .zero); v.flex.flex = f; sv1.addArrangedSubview(v)
@@ -586,7 +588,7 @@ class VerticalDemoVC: UIViewController {
         container.addArrangedSubview(sv1)
 
         container.addArrangedSubview(sectionLabel("vertical + .spaceEvenly — 均分间距"))
-        let sv2 = makeVerticalStack(height: -1)
+        let sv2 = makeVerticalStack(height: 200)
         sv2.justifyContent = .spaceEvenly; sv2.alignment = .center
         for i in 0..<4 { sv2.addArrangedSubview(UIView.colored(colors[i], text: "v\(i+1)", size: CGSize(width: 120, height: 28))) }
         container.addArrangedSubview(sv2)
