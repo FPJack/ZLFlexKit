@@ -85,7 +85,7 @@ final class FlexManager {
             if cfg.flex > 0, justify != .fillEqually {
                 flexViews.append(view)
             }
-            let marge = cfg.marge
+            let marge = cfg.margin
             let startSpacing = marge.top
             let endSpacing   = marge.bottom
             let spacing      = cfg.spacing
@@ -276,7 +276,7 @@ final class FlexManager {
             if cfg.flex > 0, justify != .fillEqually {
                 flexViews.append(view)
             }
-            let marge = cfg.marge
+            let marge = cfg.margin
             let startSpacing = marge.leading
             let endSpacing   = marge.trailing
             let spacing      = cfg.spacing
@@ -458,7 +458,7 @@ final class FlexManager {
             constraints.forEach { cons in
                 guard let view = cons.item.view else { return }
                 let flexItem = view.flex
-                let marge = flexItem.marge
+                let marge = flexItem.margin
                 let type = cons.item.type
                 if type == .start {
                     if horizontal {

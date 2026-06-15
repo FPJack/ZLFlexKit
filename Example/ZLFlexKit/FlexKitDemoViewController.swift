@@ -236,15 +236,16 @@ class FillDemoVC: UIViewController {
         container.addArrangedSubview(sectionLabel(".fill — 子 view 可通过 flexValue 按比例占据空间"))
         let fill = demoStack()
         fill.insets = NSDirectionalEdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10)
-        fill.justifyContent = .fill
-        fill.alignment = .fill
-        let f1 = UIView.colored(colors[0], text: "flex:1", size: .zero)
-        let f2 = UIView.colored(colors[1], text: "flex:2", size: .zero)
+        fill.justifyContent = .start
+        fill.alignment = .end
+        let f1 = UIView.colored(colors[0], text: "flex:1", size: .init(width: 0, height: 36))
+        let f2 = UIView.colored(colors[1], text: "flex:2", size: .init(width: 0, height: 36))
         let f3 = UIView.colored(colors[2], text: "固定60", size: CGSize(width: 60, height: 40))
         f1.flex.flex = 1
         f2.flex.flex = 2
         for v in [f1, f2, f3] { fill.addArrangedSubview(v) }
         container.addArrangedSubview(fill)
+        
         
         
 
@@ -333,9 +334,9 @@ class AlignSelfDemoVC: UIViewController {
         let m1 = UIView.colored(colors[4], text: "start+0",  size: CGSize(width: 60, height: 28))
         let m2 = UIView.colored(colors[5], text: "start+10", size: CGSize(width: 60, height: 28))
         let m3 = UIView.colored(colors[6], text: "end+10",   size: CGSize(width: 60, height: 28))
-        m2.flex.marge(.init(top: 10, leading: 0, bottom: 0, trailing: 0))
+        m2.flex.margin(.init(top: 10, leading: 0, bottom: 0, trailing: 0))
         m3.flex.alignSelf = .end
-        m3.flex.marge(.init(top: 0, leading: 0, bottom: 0, trailing: 10))
+        m3.flex.margin(.init(top: 0, leading: 0, bottom: 0, trailing: 10))
         for v in [m1, m2, m3] { sv2.addArrangedSubview(v) }
         container.addArrangedSubview(sv2)
     }
@@ -496,10 +497,10 @@ class MargeDemoVC: UIViewController {
         let v2 = UIView.colored(colors[1], text: "start+15", size: CGSize(width: 60, height: 30))
         let v3 = UIView.colored(colors[2], text: "end+15",   size: CGSize(width: 60, height: 30))
         let v4 = UIView.colored(colors[3], text: "两边+10",  size: CGSize(width: 60, height: 0))
-        v2.flex.marge(.init(top: 15, leading: 0, bottom: 0, trailing: 0))
-        v3.flex.marge(.init(top: 0, leading: 0, bottom: 15, trailing: 0))
+        v2.flex.margin(.init(top: 15, leading: 0, bottom: 0, trailing: 0))
+        v3.flex.margin(.init(top: 0, leading: 0, bottom: 15, trailing: 0))
         v3.flex.alignSelf = .end
-        v4.flex.marge(.init(top: 10, leading: 0, bottom: 10, trailing: 0))
+        v4.flex.margin(.init(top: 10, leading: 0, bottom: 10, trailing: 0))
         for v in [v1, v2, v3, v4] { sv.addArrangedSubview(v) }
         container.addArrangedSubview(sv)
 
@@ -509,8 +510,8 @@ class MargeDemoVC: UIViewController {
         let c1 = UIView.colored(colors[4], text: "offset 0", size: CGSize(width: 60, height: 30))
         let c2 = UIView.colored(colors[5], text: "up 16",    size: CGSize(width: 60, height: 30))
         let c3 = UIView.colored(colors[6], text: "down 16",  size: CGSize(width: 60, height: 30))
-        c2.flex.marge(.init(top: 0, leading: 0, bottom: 32, trailing: 0))
-        c3.flex.marge(.init(top: 32, leading: 0, bottom: 0, trailing: 0))
+        c2.flex.margin(.init(top: 0, leading: 0, bottom: 32, trailing: 0))
+        c3.flex.margin(.init(top: 32, leading: 0, bottom: 0, trailing: 0))
         for v in [c1, c2, c3] { sv2.addArrangedSubview(v) }
         container.addArrangedSubview(sv2)
     }

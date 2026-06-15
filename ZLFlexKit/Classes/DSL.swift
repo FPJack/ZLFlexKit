@@ -81,7 +81,7 @@ extension Optional: StackViewDSL where Wrapped: FlexType {
    public func getDslView() -> UIView? {
         switch self {
         case .some(let view):
-            return view.view
+            return view.baseView
         case .none:
             return nil
         }

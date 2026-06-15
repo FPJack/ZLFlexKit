@@ -35,6 +35,10 @@ extension CGFloat: NumberConvertible { public var doubleValue: Double { Double(s
 public class LayoutBox: NSObject {
 
     public weak var view: UIView?
+    
+    public func view<T: UIView>(as type: T.Type) -> T? {
+        return view as? T
+    }
 
     private var _constraints: NSMutableArray?
     private weak var _lastConstraint: NSLayoutConstraint?

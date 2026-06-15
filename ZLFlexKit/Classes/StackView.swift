@@ -199,14 +199,14 @@ open class StackView: UIView {
     
     @discardableResult
     open func addView(_ flexType: FlexType?) -> Self {
-        addArrangedSubview(flexType?.view)
+        addArrangedSubview(flexType?.baseView)
         return self
     }
     
     @discardableResult
     open func addView(if condition: Bool, _ view: FlexType?) -> Self {
         if condition {
-            addArrangedSubview(view?.view)
+            addArrangedSubview(view?.baseView)
         }
         return self
     }
@@ -214,7 +214,7 @@ open class StackView: UIView {
     @discardableResult
     open func addView<T>(make: @escaping (T) -> (any FlexType)?) -> Self where T: StackView {
         let blockView = make(self as! T)
-        addArrangedSubview(blockView?.view)
+        addArrangedSubview(blockView?.baseView)
         return self
     }
     
@@ -223,14 +223,14 @@ open class StackView: UIView {
     open func addView<T>(if condition: Bool, make: @escaping (T) -> FlexType?) -> Self where T: StackView {
         if condition {
             let blockView = make(self as! T)
-            addArrangedSubview(blockView?.view)
+            addArrangedSubview(blockView?.baseView)
         }
         return self
     }
     
     @discardableResult
     open func marge(_ marge: NSDirectionalEdgeInsets, for view: UIView?) -> Self {
-        setMarge(marge, for: view)
+        setMargin(marge, for: view)
         return self
     }
     
@@ -480,7 +480,7 @@ extension StackView {
     open var setMargeObjc: (_ top: CGFloat,_ leading: CGFloat,_ bottom: CGFloat, _ trailing: CGFloat, _ view: UIView?) -> StackView {
         {
             top,leading,bottom,trailing,view in
-            self.setMarge(.init(top: top, leading: leading, bottom: bottom, trailing: trailing), for: view)
+            self.setMargin(.init(top: top, leading: leading, bottom: bottom, trailing: trailing), for: view)
             return self
         }
     }
@@ -713,17 +713,17 @@ extension StackView {
     }
     
     
-    @objc(setMarge:forView:)
-    open func setMarge(_ marge: NSDirectionalEdgeInsets, for view: UIView?) {
+    @objc(setMargin:forView:)
+    open func setMargin(_ margin: NSDirectionalEdgeInsets, for view: UIView?) {
         guard let view = view,view.isKind(of: UIView.self) else { return }
         
         guard allViews.contains(view) else { return }
         
         let cfg = view.flex
         
-        guard cfg.marge != marge else { return }
+        guard cfg.margin != margin else { return }
         
-        cfg.marge = marge
+        cfg.margin = margin
         
         guard !view.isHidden else { return }
         
@@ -781,7 +781,7 @@ extension StackView {
 
 public protocol FlexType {}
 extension FlexType {
-    var view: UIView? {
+    var baseView: UIView? {
         if let view = self as? UIView {
             return view
         } else if let item = self as? FlexItem {
