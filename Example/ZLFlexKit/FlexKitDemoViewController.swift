@@ -967,29 +967,6 @@ class WrapScrollVerticalDemoVC: UIViewController {
         card.addArrangedSubview(thumb)
         card.addArrangedSubview(textStack)
         
-        
-       _ = HStackView(justify: .center,
-                      align: .center,
-                      spacing: 30,
-                      insets: .zero) {
-            UILabel()
-            10
-            UISwitch()
-            10.maxSpacing
-            if true {
-                VStackView {
-                    UIButton()
-                    UIButton()
-                }
-            }else {
-                HStackView {
-                    UIButton()
-                    UIButton()
-                }
-            }
-            Spacer()
-            UISwitch()
-        }
 
         // 卡片背景
         let wrapper = UIView()

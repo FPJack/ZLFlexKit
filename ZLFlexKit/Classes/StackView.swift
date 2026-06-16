@@ -340,8 +340,8 @@ open class StackView: UIView {
     /// - Parameter make: <#make description#>
     /// - Returns: <#description#>
     @discardableResult
-    open func addView(make: @escaping (Self) -> (any FlexType)?) -> Self {
-        let blockView = make(self)
+    open func addView<T>(make: @escaping (T) -> (FlexType)?) -> Self where T: StackView{
+        let blockView = make(self as! T)
         addArrangedSubview(blockView?.baseView)
         return self
     }
@@ -355,11 +355,12 @@ open class StackView: UIView {
     ///   - make: <#make description#>
     /// - Returns: <#description#>
     @discardableResult
-    open func addView(if condition: Bool, make: @escaping (Self) -> FlexType?) -> Self  {
+    open func addView<T>(if condition: Bool, make: @escaping (T) -> FlexType?) -> Self where T: StackView  {
         if condition {
-            let blockView = make(self)
+            let blockView = make(self as! T)
             addArrangedSubview(blockView?.baseView)
         }
+        
         return self
     }
     
