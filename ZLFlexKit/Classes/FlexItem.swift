@@ -359,7 +359,7 @@ public  class FlexItem: NSObject {
     }
     
     
-    /// 设置外边距，top, leading, bottom, trailing分别设置
+    /// 设置外边距，top, start, bottom, end分别设置
     /// - Parameters:
     ///   - top: <#top description#>
     ///   - leading: <#leading description#>
@@ -367,37 +367,39 @@ public  class FlexItem: NSObject {
     ///   - trailing: <#trailing description#>
     /// - Returns: <#description#>
     @discardableResult
-    public func margin(top: NumberConvertible? = nil,leading: NumberConvertible? = nil,  bottom: NumberConvertible? = nil,trailing: NumberConvertible? = nil) -> Self {
+    public func margin(t: NumberConvertible? = nil,
+                       s: NumberConvertible? = nil,
+                       b: NumberConvertible? = nil,
+                       e: NumberConvertible? = nil) -> Self {
         var margin = _margin
-        if let top = top {
+        if let top = t {
             margin.top = top.cgFloat
         }
-        if let leading = leading {
+        if let leading = s {
             margin.leading = leading.cgFloat
         }
-        if let bottom = bottom {
+        if let bottom = b {
             margin.bottom = bottom.cgFloat
         }
-        if let trailing = trailing {
+        if let trailing = e {
             margin.trailing = trailing.cgFloat
         }
         self.margin = margin
+        
+        
         return self
     }
     
-    /// 水平marge
-    /// - Parameter margin: <#margin description#>
-    /// - Returns: <#description#>
-    public func marginX(_ margin: NumberConvertible) -> Self {
-        return self.margin(leading: margin, trailing: margin)
-    }
     
     
-    /// 垂直marge
-    /// - Parameter margin: <#margin description#>
+    
+    /// 设置水平垂直外边距
+    /// - Parameters:
+    ///   - x: <#x description#>
+    ///   - y: <#y description#>
     /// - Returns: <#description#>
-    public func marginY(_ margin: NumberConvertible) -> Self {
-        return self.margin(top: margin,bottom: margin)
+    public func margin(x: NumberConvertible? = nil,y: NumberConvertible? = nil) -> Self {
+        return self.margin(t: y,s: x,b: y,e: x)
     }
     
     
