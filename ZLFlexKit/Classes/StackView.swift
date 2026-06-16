@@ -129,6 +129,32 @@ open class StackView: UIView {
         super.init(frame: .zero)
         addViews(builder: builder)
     }
+    public  init(
+                 axis: StackViewAxis? = nil,
+                 justify: Justify? = nil,
+                 align: FlexItemCrossAlign? = nil,
+                 spacing: CGFloat? = nil,
+                 insets: EdgeInsets? = nil,
+                 @StackViewBuilder builder: () -> [StackViewDSL]) {
+        super.init(frame: .zero)
+        addViews(builder: builder)
+        if let axis = axis {
+            self.axis = axis
+        }
+                     
+        if let justify = justify {
+            self.justifyContent = justify
+        }
+        if let align = align {
+            self.alignment = align
+        }
+        if let spacing = spacing {
+            self.spacing = spacing
+        }
+        if let insets = insets {
+            self.insets = insets.directionalEdgeInsets
+        }
+    }
     
     
     
@@ -314,8 +340,8 @@ open class StackView: UIView {
     /// - Parameter make: <#make description#>
     /// - Returns: <#description#>
     @discardableResult
-    open func addView<T>(make: @escaping (T) -> (any FlexType)?) -> Self where T: StackView {
-        let blockView = make(self as! T)
+    open func addView(make: @escaping (Self) -> (any FlexType)?) -> Self {
+        let blockView = make(self)
         addArrangedSubview(blockView?.baseView)
         return self
     }
@@ -329,13 +355,15 @@ open class StackView: UIView {
     ///   - make: <#make description#>
     /// - Returns: <#description#>
     @discardableResult
-    open func addView<T>(if condition: Bool, make: @escaping (T) -> FlexType?) -> Self where T: StackView {
+    open func addView(if condition: Bool, make: @escaping (Self) -> FlexType?) -> Self  {
         if condition {
-            let blockView = make(self as! T)
+            let blockView = make(self)
             addArrangedSubview(blockView?.baseView)
         }
         return self
     }
+    
+    
     
     
     
