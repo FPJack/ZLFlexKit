@@ -1060,6 +1060,25 @@ open class VStackView: StackView {
     public override init(@StackViewBuilder builder: () -> [StackViewDSL]) {
         super.init(builder: builder)
     }
+    public  init(justify: Justify? = nil,
+                 align: FlexItemCrossAlign? = nil,
+                 spacing: CGFloat? = nil,
+                 insets: EdgeInsets? = nil,
+                 @StackViewBuilder builder: () -> [StackViewDSL]) {
+        super.init(builder: builder)
+        if let justify = justify {
+            self.justifyContent = justify
+        }
+        if let align = align {
+            self.alignment = align
+        }
+        if let spacing = spacing {
+            self.spacing = spacing
+        }
+        if let insets = insets {
+            self.insets = insets.directionalEdgeInsets
+        }
+    }
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -1073,8 +1092,27 @@ open class HStackView: StackView {
         set {}
     }
     
-    public override init(@StackViewBuilder builder: () -> [StackViewDSL]) {
+    public override init( @StackViewBuilder builder: () -> [StackViewDSL]) {
         super.init(builder: builder)
+    }
+    public  init(justify: Justify? = nil,
+                 align: FlexItemCrossAlign? = nil,
+                 spacing: CGFloat? = nil,
+                 insets: EdgeInsets? = nil,
+                 @StackViewBuilder builder: () -> [StackViewDSL]) {
+        super.init(builder: builder)
+        if let justify = justify {
+            self.justifyContent = justify
+        }
+        if let align = align {
+            self.alignment = align
+        }
+        if let spacing = spacing {
+            self.spacing = spacing
+        }
+        if let insets = insets {
+            self.insets = insets.directionalEdgeInsets
+        }
     }
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")

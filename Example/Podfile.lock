@@ -1,6 +1,6 @@
 PODS:
   - SnapKit (5.6.0)
-  - ZLFlexKit (0.1.5)
+  - ZLFlexKit (0.1.6)
 
 DEPENDENCIES:
   - SnapKit (~> 5.0)
@@ -16,7 +16,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   SnapKit: e01d52ebb8ddbc333eefe2132acf85c8227d9c25
-  ZLFlexKit: f9067c06720e031d6dc88163f2732a19b0ef8165
+  ZLFlexKit: 07532e18e9cd8c661f129d0da2c69cdf811a0152
 
 PODFILE CHECKSUM: 79942bfa8eaca57d783b8a75d79cf500cb25cfb6
 

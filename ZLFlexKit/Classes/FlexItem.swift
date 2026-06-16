@@ -343,65 +343,13 @@ public  class FlexItem: NSObject {
     /// - Parameter margin: <#margin description#>
     /// - Returns: <#description#>
     @discardableResult
-    public func margin(_ margin: NSDirectionalEdgeInsets) -> Self {
-        self.margin = margin
+    public func margin(_ margin: EdgeInsets) -> Self {
+        self.margin = margin.directionalEdgeInsets
         return self
     }
     
     
-    /// 设置外边距，top, leading, bottom, trailing同时设置
-    /// - Parameter margin: <#margin description#>
-    /// - Returns: <#description#>
-    @discardableResult
-    public func margin(_ margin: NumberConvertible) -> Self {
-           self.margin = .init(top: margin.cgFloat, leading: margin.cgFloat, bottom: margin.cgFloat, trailing: margin.cgFloat)
-        return self
-    }
-    
-    
-    /// 设置外边距，top, start, bottom, end分别设置
-    /// - Parameters:
-    ///   - top: <#top description#>
-    ///   - leading: <#leading description#>
-    ///   - bottom: <#bottom description#>
-    ///   - trailing: <#trailing description#>
-    /// - Returns: <#description#>
-    @discardableResult
-    public func margin(t: NumberConvertible? = nil,
-                       s: NumberConvertible? = nil,
-                       b: NumberConvertible? = nil,
-                       e: NumberConvertible? = nil) -> Self {
-        var margin = _margin
-        if let top = t {
-            margin.top = top.cgFloat
-        }
-        if let leading = s {
-            margin.leading = leading.cgFloat
-        }
-        if let bottom = b {
-            margin.bottom = bottom.cgFloat
-        }
-        if let trailing = e {
-            margin.trailing = trailing.cgFloat
-        }
-        self.margin = margin
-        
-        
-        return self
-    }
-    
-    
-    
-    
-    /// 设置水平垂直外边距
-    /// - Parameters:
-    ///   - x: <#x description#>
-    ///   - y: <#y description#>
-    /// - Returns: <#description#>
-    public func margin(x: NumberConvertible? = nil,y: NumberConvertible? = nil) -> Self {
-        return self.margin(t: y,s: x,b: y,e: x)
-    }
-    
+   
     
     
     /// 设置view后面的最小间距，默认跟随StackView的spacing属性
