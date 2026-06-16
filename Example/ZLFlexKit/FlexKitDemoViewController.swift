@@ -336,9 +336,9 @@ class AlignSelfDemoVC: UIViewController {
         let m1 = UIView.colored(colors[4], text: "start+0",  size: CGSize(width: 60, height: 28))
         let m2 = UIView.colored(colors[5], text: "start+10", size: CGSize(width: 60, height: 28))
         let m3 = UIView.colored(colors[6], text: "end+10",   size: CGSize(width: 60, height: 28))
-        m2.flex.margin(.init(top: 10, leading: 0, bottom: 0, trailing: 0))
+        m2.flex.margin(.init(t: 10, s: 0, b: 0, e: 0))
         m3.flex.alignSelf = .end
-        m3.flex.margin(.init(top: 0, leading: 0, bottom: 0, trailing: 10))
+        m3.flex.margin(.init(t: 0, s: 0, b: 0, e: 10))
         for v in [m1, m2, m3] { sv2.addArrangedSubview(v) }
         container.addArrangedSubview(sv2)
     }
@@ -499,10 +499,10 @@ class MargeDemoVC: UIViewController {
         let v2 = UIView.colored(colors[1], text: "start+15", size: CGSize(width: 60, height: 30))
         let v3 = UIView.colored(colors[2], text: "end+15",   size: CGSize(width: 60, height: 30))
         let v4 = UIView.colored(colors[3], text: "两边+10",  size: CGSize(width: 60, height: 0))
-        v2.flex.margin(.init(top: 15, leading: 0, bottom: 0, trailing: 0))
-        v3.flex.margin(.init(top: 0, leading: 0, bottom: 15, trailing: 0))
+        v2.flex.margin(.init(t: 15, s: 0, b: 0, e: 0))
+        v3.flex.margin(.init(t: 0, s: 0, b: 15, e: 0))
         v3.flex.alignSelf = .end
-        v4.flex.align(.fill).margin(.init(top: 10, leading: 0, bottom: 10, trailing: 0))
+        v4.flex.align(.fill).margin(.init(t: 10, s: 0, b: 10, e: 0))
         for v in [v1, v2, v3, v4] { sv.addArrangedSubview(v) }
         container.addArrangedSubview(sv)
 
@@ -512,8 +512,8 @@ class MargeDemoVC: UIViewController {
         let c1 = UIView.colored(colors[4], text: "offset 0", size: CGSize(width: 60, height: 30))
         let c2 = UIView.colored(colors[5], text: "up 16",    size: CGSize(width: 60, height: 30))
         let c3 = UIView.colored(colors[6], text: "down 16",  size: CGSize(width: 60, height: 30))
-        c2.flex.margin(.init(top: 0, leading: 0, bottom: 32, trailing: 0))
-        c3.flex.margin(.init(top: 32, leading: 0, bottom: 0, trailing: 0))
+        c2.flex.margin(.init(t: 0, s: 0, b: 32, e: 0))
+        c3.flex.margin(.init(t: 32, s: 0, b: 0, e: 0))
         for v in [c1, c2, c3] { sv2.addArrangedSubview(v) }
         container.addArrangedSubview(sv2)
     }

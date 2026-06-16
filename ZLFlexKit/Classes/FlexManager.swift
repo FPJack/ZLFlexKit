@@ -19,8 +19,8 @@ final class FlexManager {
 
     // MARK: - Private lazy StackEdgeInsets
 
-    lazy private var stackEdgeInsets: StackEdgeInsets =  {
-        let insets = StackEdgeInsets()
+    lazy private var stackLayoutEngine: StackLayoutEngine =  {
+        let insets = StackLayoutEngine()
         insets.stackView = self.stackView
         return insets
     }()
@@ -46,7 +46,7 @@ final class FlexManager {
     // MARK: - Layout
 
     func removeAllSpacing() {
-        stackEdgeInsets.removeEdgeInsets()
+        stackLayoutEngine.removeEdgeInsets()
         stackView?.layoutGuides
             .compactMap { $0 as? LayoutGuide }
             .forEach { $0.removeFromOwningView() }
@@ -58,7 +58,7 @@ final class FlexManager {
         guard horizontal else { return }
         let views = self.views
         let count = views.count
-        var nextXAnchor:  NSLayoutXAxisAnchor = stackEdgeInsets.jLeadingAnchor
+        var nextXAnchor:  NSLayoutXAxisAnchor = stackLayoutEngine.jLeadingAnchor
         var widthDim:     NSLayoutDimension?   // for spaceBetween/Around/Evenly
         var viewWidthDim: NSLayoutDimension?   // for fillEqually
         var flexWidthDim: NSLayoutDimension?   // for flex spaces
@@ -95,9 +95,9 @@ final class FlexManager {
             addCrossAxisConstraints(
                 for: view, cfg: cfg,
                 startSpacing: startSpacing + insets.top, endSpacing: endSpacing + insets.bottom,
-                startAnchor: stackEdgeInsets.topAnchor,
-                endAnchor:   stackEdgeInsets.bottomAnchor,
-                centerAnchor: stackEdgeInsets.centerYAnchor,
+                startAnchor: stackLayoutEngine.topAnchor,
+                endAnchor:   stackLayoutEngine.bottomAnchor,
+                centerAnchor: stackLayoutEngine.centerYAnchor,
                 mainAxis: .horizontal
             )
 
@@ -202,9 +202,9 @@ final class FlexManager {
 
         // 末尾约束
         if justify == .start {
-            constraints.append(nextXAnchor.constraint(lessThanOrEqualTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
+            constraints.append(nextXAnchor.constraint(lessThanOrEqualTo: stackLayoutEngine.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
         } else {
-            constraints.append(nextXAnchor.constraint(equalTo: stackEdgeInsets.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
+            constraints.append(nextXAnchor.constraint(equalTo: stackLayoutEngine.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
         }
         
         justifyLastConstraints = constraints.last
@@ -213,7 +213,7 @@ final class FlexManager {
 
         // spaceAround / spaceEvenly 边距关系
         if let dim = widthDim {
-            let anchors = stackEdgeInsets.widthAnchors
+            let anchors = stackLayoutEngine.widthAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
                 if justify == .spaceAround {
@@ -226,7 +226,7 @@ final class FlexManager {
 
         // center justify 两边宽度相等
         if justify == .center {
-            let anchors = stackEdgeInsets.widthAnchors
+            let anchors = stackLayoutEngine.widthAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
             }
@@ -234,7 +234,7 @@ final class FlexManager {
 
         // align center 上下高度相等
         if align == .center {
-            let anchors = stackEdgeInsets.heightAnchors
+            let anchors = stackLayoutEngine.heightAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
             }
@@ -250,7 +250,7 @@ final class FlexManager {
         guard !horizontal else { return }
         let views = self.views
         let count = views.count
-        var nextYAnchor: NSLayoutYAxisAnchor = stackEdgeInsets.jTopAnchor
+        var nextYAnchor: NSLayoutYAxisAnchor = stackLayoutEngine.jTopAnchor
         var heightDim:     NSLayoutDimension?
         var viewHeightDim: NSLayoutDimension?
         var flexHeightDim: NSLayoutDimension?
@@ -286,9 +286,9 @@ final class FlexManager {
             addCrossAxisConstraints(
                 for: view, cfg: cfg,
                 startSpacing: startSpacing + insets.leading, endSpacing: endSpacing + insets.trailing,
-                startAnchor: stackEdgeInsets.leadingAnchor,
-                endAnchor:   stackEdgeInsets.trailingAnchor,
-                centerAnchor: stackEdgeInsets.centerXAnchor,
+                startAnchor: stackLayoutEngine.leadingAnchor,
+                endAnchor:   stackLayoutEngine.trailingAnchor,
+                centerAnchor: stackLayoutEngine.centerXAnchor,
                 mainAxis: .vertical
             )
 
@@ -387,15 +387,15 @@ final class FlexManager {
 
         // 末尾约束
         if justify == .start {
-            constraints.append(nextYAnchor.constraint(lessThanOrEqualTo: stackEdgeInsets.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
+            constraints.append(nextYAnchor.constraint(lessThanOrEqualTo: stackLayoutEngine.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
         } else {
-            constraints.append(nextYAnchor.constraint(equalTo: stackEdgeInsets.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
+            constraints.append(nextYAnchor.constraint(equalTo: stackLayoutEngine.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
         }
         justifyLastConstraints = constraints.last
 
         // spaceAround / spaceEvenly 边距关系
         if let dim = heightDim {
-            let anchors = stackEdgeInsets.heightAnchors
+            let anchors = stackLayoutEngine.heightAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
                 if justify == .spaceAround {
@@ -408,7 +408,7 @@ final class FlexManager {
 
         // center justify 上下高度相等
         if justify == .center {
-            let anchors = stackEdgeInsets.heightAnchors
+            let anchors = stackLayoutEngine.heightAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
             }
@@ -416,7 +416,7 @@ final class FlexManager {
 
         // align center 左右宽度相等
         if align == .center {
-            let anchors = stackEdgeInsets.widthAnchors
+            let anchors = stackLayoutEngine.widthAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
             }

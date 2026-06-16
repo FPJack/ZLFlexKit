@@ -42,7 +42,7 @@ final class MargeGuide: UILayoutGuide {
 
 // MARK: - StackEdgeInsets
 
-final class StackEdgeInsets {
+final class StackLayoutEngine {
 
     weak var stackView: StackView?
 
