@@ -19,6 +19,7 @@ public enum Justify: Int {
     case start
     case center
     case end
+    ///间距不包括stackView的内边距和view的margin，适用于view之间的纯间距
     case spaceBetween   // 两边没有间距，中间相等
     case spaceAround    // 两边是中间一半
     case spaceEvenly    // 所有间距都相等
@@ -253,6 +254,12 @@ open class StackView: UIView {
     @discardableResult
     public func insets(_ insets: NSDirectionalEdgeInsets) -> Self {
         self.insets = insets
+        return self
+    }
+    
+    @discardableResult
+    public func insets(_ insets: EdgeInsets) -> Self {
+        self.insets = insets.directionalEdgeInsets
         return self
     }
     
@@ -1081,10 +1088,21 @@ extension StackView {
 
 /// 垂直排列的 StackView，axis 固定为 .vertical
 open class VStackView: StackView {
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+    }
+    
+    public init() {
+        super.init(frame: .zero)
+    }
+    
+    
     public override var axis: StackViewAxis {
         get { .vertical }
         set {}
     }
+    
+   
     
     public override init(@StackViewBuilder builder: () -> [StackViewDSL]) {
         super.init(builder: builder)
@@ -1116,6 +1134,12 @@ open class VStackView: StackView {
 
 /// 水平排列的 StackView，axis 固定为 .horizontal
 open class HStackView: StackView {
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+    }
+    public init() {
+        super.init(frame: .zero)
+    }
     public override var axis: StackViewAxis {
         get { .horizontal }
         set {}
