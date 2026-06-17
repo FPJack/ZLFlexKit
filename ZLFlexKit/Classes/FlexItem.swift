@@ -23,6 +23,7 @@ public  class FlexItem: NSObject {
     
     
     /// 弹性view
+    @objc
     public  weak var view: UIView? {
         didSet {
             guard observation == nil else { return }
@@ -643,7 +644,7 @@ private var flexKey:      UInt8 = 0
 extension UIView {
     
     /// 获取view在StackView里面弹性布局对象
-    @objc
+    @objc(zl_flex)
     public var flex: FlexItem {
         if let cfg = objc_getAssociatedObject(self, &flexKey) as? FlexItem {
             return cfg

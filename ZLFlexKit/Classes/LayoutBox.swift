@@ -34,6 +34,7 @@ extension CGFloat: NumberConvertible { public var doubleValue: Double { Double(s
 @objc(ZLLayout)
 public class LayoutBox: NSObject {
 
+    @objc
     public weak var view: UIView?
     
     public func view<T: UIView>(as type: T.Type) -> T? {
@@ -423,7 +424,8 @@ public extension UIView {
 
     /// 关联的 Layout 对象
     /// box or geo
-   @objc var box: LayoutBox {
+    @objc(zl_layout)
+    var box: LayoutBox {
         if let obj = objc_getAssociatedObject(self, &zlLayoutKey) as? LayoutBox {
             return obj
         }
