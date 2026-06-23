@@ -336,9 +336,9 @@ class AlignSelfDemoVC: UIViewController {
         let m1 = UIView.colored(colors[4], text: "start+0",  size: CGSize(width: 60, height: 28))
         let m2 = UIView.colored(colors[5], text: "start+10", size: CGSize(width: 60, height: 28))
         let m3 = UIView.colored(colors[6], text: "end+10",   size: CGSize(width: 60, height: 28))
-        m2.flex.margin(.init(t: 10, s: 0, b: 0, e: 0))
+        m2.flex.margin(.top(10))
         m3.flex.alignSelf = .end
-        m3.flex.margin(.init(t: 0, s: 0, b: 0, e: 10))
+        m3.flex.margin(.bottom(10))
         for v in [m1, m2, m3] { sv2.addArrangedSubview(v) }
         container.addArrangedSubview(sv2)
     }
@@ -506,14 +506,14 @@ class MargeDemoVC: UIViewController {
         for v in [v1, v2, v3, v4] { sv.addArrangedSubview(v) }
         container.addArrangedSubview(sv)
 
-        container.addArrangedSubview(sectionLabel("⚠️ alignSelf = .center 时，offset = (startMarge - endMarge) * 0.5"))
+        container.addArrangedSubview(sectionLabel("⚠️ alignSelf = .center 时，offset = (startMarge - endMarge)"))
         let sv2 = demoStack(height: 80)
         sv2.justifyContent = .spaceEvenly; sv2.alignment = .center
         let c1 = UIView.colored(colors[4], text: "offset 0", size: CGSize(width: 60, height: 30))
-        let c2 = UIView.colored(colors[5], text: "up 16",    size: CGSize(width: 60, height: 30))
-        let c3 = UIView.colored(colors[6], text: "down 16",  size: CGSize(width: 60, height: 30))
-        c2.flex.margin(.init(t: 0, s: 0, b: 32, e: 0))
-        c3.flex.margin(.init(t: 32, s: 0, b: 0, e: 0))
+        let c2 = UIView.colored(colors[5], text: "up 10",    size: CGSize(width: 60, height: 30))
+        let c3 = UIView.colored(colors[6], text: "down 10",  size: CGSize(width: 60, height: 30))
+        c2.flex.margin(.bottom(10))
+        c3.flex.margin(.top(10))
         for v in [c1, c2, c3] { sv2.addArrangedSubview(v) }
         container.addArrangedSubview(sv2)
     }
@@ -1006,8 +1006,6 @@ class DSLDemoVC: UIViewController {
             UIView.colored(colors[1], text: "B", size: CGSize(width: 60, height: 36))
             Spacer()                                    // 弹性空白
             UIView.colored(colors[2], text: "C", size: CGSize(width: 44, height: 36))
-            
-            
         }
         .justify(.fill)
         .align(.center)
@@ -1029,6 +1027,7 @@ class DSLDemoVC: UIViewController {
         .justify(.fill)
         .align(.fill)
         .insets(NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+        
         sv0v.backgroundColor = .compatGray5
         sv0v.layer.cornerRadius = 6
         sv0v.translatesAutoresizingMaskIntoConstraints = false

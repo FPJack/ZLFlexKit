@@ -475,7 +475,7 @@ final class FlexManager {
                 } else if type == .center {
                     let startSpacing = horizontal ? startMarge + marge.top : startMarge + marge.leading
                     let endSpacing   = horizontal ? endMarge + marge.bottom : endMarge + marge.trailing
-                    cons.constant = (startSpacing - endSpacing) * 0.5
+                    cons.constant = (startSpacing - endSpacing) * 1
                 }
             }
         }
@@ -504,7 +504,7 @@ final class FlexManager {
             constraints.append(make(view.topAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
             constraints.append(make(view.bottomAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
         case .center:
-            let offsetY = (startSpacing - endSpacing) * 0.5
+            let offsetY = (startSpacing - endSpacing) * 1
             constraints.append(make(view.topAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
             constraints.append(make(view.bottomAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
             constraints.append(make(view.centerYAnchor.constraint(equalTo: centerAnchor, constant: offsetY), type: .center))
@@ -538,7 +538,7 @@ final class FlexManager {
             constraints.append(make(view.leadingAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
             constraints.append(make(view.trailingAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
         case .center:
-            let offsetX = (startSpacing - endSpacing) * 0.5
+            let offsetX = (startSpacing - endSpacing) * 1
             constraints.append(make(view.leadingAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
             constraints.append(make(view.trailingAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
             constraints.append(make(view.centerXAnchor.constraint(equalTo: centerAnchor, constant: offsetX), type: .center))

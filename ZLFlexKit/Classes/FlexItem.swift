@@ -469,6 +469,17 @@ public  class FlexItem: NSObject {
     
     
     
+    /// 设置正方形长宽
+    /// - Parameter side: <#side description#>
+    /// - Returns: <#description#>
+    @discardableResult
+    public func square(_ side: NumberConvertible) -> Self {
+        return size(w: side, h: side)
+    }
+
+    
+    
+    
     /// 获取view并转换成指定类型，转换失败返回nil
     /// - Parameter view: <#view description#>
     /// - Returns: <#description#>

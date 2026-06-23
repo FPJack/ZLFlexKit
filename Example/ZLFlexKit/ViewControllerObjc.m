@@ -72,9 +72,9 @@
     UIView *f2 = [self box:UIColor.systemPurpleColor  text:@"flex:2" w:0 h:0];
     UIView *f3 = [self box:UIColor.systemTealColor    text:@"flex:3" w:0 h:0];
     
-    f1.flex.flex(1);
-    f2.flex.flex(2);
-    f3.flex.flex(3);
+    f1.zl_flex.flex(1);
+    f2.zl_flex.flex(2);
+    f3.zl_flex.flex(3);
     sv2
         .setJustify(ZLJustifyFill)
         .setAlign(ZLFlexItemCrossAlignFill)
@@ -83,7 +83,7 @@
         .addView(f3);
     
     [box addArrangedSubview:sv2];
-    self.view.box.lastConstraint().constant = 200; // 修改最后一个约束为 200，演示动态更新布局
+    self.view.zl_layout.lastConstraint().constant = 200; // 修改最后一个约束为 200，演示动态更新布局
     
     
     
@@ -187,12 +187,12 @@
     UIView *as2 = [self box:UIColor.systemBlueColor   text:@"+top15" w:60 h:28];
     UIView *as3 = [self box:UIColor.systemGreenColor  text:@"end"    w:60 h:28];
     UIView *as4 = [self box:UIColor.systemOrangeColor text:@"fill"   w:60 h:0 ];
-    as1.flex.align(ZLFlexItemCrossAlignStart);
-    as2.flex.align(ZLFlexItemCrossAlignStart);
-    as2.flex.margin(NSDirectionalEdgeInsetsMake(15, 0, 0, 0));
+    as1.zl_flex.align(ZLFlexItemCrossAlignStart);
+    as2.zl_flex.align(ZLFlexItemCrossAlignStart);
+    as2.zl_flex.margin(NSDirectionalEdgeInsetsMake(15, 0, 0, 0));
     // 距顶 15pt
-    as3.flex.align(ZLFlexItemCrossAlignEnd);
-    as4.flex.align(ZLFlexItemCrossAlignFill);
+    as3.zl_flex.align(ZLFlexItemCrossAlignEnd);
+    as4.zl_flex.align(ZLFlexItemCrossAlignFill);
     sv9
         .setJustify(ZLJustifySpaceEvenly)
         .setAlign(ZLFlexItemCrossAlignStart)
@@ -205,9 +205,9 @@
     UIView *v1 = [self box:UIColor.systemRedColor   text:@"flex:1" w:0 h:0];
     UIView *v2 = [self box:UIColor.systemBlueColor  text:@"flex:2" w:0 h:0];
     UIView *v3 = [self box:UIColor.systemGreenColor text:@"flex:1" w:0 h:0];
-    v1.flex.flex(1);
-    v2.flex.flex(2);
-    v3.flex.flex(1);
+    v1.zl_flex.flex(1);
+    v2.zl_flex.flex(2);
+    v3.zl_flex.flex(1);
     sv10
         .setAxis(ZLStackViewAxisVertical)
         .setJustify(ZLJustifyFill)
