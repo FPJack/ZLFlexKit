@@ -197,6 +197,7 @@ final class FlexManager {
                     constraints.append(guide.widthAnchor.constraint(equalTo: dim))
                 }
                 widthDim = guide.widthAnchor
+                
             }
         }
 
@@ -225,7 +226,7 @@ final class FlexManager {
         }
 
         // center justify 两边宽度相等
-        if justify == .center {
+        if justify == .center || ([.spaceBetween, .spaceAround, .spaceEvenly].contains(justify) && count == 1){
             let anchors = stackLayoutEngine.widthAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
@@ -407,7 +408,7 @@ final class FlexManager {
         }
 
         // center justify 上下高度相等
-        if justify == .center {
+        if justify == .center || ([.spaceBetween, .spaceAround, .spaceEvenly].contains(justify) && count == 1) {
             let anchors = stackLayoutEngine.heightAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
