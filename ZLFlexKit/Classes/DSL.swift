@@ -11,13 +11,13 @@ public protocol StackViewDSL {
     func getDslView() -> UIView?
 }
 extension StackViewDSL {
-   public func getDslView() -> UIView? {
+    public func getDslView() -> UIView? {
         nil
     }
 }
 
 extension UIView: StackViewDSL {
-   public func getDslView() -> UIView? {
+    public func getDslView() -> UIView? {
         self
     }
 }
@@ -29,7 +29,7 @@ public enum Spacer {
     case min(Float)
     case max(Float)
     case value(Float)
-
+    
     public init() {
         self = .normal
     }
@@ -78,7 +78,7 @@ extension Double: SpacerType {
 
 ///允许可选类型的view
 extension Optional: StackViewDSL where Wrapped: FlexType {
-   public func getDslView() -> UIView? {
+    public func getDslView() -> UIView? {
         switch self {
         case .some(let view):
             return view.baseView
@@ -98,28 +98,35 @@ public struct StackViewBuilder {
     ) -> [StackViewDSL] {
         components.flatMap { $0 }
     }
-
+    
     public static func buildExpression(
         _ expression: StackViewDSL
     ) -> [StackViewDSL] {
         [expression]
     }
-
+    
     public static func buildOptional(
         _ component: [StackViewDSL]?
     ) -> [StackViewDSL] {
         component ?? []
     }
-
+    
     public static func buildEither(
         first component: [StackViewDSL]
     ) -> [StackViewDSL] {
         component
     }
-
+    
     public static func buildEither(
         second component: [StackViewDSL]
     ) -> [StackViewDSL] {
         component
+    }
+    
+    
+    public static func buildArray(
+        _ components: [[StackViewDSL]]
+    ) -> [StackViewDSL] {
+        components.flatMap { $0 }
     }
 }
