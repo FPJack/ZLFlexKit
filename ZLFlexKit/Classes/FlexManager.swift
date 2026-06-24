@@ -226,7 +226,7 @@ final class FlexManager {
         }
 
         // center justify 两边宽度相等
-        if justify == .center || ([.spaceBetween, .spaceAround, .spaceEvenly].contains(justify) && count == 1){
+        if justify == .center || ([.spaceAround, .spaceEvenly].contains(justify) && count == 1){
             let anchors = stackLayoutEngine.widthAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
@@ -373,7 +373,7 @@ final class FlexManager {
             }
 
             // spaceBetween / spaceAround / spaceEvenly: 均等间距
-            if [Justify.spaceBetween, .spaceAround, .spaceEvenly].contains(justify), i < count - 1 {
+            if [.spaceBetween, .spaceAround, .spaceEvenly].contains(justify), i < count - 1 {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
                 constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
@@ -408,7 +408,7 @@ final class FlexManager {
         }
 
         // center justify 上下高度相等
-        if justify == .center || ([.spaceBetween, .spaceAround, .spaceEvenly].contains(justify) && count == 1) {
+        if justify == .center || ([.spaceAround, .spaceEvenly].contains(justify) && count == 1) {
             let anchors = stackLayoutEngine.heightAnchors
             if let first = anchors.first, let last = anchors.last {
                 constraints.append(first.constraint(equalTo: last))
