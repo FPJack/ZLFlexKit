@@ -217,10 +217,14 @@ class FillDemoVC: UIViewController {
         
         do {
             let fillStackView = HStackView(align: .fill,insets: .all(8)) {
+                
                 UIView.colored(colors[0], text: "flex:1", size: .zero)
                     .flex.flex(1)
+                
                 UIView.colored(colors[1], text: "flex:2", size: .zero).flex.flex(2)
+                
                 UIView.colored(colors[2], text: "固定60", size: CGSize(width: 60, height: 40))
+                
             }
             fillStackView.backgroundColor = .compatGray5
             
