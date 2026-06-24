@@ -1070,9 +1070,11 @@ extension StackView {
     }
     private func adjustStackView(_ view: UIView) {
         
-        guard let stackView = view as? StackView else { return }
-        // StackView 嵌套时避免约束冲突
-        stackView.translatesAutoresizingMaskIntoConstraints = false
+        if view is StackView || view is UIStackView {
+            // StackView 嵌套时避免约束冲突
+            view.translatesAutoresizingMaskIntoConstraints = false
+        }
+       
     }
     
     private func filterConstraint(

@@ -374,30 +374,61 @@ class FlexValueDemoVC: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .compatBackground
         let container = makeContainerStack()
+        
+        do {
+            let sv1 = HStackView(justify: .fill,align: .fill) {
+                
+                UIView.colored(colors[0], text: "flex:1", size: .init(width: 0, height: 40)).flex.flex(1)
+                
+                UIView.colored(colors[1], text: "flex:1", size: .zero).flex.flex(1)
 
-        container.addArrangedSubview(sectionLabel("flex 1:1:1 — 三等分"))
-        let sv1 = demoStack()
-        sv1.justifyContent = .fill; sv1.alignment = .fill
-        for i in 0..<3 { let v = UIView.colored(colors[i], text: "flex:1", size: .zero); v.flex.flex = 1; sv1.addArrangedSubview(v) }
-        container.addArrangedSubview(sv1)
+                UIView.colored(colors[2], text: "flex:1", size: .zero).flex.flex(1)
+            }
+            sv1.backgroundColor = .compatGray5
+            
+            container.addViews {
+                sectionLabel("flex 1:1:1 — 三等分")
+                sv1
+            }
+        }
+        
+        
+        do {
+            let sv1 = HStackView(justify: .fill,align: .fill) {
+                
+                UIView.colored(colors[0], text: "flex:1", size: .init(width: 0, height: 40)).flex.flex(1)
+                
+                UIView.colored(colors[1], text: "flex:2", size: .zero).flex.flex(2)
 
-        container.addArrangedSubview(sectionLabel("flex 1:2:3 — 按比例分配"))
-        let sv2 = demoStack()
-        sv2.justifyContent = .fill; sv2.alignment = .fill
-        for (i, f) in [1,2,3].enumerated() { let v = UIView.colored(colors[i], text: "flex:\(f)", size: .zero); v.flex.flex = f; sv2.addArrangedSubview(v) }
-        container.addArrangedSubview(sv2)
+                UIView.colored(colors[2], text: "flex:3", size: .zero).flex.flex(3)
+            }
+            sv1.backgroundColor = .compatGray5
 
-        container.addArrangedSubview(sectionLabel("固定宽度 + flex 占据剩余空间"))
-        let sv3 = demoStack()
-        sv3.justifyContent = .fill; sv3.alignment = .fill
-        let fixed = UIView.colored(colors[3], text: "固定80", size: CGSize(width: 80, height: 40))
-        let fl1   = UIView.colored(colors[4], text: "flex:1", size: .zero)
-        let fl2   = UIView.colored(colors[5], text: "flex:2", size: .zero)
-        fl1.flex.flex = 1; fl2.flex.flex = 2
-        for v in [fixed, fl1, fl2] { sv3.addArrangedSubview(v) }
-        container.addArrangedSubview(sv3)
+            container.addViews {
+                sectionLabel("flex 1:2:3 — 按比例分配")
+                sv1
+            }
+            
+        }
+        
+        do {
+            let sv1 = HStackView(justify: .fill,align: .fill) {
+                
+                UIView.colored(colors[3], text: "固定80", size: CGSize(width: 80, height: 40))
+                
+                UIView.colored(colors[1], text: "flex:1", size: .zero).flex.flex(1)
 
-        container.addArrangedSubview(sectionLabel("⚠️ flexValue 仅在 justifyContent = .fill 时生效"))
+                UIView.colored(colors[2], text: "flex:2", size: .zero).flex.flex(2)
+            }
+            sv1.backgroundColor = .compatGray5
+
+            container.addViews {
+                sectionLabel("固定宽度 + flex 占据剩余空间")
+                sv1
+            }
+            
+        }
+
     }
 }
 
@@ -409,26 +440,51 @@ class FlexSpaceDemoVC: UIViewController {
         view.backgroundColor = .compatBackground
         let container = makeContainerStack()
 
-        container.addArrangedSubview(sectionLabel("在 view 后插入弹性空白，将后续 view 推到末尾"))
-        let sv1 = demoStack()
-        sv1.justifyContent = .fill; sv1.alignment = .center
-        let a = UIView.colored(colors[0], text: "A", size: CGSize(width: 44, height: 36))
-        let b = UIView.colored(colors[1], text: "B", size: CGSize(width: 44, height: 36))
-        let c = UIView.colored(colors[2], text: "C", size: CGSize(width: 44, height: 36))
-        a.flex.isFlexibleSpace = true
-        for v in [a, b, c] { sv1.addArrangedSubview(v) }
-        container.addArrangedSubview(sv1)
+      
+        
+        
+        do {
+            let sv1 = HStackView(justify: .fill,align: .fill) {
+                
+                UIView.colored(colors[0], text: "A", size: CGSize(width: 44, height: 36))
+                
+                Spacer() //弹性空白
+                
+                UIView.colored(colors[1], text: "B", size: CGSize(width: 44, height: 36))
 
-        container.addArrangedSubview(sectionLabel("两个弹性空白 → 类似 spaceEvenly"))
-        let sv2 = demoStack()
-        sv2.justifyContent = .fill; sv2.alignment = .center
-        let d = UIView.colored(colors[3], text: "D", size: CGSize(width: 44, height: 36))
-        let e = UIView.colored(colors[4], text: "E", size: CGSize(width: 44, height: 36))
-        let f = UIView.colored(colors[5], text: "F", size: CGSize(width: 44, height: 36))
-        d.flex.isFlexibleSpace = true; e.flex.isFlexibleSpace = true
-        for v in [d, e, f] { sv2.addArrangedSubview(v) }
-        container.addArrangedSubview(sv2)
+                UIView.colored(colors[2], text: "C", size: CGSize(width: 44, height: 36))
+            }
+            sv1.backgroundColor = .compatGray5
 
+            container.addViews {
+                sectionLabel("在 view 后插入弹性空白，将后续 view 推到末尾")
+                sv1
+            }
+        }
+        
+        
+        do {
+            let sv1 = HStackView(justify: .fill,align: .fill) {
+                
+                UIView.colored(colors[0], text: "A", size: CGSize(width: 44, height: 36))
+                
+                Spacer() //弹性空白
+                
+                UIView.colored(colors[1], text: "B", size: CGSize(width: 44, height: 36))
+                
+                Spacer() //弹性空白
+
+                UIView.colored(colors[2], text: "C", size: CGSize(width: 44, height: 36))
+            }
+            sv1.backgroundColor = .compatGray5
+
+            container.addViews {
+                sectionLabel("在 view 后插入弹性空白，将后续 view 推到末尾")
+                sv1
+            }
+        }
+        
+       
         container.addArrangedSubview(sectionLabel("⚠️ isFlexibleSpace 只在 .fill / .fillEqually 模式下有效"))
     }
 }
@@ -446,55 +502,146 @@ class SpacingDemoVC: UIViewController {
         view.backgroundColor = .compatBackground
         let container = makeContainerStack()
 
-        // 固定 spacing — 使用公开方法 setCustomSpacing 或直接赋值 spacing
-        container.addArrangedSubview(sectionLabel("固定 spacing — view.flex.spacing 设置该 view 后面的间距"))
-        let sv1 = demoStack()
-        sv1.justifyContent = .start;
-        sv1.alignment = .center
-        let views1 = (0..<4).map { UIView.colored(colors[$0], text: "\($0+1)", size: CGSize(width: 44, height: 36)) }
-        views1[0].flex.spacing = 4    // 公开属性
-        views1[1].flex.spacing = 16
-        views1[2].flex.spacing = 32
-        for v in views1 { sv1.addArrangedSubview(v) }
-        container.addArrangedSubview(sv1)
+       
+        
+        do {
+          let sv1 = HStackView(justify: .start,align: .center) {
+              
+              UIView.colored(colors[0], text: "1", size: CGSize(width: 44, height: 36))
+              
+              5
+              
+              UIView.colored(colors[1], text: "2", size: CGSize(width: 44, height: 36))
+              
+              10
 
-        container.addArrangedSubview(sectionLabel("stackView.spacing — 全局默认间距（单个 view 设置后会覆盖）"))
-        let sv2 = demoStack()
-        sv2.justifyContent = .start; sv2.alignment = .center; sv2.spacing = 20
-        let views2 = (0..<4).map { UIView.colored(colors[$0], text: "\($0+1)", size: CGSize(width: 44, height: 36)) }
-        views2[2].flex.spacing = 50
-        for v in views2 { sv2.addArrangedSubview(v) }
-        container.addArrangedSubview(sv2)
+              UIView.colored(colors[2], text: "3", size: CGSize(width: 44, height: 36))
 
-        container.addArrangedSubview(sectionLabel("minSpacing / maxSpacing — 间距范围约束"))
-        let sv3 = demoStack()
-        sv3.justifyContent = .start; sv3.alignment = .center
-        let ma = UIView.colored(colors[0], text: "min10", size: CGSize(width: 50, height: 36))
-        let mb = UIView.colored(colors[1], text: "max30", size: CGSize(width: 50, height: 36))
-        let mc = UIView.colored(colors[2], text: "C",     size: CGSize(width: 50, height: 36))
-        ma.flex.minSpacing = 10    // 公开属性
-        mb.flex.maxSpacing = 30
-        for v in [ma, mb, mc] { sv3.addArrangedSubview(v) }
-        container.addArrangedSubview(sv3)
+              15
+              
+              UIView.colored(colors[3], text: "4", size: CGSize(width: 44, height: 36))
+              
+          }
+            
+          sv1.backgroundColor = .compatGray5
+          container.addViews {
+                sectionLabel("固定 spacing — view.flex.spacing 设置该 view 后面的间距")
+                sv1
+            }
+        }
+        
+        
+        do {
+          let sv1 = HStackView(justify: .start,align: .center,spacing: 20) {
+              
+              UIView.colored(colors[0], text: "1", size: CGSize(width: 44, height: 36))
+              
+              
+              
+              UIView.colored(colors[1], text: "2", size: CGSize(width: 44, height: 36))
+              
+              30
 
-        container.addArrangedSubview(sectionLabel("动态修改 — setCustomSpacing(_:after:)"))
-        fixedSpacingView = demoStack()
-        fixedSpacingView.justifyContent = .start; fixedSpacingView.alignment = .center
-        let views3 = (0..<3).map { UIView.colored(colors[$0], text: "v\($0+1)", size: CGSize(width: 50, height: 36)) }
-        for v in views3 { fixedSpacingView.addArrangedSubview(v) }
-        container.addArrangedSubview(fixedSpacingView)
+              UIView.colored(colors[2], text: "3", size: CGSize(width: 44, height: 36))
+              40
+                            
+              UIView.colored(colors[3], text: "4", size: CGSize(width: 44, height: 36))
+              
+          }
+            
+          sv1.backgroundColor = .compatGray5
+          container.addViews {
+                sectionLabel("stackView.spacing — 全局默认间距（单个 view 设置后会覆盖）")
+                sv1
+            }
+        }
+        
+        
+        do {
+          let sv1 = HStackView(justify: .start,align: .center) {
+              
+              UIView.colored(colors[0], text: "min30", size: CGSize(width: 44, height: 36))
+              
+              Spacer(min: 30)
+              
+              UIView.colored(colors[1], text: "2", size: CGSize(width: 44, height: 36))
+              
+              10
 
-        label = UILabel()
-        label.text = "第 1 个 view 后间距: \(Int(currentSpacing))pt"
-        label.font = .systemFont(ofSize: 12)
-        container.addArrangedSubview(label)
+              UIView.colored(colors[2], text: "3", size: CGSize(width: 44, height: 36))
+             
+              
+          }
+            
+          sv1.backgroundColor = .compatGray5
+          container.addViews {
+                sectionLabel("minSpacing  — 间距范围约束")
+                sv1
+            }
+        }
+        
+        do {
+          let sv1 = HStackView(justify: .fill,align: .center) {
+              
+              UIView.colored(colors[0], text: "max50", size: CGSize(width: 44, height: 36))
+              
+              Spacer(max: 50)
+              
+              UIView.colored(colors[1], text: "2", size: CGSize(width: 44, height: 36))
+              
+              10
 
-        let slider = UISlider()
-        slider.minimumValue = 0; slider.maximumValue = 80; slider.value = Float(currentSpacing)
-        slider.addTarget(self, action: #selector(sliderChanged(_:)), for: .valueChanged)
-        container.addArrangedSubview(slider)
 
-        fixedSpacingView.setCustomSpacing(currentSpacing, after: views3[0])
+              UIView.colored(colors[2], text: "3", size: CGSize(width: 0, height: 36))
+             
+              
+          }
+            
+          sv1.backgroundColor = .compatGray5
+          container.addViews {
+                sectionLabel("maxSpacing — 间距范围约束")
+                sv1
+            }
+        }
+        
+        
+
+       
+
+       
+
+        do {
+            fixedSpacingView =  HStackView(justify: .start) {
+                UIView.colored(colors[0], text: "1", size: CGSize(width: 50, height: 36))
+                
+                UIView.colored(colors[1], text: "2", size: CGSize(width: 50, height: 36))
+                
+                UIView.colored(colors[2], text: "3", size: CGSize(width: 50, height: 36))
+
+
+            }
+            
+            
+            fixedSpacingView.backgroundColor = .compatGray5
+            container.addViews {
+                sectionLabel("动态修改 — setCustomSpacing(_:after:)")
+                fixedSpacingView
+            }
+
+            label = UILabel()
+            label.text = "第 1 个 view 后间距: \(Int(currentSpacing))pt"
+            label.font = .systemFont(ofSize: 12)
+            container.addArrangedSubview(label)
+
+            let slider = UISlider()
+            slider.minimumValue = 0;
+            slider.maximumValue = 80;
+            slider.value = Float(currentSpacing)
+            slider.addTarget(self, action: #selector(sliderChanged(_:)), for: .valueChanged)
+            container.addArrangedSubview(slider)
+
+            fixedSpacingView.setCustomSpacing(currentSpacing, after: fixedSpacingView.arrangedViews.first!)
+        }
     }
 
     @objc private func sliderChanged(_ s: UISlider) {
@@ -514,31 +661,50 @@ class MargeDemoVC: UIViewController {
         view.backgroundColor = .compatBackground
         let container = makeContainerStack()
 
-        container.addArrangedSubview(sectionLabel("交叉轴方向的 margin（从 insets 边界开始计算）"))
-        let sv = demoStack(height: 90)
-        sv.justifyContent = .spaceEvenly;
-        sv.alignment = .start
-        let v1 = UIView.colored(colors[0], text: "无偏移",   size: CGSize(width: 60, height: 30))
-        let v2 = UIView.colored(colors[1], text: "start+15", size: CGSize(width: 60, height: 30))
-        let v3 = UIView.colored(colors[2], text: "end+15",   size: CGSize(width: 60, height: 30))
-        let v4 = UIView.colored(colors[3], text: "两边+10",  size: CGSize(width: 60, height: 0))
-        v2.flex.margin(.init(t: 15, s: 0, b: 0, e: 0))
-        v3.flex.margin(.init(t: 0, s: 0, b: 15, e: 0))
-        v3.flex.alignSelf = .end
-        v4.flex.align(.fill).margin(.init(t: 10, s: 0, b: 10, e: 0))
-        for v in [v1, v2, v3, v4] { sv.addArrangedSubview(v) }
-        container.addArrangedSubview(sv)
+        do {
+            let stackView =  HStackView(justify: .spaceEvenly,align: .start) {
+                
+                UIView.colored(colors[0], text: "无偏移",   size: CGSize(width: 60, height: 30))
+                
+                UIView.colored(colors[1], text: "start+15", size: CGSize(width: 60, height: 30))
+                    .flex.margin(.top(15))
+                
+                UIView.colored(colors[2], text: "end+15",   size: CGSize(width: 60, height: 30))
+                    .flex.align(.end).margin(.bottom(15))
+                
+                UIView.colored(colors[3], text: "两边+10",  size: CGSize(width: 60, height: 0))
+                    .flex.align(.fill).margin(.vertical(10))
+            }
+            stackView.box.height(90)
+            stackView.backgroundColor = .compatGray5
+            container.addViews {
+                sectionLabel("交叉轴方向的 margin（从 insets 边界开始计算）")
+                stackView
+            }
+        }
 
-        container.addArrangedSubview(sectionLabel("⚠️ alignSelf = .center 时，offset = (startMarge - endMarge)"))
-        let sv2 = demoStack(height: 80)
-        sv2.justifyContent = .spaceEvenly; sv2.alignment = .center
-        let c1 = UIView.colored(colors[4], text: "offset 0", size: CGSize(width: 60, height: 30))
-        let c2 = UIView.colored(colors[5], text: "up 10",    size: CGSize(width: 60, height: 30))
-        let c3 = UIView.colored(colors[6], text: "down 10",  size: CGSize(width: 60, height: 30))
-        c2.flex.margin(.bottom(10))
-        c3.flex.margin(.top(10))
-        for v in [c1, c2, c3] { sv2.addArrangedSubview(v) }
-        container.addArrangedSubview(sv2)
+        
+        
+        do {
+            let stackView =  HStackView(justify: .spaceEvenly,align: .center) {
+                
+                UIView.colored(colors[0], text: "offset 0",   size: CGSize(width: 60, height: 30))
+                
+                UIView.colored(colors[1], text: "up 10", size: CGSize(width: 60, height: 30))
+                    .flex.margin(.bottom(10))
+                
+                UIView.colored(colors[2], text: "down 10",   size: CGSize(width: 60, height: 30))
+                    .flex.margin(.top(10))
+                
+            }
+            stackView.box.height(90)
+            stackView.backgroundColor = .compatGray5
+            container.addViews {
+                sectionLabel("⚠️ alignSelf = .center 时，offset = (startMarge - endMarge)")
+                stackView
+            }
+        }
+        
     }
 }
 
@@ -555,17 +721,24 @@ class InsetsDemoVC: UIViewController {
         view.backgroundColor = .compatBackground
         let container = makeContainerStack(padding: 16)
         container.spacing = 12
-
-        container.addArrangedSubview(sectionLabel("insets 给 stackView 整体设置内边距，动态修改时动画流畅"))
-        sv = demoStack(height: 80)
-        sv.justifyContent = .fillEqually;
-        sv.spacing = 50
-        sv.alignment = .fill
-        sv.insets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
-        for i in 0..<3 { sv.addArrangedSubview(UIView.colored(colors[i], text: "\(i+1)", size: .zero))
-            
+        
+        do {
+           let view =  HStackView(justify: .fillEqually,
+                                 align: .fill,
+                                 spacing: 50,
+                                  insets: .init(t: 8, s: 16, b: 8, e: 16)) {
+               UIView.colored(colors[0], text: "1", size: .init(width: 0, height: 40))
+               UIView.colored(colors[1], text: "2", size: .init(width: 0, height: 40))
+               UIView.colored(colors[2], text: "3", size: .init(width: 0, height: 40))
+            }
+            view.backgroundColor = .compatGray5
+            self.sv = view
+            container.addViews {
+                sectionLabel("insets 给 stackView 整体设置内边距，动态修改时动画流畅")
+                view
+            }
         }
-        container.addArrangedSubview(sv)
+        
 
         insetsLabel = UILabel()
         insetsLabel.text = "insets: top=8, left=16, bottom=8, right=16"
@@ -602,27 +775,59 @@ class VerticalDemoVC: UIViewController {
         view.backgroundColor = .compatBackground
         let container = makeScrollableContainerStack()
 
-        container.addArrangedSubview(sectionLabel("vertical + .fill + flexValue — 按比例分配高度"))
-        let sv1 = makeVerticalStack(height: 100)
-        sv1.justifyContent = .fill; sv1.alignment = .fill
-        for (i, f) in [1,2,1].enumerated() {
-            let v = UIView.colored(colors[i], text: "flex:\(f)", size: .zero); v.flex.flex = f; sv1.addArrangedSubview(v)
+       
+        
+        do {
+           let view = VStackView(align: .fill,spacing: 10) {
+                UIView.colored(colors[1], text: "flex:1", size: .zero).flex.flex(1)
+                UIView.colored(colors[2], text: "flex:2", size: .zero).flex.flex(2)
+                UIView.colored(colors[3], text: "flex:1", size: .zero).flex.flex(1)
+            }
+            view.backgroundColor = .compatGray5
+            view.box.height(100)
+            container.addViews {
+                sectionLabel("vertical + .fill + flexValue — 按比例分配高度")
+                view
+            }
         }
-        container.addArrangedSubview(sv1)
+        
+        
+        do {
+            let view = VStackView(justify: .spaceEvenly,
+                                  align: .center) {
+                UIView.colored(colors[1], text: "1", size: .init(width: 120, height: 28))
+                UIView.colored(colors[2], text: "2", size: .init(width: 120, height: 28))
+                UIView.colored(colors[3], text: "3", size: .init(width: 120, height: 28))
+                UIView.colored(colors[4], text: "4", size: .init(width: 120, height: 28))
 
-        container.addArrangedSubview(sectionLabel("vertical + .spaceEvenly — 均分间距"))
-        let sv2 = makeVerticalStack(height: 200)
-        sv2.justifyContent = .spaceEvenly; sv2.alignment = .center
-        for i in 0..<4 { sv2.addArrangedSubview(UIView.colored(colors[i], text: "v\(i+1)", size: CGSize(width: 120, height: 28))) }
-        container.addArrangedSubview(sv2)
-
-        container.addArrangedSubview(sectionLabel("vertical + alignment = .end — 子 view 靠右"))
-        let sv3 = makeVerticalStack(height: -1)
-        sv3.justifyContent = .start; sv3.alignment = .end; sv3.spacing = 8
-        for (i, w) in [60.0,100.0,80.0,130.0].enumerated() {
-            sv3.addArrangedSubview(UIView.colored(colors[i], text: "w\(Int(w))", size: CGSize(width: w, height: 26)))
+            }
+            view.backgroundColor = .compatGray5
+            view.box.height(200)
+            container.addViews {
+                sectionLabel("vertical + .spaceEvenly — 均分间距")
+                view
+            }
         }
-        container.addArrangedSubview(sv3)
+        
+
+       
+        do {
+            let view = VStackView(justify: .fill,
+                                  align: .end,
+                                  spacing: 20) {
+                UIView.colored(colors[1], text: "1", size: .init(width: 60, height: 28))
+                UIView.colored(colors[2], text: "2", size: .init(width: 100, height: 28))
+                UIView.colored(colors[3], text: "3", size: .init(width: 80, height: 28))
+                UIView.colored(colors[4], text: "4", size: .init(width: 130, height: 28))
+
+            }
+            view.backgroundColor = .compatGray5
+            container.addViews {
+                sectionLabel("vertical + alignment = .end — 子 view 靠右")
+                view
+            }
+        }
+    
     }
 
     private func makeVerticalStack(height: CGFloat) -> StackView {
@@ -650,10 +855,9 @@ class DynamicDemoVC: UIViewController {
         view.backgroundColor = .compatBackground
         let container = makeContainerStack()
         container.spacing = 12
-
         container.addArrangedSubview(sectionLabel("点击按钮动态增/删子 view，布局自动更新"))
         stack = demoStack(height: 60)
-        stack.justifyContent = .start;
+        stack.justifyContent = .fill;
         stack.alignment = .center;
         stack.spacing = 8
         container.addArrangedSubview(stack.wrapScrollView())
@@ -662,13 +866,18 @@ class DynamicDemoVC: UIViewController {
         
         for _ in 0..<3 { addView() }
 
-        let btnStack = UIStackView()
-        btnStack.axis = .horizontal; btnStack.spacing = 12; btnStack.distribution = .fillEqually
-        let addBtn    = makeBtn("➕ 添加",    #selector(addTapped))
-        let removeBtn = makeBtn("➖ 移除末尾", #selector(removeTapped))
-        let hideBtn   = makeBtn("👁 隐藏首个", #selector(hideTapped))
-        for b in [addBtn, removeBtn, hideBtn] { btnStack.addArrangedSubview(b) }
-        container.addArrangedSubview(btnStack)
+        
+        do {
+            
+           let view = HStackView(justify: .spaceEvenly,spacing: 20) {
+               makeBtn("➕ 添加",    #selector(addTapped))
+               makeBtn("➖ 移除末尾", #selector(removeTapped))
+               makeBtn("👁 隐藏首个", #selector(hideTapped))
+           }
+            
+           container.addArrangedSubview(view)
+        }
+        
         container.addArrangedSubview(sectionLabel("⚠️ isHidden=true 的 view 自动排除出布局，显示时自动恢复"))
     }
 
@@ -1093,10 +1302,14 @@ class DSLDemoVC: UIViewController {
         sv2.heightAnchor.constraint(equalToConstant: 56).isActive = true
 
         sv2.addViews {
+            
             UIView.colored(colors[0], text: "L", size: CGSize(width: 44, height: 36))
             16                                          // 固定 16pt 间距
             UIView.colored(colors[1], text: "M", size: CGSize(width: 44, height: 36))
-            Spacer()                                    // 弹性空白，将 R 推到末尾
+            
+            Spacer()
+            
+            // 弹性空白，将 R 推到末尾
             UIView.colored(colors[2], text: "R", size: CGSize(width: 44, height: 36))
         }
         container.addArrangedSubview(sv2)
