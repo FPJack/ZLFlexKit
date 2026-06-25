@@ -8,7 +8,7 @@
 import UIKit
 import ZLFlexKit
 import SnapKit
-
+import RxSwift
 // MARK: - 兼容色（替换 iOS 13+ 专属颜色）
 class CustomLabel: UILabel {}
 
@@ -179,11 +179,11 @@ class JustifyDemoVC: UIViewController {
         let stack = makeScrollableContainerStack()
         let cases: [(Justify, String)] = [
             (.start,       ".start  — 靠左对齐，末尾留空"),
-//            (.center,      ".center — 居中，两侧留空"),
-//            (.end,         ".end    — 靠右对齐，前面留空"),
-//            (.spaceBetween,".spaceBetween — 首尾贴边，中间均分"),
-//            (.spaceAround, ".spaceAround  — 每项两侧相等（首尾是中间一半）"),
-//            (.spaceEvenly, ".spaceEvenly  — 所有间距完全相等"),
+            (.center,      ".center — 居中，两侧留空"),
+            (.end,         ".end    — 靠右对齐，前面留空"),
+            (.spaceBetween,".spaceBetween — 首尾贴边，中间均分"),
+            (.spaceAround, ".spaceAround  — 每项两侧相等（首尾是中间一半）"),
+            (.spaceEvenly, ".spaceEvenly  — 所有间距完全相等"),
         ]
         for (justify, desc) in cases {
            let sv = HStackView(
@@ -802,7 +802,6 @@ class VerticalDemoVC: UIViewController {
                 UIView.colored(colors[3], text: "3", size: .init(width: 120, height: 28))
                 UIView.colored(colors[4], text: "4", size: .init(width: 120, height: 28))
                 
-                UISwitch().flex.margin(.init(t: -50, s: 200, b: 0, e: 0))
             }
             view.backgroundColor = .compatGray5
             view.box.height(200)
@@ -898,7 +897,9 @@ class DynamicDemoVC: UIViewController {
         }
     }
 
-    @objc private func addTapped() { addView() }
+    @objc private func addTapped() {
+        addView()
+    }
     @objc private func removeTapped() {
         guard let last = stack.arrangedViews.last else { return }
         UIView.animate(withDuration: 0.25) { self.stack.removeArrangedSubview(last); self.view.layoutIfNeeded() }

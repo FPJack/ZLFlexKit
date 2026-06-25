@@ -7,8 +7,8 @@
 
 import UIKit
 
-struct ConstraintWrapper {
-    
+struct ConstraintWrapper: Hashable {
+
     let firstItem: AnyObject?
     
     let secondItem: AnyObject?
@@ -38,12 +38,40 @@ struct ConstraintWrapper {
         }
     }
     
+    var priority: UILayoutPriority {
+        constraint.priority
+    }
+
+    
     
     let constraint: NSLayoutConstraint
     init(_ constraint: NSLayoutConstraint) {
         self.firstItem = constraint.firstItem
         self.secondItem = constraint.secondItem
         self.constraint = constraint
+    }
+    
+    
+    static func == (lhs: ConstraintWrapper, rhs: ConstraintWrapper) -> Bool {
+        return lhs.firstItem === rhs.firstItem &&
+            lhs.secondItem === rhs.secondItem &&
+            lhs.firstAttribute == rhs.firstAttribute &&
+            lhs.secondAttribute == rhs.secondAttribute &&
+            lhs.relation == rhs.relation &&
+            lhs.multiplier == rhs.multiplier &&
+            lhs.constant == rhs.constant &&
+            lhs.priority == rhs.priority
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(firstAttribute)
+        hasher.combine(secondAttribute)
+        hasher.combine(relation)
+        hasher.combine(multiplier)
+        hasher.combine(constant)
+        hasher.combine(priority)
+        hasher.combine(firstItem.map(ObjectIdentifier.init))
+        hasher.combine(secondItem.map(ObjectIdentifier.init))
     }
 }
 
@@ -55,11 +83,10 @@ final class FlexManager {
     private var justifyFirstConstraints: NSLayoutConstraint?
     private var justifyLastConstraints: NSLayoutConstraint?
     
-
-//    private(set) var constraints: [NSLayoutConstraint] = []
     private(set) var constraints: [ConstraintWrapper] = []
+    
+    private(set) var preConstraints: [ConstraintWrapper] = []
         
-
     // MARK: - Private lazy StackEdgeInsets
 
     lazy private var stackLayoutEngine: StackLayoutEngine =  {
@@ -85,6 +112,9 @@ final class FlexManager {
     private var horizontal: Bool {
         stackView?.axis == .horizontal
     }
+    
+    ///开启刷新优化
+    private var enableRefreshOptimization: Bool = false
 
     // MARK: - Layout
 
@@ -99,6 +129,12 @@ final class FlexManager {
 
     func addHorizontalLayoutConstraints() {
         guard horizontal else { return }
+        if enableRefreshOptimization {
+            preConstraints.removeAll()
+            preConstraints.append(contentsOf: constraints)
+            constraints.removeAll()
+        }
+       
         let views = self.views
         let count = views.count
         var nextXAnchor:  NSLayoutXAxisAnchor = stackLayoutEngine.jLeadingAnchor
@@ -292,6 +328,12 @@ final class FlexManager {
 
     func addVerticalLayoutConstraints() {
         guard !horizontal else { return }
+        if enableRefreshOptimization {
+            preConstraints.removeAll()
+            preConstraints.append(contentsOf: constraints)
+            constraints.removeAll()
+        }
+       
         let views = self.views
         let count = views.count
         var nextYAnchor: NSLayoutYAxisAnchor = stackLayoutEngine.jTopAnchor
@@ -477,12 +519,36 @@ final class FlexManager {
     // MARK: - Constraint Control
 
     func activateConstraints() {
-        NSLayoutConstraint.activate(constraints.map{$0.constraint})
+        if enableRefreshOptimization {
+            if preConstraints.isEmpty {
+                NSLayoutConstraint.activate(constraints.map{$0.constraint})
+            }else {
+                let preConstraintsSet = Set(preConstraints)
+                let constraintsSet = Set(constraints)
+                
+                let constraintsToDeactivate = preConstraintsSet.subtracting(constraintsSet)
+                let constraintsToActivate = constraintsSet.subtracting(preConstraintsSet)
+                
+                NSLayoutConstraint.deactivate(constraintsToDeactivate.map{$0.constraint})
+                NSLayoutConstraint.activate(constraintsToActivate.map{$0.constraint})
+                
+                constraints.removeAll()
+                constraints.append(contentsOf: preConstraintsSet.intersection(constraintsSet))
+                constraints.append(contentsOf: constraintsToActivate)
+                preConstraints.removeAll()
+            }
+
+        } else {
+           NSLayoutConstraint.activate(constraints.map{$0.constraint})
+        }
+        
     }
 
     func deactivateConstraints() {
-        NSLayoutConstraint.deactivate(constraints.map{$0.constraint})
-        constraints.removeAll()
+        if !enableRefreshOptimization {
+            NSLayoutConstraint.deactivate(constraints.map{$0.constraint})
+            constraints.removeAll()
+        }
     }
 
     // MARK: - Insets
