@@ -1081,8 +1081,8 @@ extension StackView {
         _ block: (NSLayoutConstraint) -> Bool
     ) -> [NSLayoutConstraint] {
         return layoutManager.constraints.filter { constraint in
-            block(constraint)
-        }
+            block(constraint.constraint)
+        }.map {  $0.constraint}
     }
 }
 

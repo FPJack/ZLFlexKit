@@ -7,6 +7,47 @@
 
 import UIKit
 
+struct ConstraintWrapper {
+    
+    let firstItem: AnyObject?
+    
+    let secondItem: AnyObject?
+    
+    var firstAttribute: NSLayoutConstraint.Attribute {
+        constraint.firstAttribute
+    }
+
+    var secondAttribute: NSLayoutConstraint.Attribute {
+        constraint.secondAttribute
+    }
+    
+     var relation: NSLayoutConstraint.Relation {
+        constraint.relation
+    }
+
+     var multiplier: CGFloat {
+        constraint.multiplier
+    }
+
+    var constant: CGFloat {
+        get {
+            constraint.constant
+        }
+        set {
+            constraint.constant = newValue
+        }
+    }
+    
+    
+    let constraint: NSLayoutConstraint
+    init(_ constraint: NSLayoutConstraint) {
+        self.firstItem = constraint.firstItem
+        self.secondItem = constraint.secondItem
+        self.constraint = constraint
+    }
+}
+
+
 final class FlexManager {
 
     weak var stackView: StackView?
@@ -15,7 +56,9 @@ final class FlexManager {
     private var justifyLastConstraints: NSLayoutConstraint?
     
 
-    private(set) var constraints: [NSLayoutConstraint] = []
+//    private(set) var constraints: [NSLayoutConstraint] = []
+    private(set) var constraints: [ConstraintWrapper] = []
+        
 
     // MARK: - Private lazy StackEdgeInsets
 
@@ -78,7 +121,7 @@ final class FlexManager {
             if align != .fill, view.intrinsicContentSize == noIntrinsic {
                 let c = view.heightAnchor.constraint(equalToConstant: 0)
                 c.priority = fittingLow
-                constraints.append(c)
+                addConstraint(c)
             }
 
             let cfg = view.flex
@@ -115,14 +158,14 @@ final class FlexManager {
                 leadingCon = view.leadingAnchor.constraint(equalTo: nextXAnchor, constant: preTrailingMarge + leadingMarge)
             }
             
-            constraints.append(leadingCon)
+            addConstraint(leadingCon)
             nextXAnchor = view.trailingAnchor
             preTrailingMarge = marge.trailing
 
             // fillEqually: 宽度相等
             if justify == .fillEqually {
                 if let dim = viewWidthDim {
-                    constraints.append(view.widthAnchor.constraint(equalTo: dim))
+                    addConstraint(view.widthAnchor.constraint(equalTo: dim))
                 }
                 viewWidthDim = view.widthAnchor
             }
@@ -134,13 +177,13 @@ final class FlexManager {
                 let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
                 nextXAnchor = guide.trailingAnchor
                 preTrailingMarge = 0.0
-                constraints.append(cons)
+                addConstraint(cons)
 
                 
                 
-                constraints.append(guide.widthAnchor.constraint(greaterThanOrEqualToConstant: 0))
+                addConstraint(guide.widthAnchor.constraint(greaterThanOrEqualToConstant: 0))
                 if let dim = flexWidthDim {
-                    constraints.append(dim.constraint(equalTo: guide.widthAnchor))
+                    addConstraint(dim.constraint(equalTo: guide.widthAnchor))
                 }
                 flexWidthDim = guide.widthAnchor
             }
@@ -152,7 +195,7 @@ final class FlexManager {
                     let guide = LayoutGuide()
                     guide.stackView = stackView
                     let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
-                    constraints.append(cons)
+                    addConstraint(cons)
                     nextXAnchor = guide.trailingAnchor
                     preTrailingMarge = 0.0
 
@@ -160,27 +203,27 @@ final class FlexManager {
                     if cfg._minSpacing > 0 {
                         let c1 = guide.widthAnchor.constraint(greaterThanOrEqualToConstant: cfg._minSpacing)
                         c1.item.type = .minSpacing; c1.item.view = view
-                        constraints.append(c1)
+                        addConstraint(c1)
                         let c2 = guide.widthAnchor.constraint(equalToConstant: cfg._minSpacing)
                         c2.item.type = .minSpacing; c2.item.view = view
                         c2.priority = fittingLow
-                        constraints.append(c2)
+                        addConstraint(c2)
                         if spacing < cfg._minSpacing { spacingFlag = false }
                     }
                     if cfg._maxSpacing > 0 {
                         let c1 = guide.widthAnchor.constraint(lessThanOrEqualToConstant: cfg._maxSpacing)
                         c1.item.type = .maxSpacing; c1.item.view = view
-                        constraints.append(c1)
+                        addConstraint(c1)
                         let c2 = guide.widthAnchor.constraint(equalToConstant: 0)
                         c2.item.type = .maxSpacing; c2.item.view = view
                         c2.priority = fittingLow
-                        constraints.append(c2)
+                        addConstraint(c2)
                         if spacing > cfg._maxSpacing { spacingFlag = false }
                     }
                     if spacingFlag, spacing >= 0 {
                         let c = guide.widthAnchor.constraint(equalToConstant: spacing)
                         c.item.type = .spacing; c.item.view = view
-                        constraints.append(c)
+                        addConstraint(c)
                     }
                 }
             }
@@ -190,11 +233,11 @@ final class FlexManager {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
                 let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
-                constraints.append(cons)
+                addConstraint(cons)
                 nextXAnchor = guide.trailingAnchor
                 preTrailingMarge = 0.0
                 if let dim = widthDim {
-                    constraints.append(guide.widthAnchor.constraint(equalTo: dim))
+                    addConstraint(guide.widthAnchor.constraint(equalTo: dim))
                 }
                 widthDim = guide.widthAnchor
                 
@@ -203,12 +246,12 @@ final class FlexManager {
 
         // 末尾约束
         if justify == .start {
-            constraints.append(nextXAnchor.constraint(lessThanOrEqualTo: stackLayoutEngine.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
+            addConstraint(nextXAnchor.constraint(lessThanOrEqualTo: stackLayoutEngine.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
         } else {
-            constraints.append(nextXAnchor.constraint(equalTo: stackLayoutEngine.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
+            addConstraint(nextXAnchor.constraint(equalTo: stackLayoutEngine.jTrailingAnchor, constant: -insets.trailing - preTrailingMarge))
         }
         
-        justifyLastConstraints = constraints.last
+        justifyLastConstraints = constraints.last?.constraint
 
        
 
@@ -216,11 +259,11 @@ final class FlexManager {
         if let dim = widthDim {
             let anchors = stackLayoutEngine.widthAnchors
             if let first = anchors.first, let last = anchors.last {
-                constraints.append(first.constraint(equalTo: last))
+                addConstraint(first.constraint(equalTo: last))
                 if justify == .spaceAround {
-                    constraints.append(first.constraint(equalTo: dim, multiplier: 0.5))
+                    addConstraint(first.constraint(equalTo: dim, multiplier: 0.5))
                 } else if justify == .spaceEvenly {
-                    constraints.append(first.constraint(equalTo: dim))
+                    addConstraint(first.constraint(equalTo: dim))
                 }
             }
         }
@@ -229,7 +272,7 @@ final class FlexManager {
         if justify == .center || ([.spaceAround, .spaceEvenly].contains(justify) && count == 1){
             let anchors = stackLayoutEngine.widthAnchors
             if let first = anchors.first, let last = anchors.last {
-                constraints.append(first.constraint(equalTo: last))
+                addConstraint(first.constraint(equalTo: last))
             }
         }
 
@@ -237,7 +280,7 @@ final class FlexManager {
         if align == .center {
             let anchors = stackLayoutEngine.heightAnchors
             if let first = anchors.first, let last = anchors.last {
-                constraints.append(first.constraint(equalTo: last))
+                addConstraint(first.constraint(equalTo: last))
             }
         }
 
@@ -270,7 +313,7 @@ final class FlexManager {
             if align != .fill, view.intrinsicContentSize == noIntrinsic {
                 let c = view.widthAnchor.constraint(equalToConstant: 0)
                 c.priority = fittingLow
-                constraints.append(c)
+                addConstraint(c)
             }
 
             let cfg = view.flex
@@ -307,14 +350,14 @@ final class FlexManager {
                 topCon = view.topAnchor.constraint(equalTo: nextYAnchor, constant: preBottomMarge + topMarge)
             }
             
-            constraints.append(topCon)
+            addConstraint(topCon)
             nextYAnchor = view.bottomAnchor
             preBottomMarge = marge.bottom
 
             // fillEqually: 高度相等
             if justify == .fillEqually {
                 if let dim = viewHeightDim {
-                    constraints.append(view.heightAnchor.constraint(equalTo: dim))
+                    addConstraint(view.heightAnchor.constraint(equalTo: dim))
                 }
                 viewHeightDim = view.heightAnchor
             }
@@ -323,12 +366,12 @@ final class FlexManager {
             if (justify == .fill || justify == .fillEqually), cfg.isFlexibleSpace {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
-                constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
+                addConstraint(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
                 nextYAnchor = guide.bottomAnchor
                 preBottomMarge = 0.0
-                constraints.append(guide.heightAnchor.constraint(greaterThanOrEqualToConstant: 0))
+                addConstraint(guide.heightAnchor.constraint(greaterThanOrEqualToConstant: 0))
                 if let dim = flexHeightDim {
-                    constraints.append(dim.constraint(equalTo: guide.heightAnchor))
+                    addConstraint(dim.constraint(equalTo: guide.heightAnchor))
                 }
                 flexHeightDim = guide.heightAnchor
             }
@@ -339,7 +382,7 @@ final class FlexManager {
                 if spacing >= 0 || cfg._minSpacing > 0 || cfg._maxSpacing > 0 {
                     let guide = LayoutGuide()
                     guide.stackView = stackView
-                    constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
+                    addConstraint(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
                     nextYAnchor = guide.bottomAnchor
                     preBottomMarge = 0.0
 
@@ -347,27 +390,27 @@ final class FlexManager {
                     if cfg._minSpacing > 0 {
                         let c1 = guide.heightAnchor.constraint(greaterThanOrEqualToConstant: cfg._minSpacing)
                         c1.item.type = .minSpacing; c1.item.view = view
-                        constraints.append(c1)
+                        addConstraint(c1)
                         let c2 = guide.heightAnchor.constraint(equalToConstant: cfg._minSpacing)
                         c2.item.type = .minSpacing; c2.item.view = view
                         c2.priority = fittingLow
-                        constraints.append(c2)
+                        addConstraint(c2)
                         if spacing < cfg._minSpacing { spacingFlag = false }
                     }
                     if cfg._maxSpacing > 0 {
                         let c1 = guide.heightAnchor.constraint(lessThanOrEqualToConstant: cfg._maxSpacing)
                         c1.item.type = .maxSpacing; c1.item.view = view
-                        constraints.append(c1)
+                        addConstraint(c1)
                         let c2 = guide.heightAnchor.constraint(equalToConstant: 0)
                         c2.item.type = .maxSpacing; c2.item.view = view
                         c2.priority = fittingLow
-                        constraints.append(c2)
+                        addConstraint(c2)
                         if spacing > cfg._maxSpacing { spacingFlag = false }
                     }
                     if spacingFlag, spacing >= 0 {
                         let c = guide.heightAnchor.constraint(equalToConstant: spacing)
                         c.item.type = .spacing; c.item.view = view
-                        constraints.append(c)
+                        addConstraint(c)
                     }
                 }
             }
@@ -376,11 +419,11 @@ final class FlexManager {
             if [.spaceBetween, .spaceAround, .spaceEvenly].contains(justify), i < count - 1 {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
-                constraints.append(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
+                addConstraint(guide.topAnchor.constraint(equalTo: nextYAnchor,constant: preBottomMarge))
                 nextYAnchor = guide.bottomAnchor
                 preBottomMarge = 0.0
                 if let dim = heightDim {
-                    constraints.append(guide.heightAnchor.constraint(equalTo: dim))
+                    addConstraint(guide.heightAnchor.constraint(equalTo: dim))
                 }
                 heightDim = guide.heightAnchor
             }
@@ -388,21 +431,21 @@ final class FlexManager {
 
         // 末尾约束
         if justify == .start {
-            constraints.append(nextYAnchor.constraint(lessThanOrEqualTo: stackLayoutEngine.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
+            addConstraint(nextYAnchor.constraint(lessThanOrEqualTo: stackLayoutEngine.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
         } else {
-            constraints.append(nextYAnchor.constraint(equalTo: stackLayoutEngine.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
+            addConstraint(nextYAnchor.constraint(equalTo: stackLayoutEngine.jBottomAnchor, constant: -insets.bottom - preBottomMarge))
         }
-        justifyLastConstraints = constraints.last
+        justifyLastConstraints = constraints.last?.constraint
 
         // spaceAround / spaceEvenly 边距关系
         if let dim = heightDim {
             let anchors = stackLayoutEngine.heightAnchors
             if let first = anchors.first, let last = anchors.last {
-                constraints.append(first.constraint(equalTo: last))
+                addConstraint(first.constraint(equalTo: last))
                 if justify == .spaceAround {
-                    constraints.append(first.constraint(equalTo: dim, multiplier: 0.5))
+                    addConstraint(first.constraint(equalTo: dim, multiplier: 0.5))
                 } else if justify == .spaceEvenly {
-                    constraints.append(first.constraint(equalTo: dim))
+                    addConstraint(first.constraint(equalTo: dim))
                 }
             }
         }
@@ -411,7 +454,7 @@ final class FlexManager {
         if justify == .center || ([.spaceAround, .spaceEvenly].contains(justify) && count == 1) {
             let anchors = stackLayoutEngine.heightAnchors
             if let first = anchors.first, let last = anchors.last {
-                constraints.append(first.constraint(equalTo: last))
+                addConstraint(first.constraint(equalTo: last))
             }
         }
 
@@ -419,22 +462,26 @@ final class FlexManager {
         if align == .center {
             let anchors = stackLayoutEngine.widthAnchors
             if let first = anchors.first, let last = anchors.last {
-                constraints.append(first.constraint(equalTo: last))
+                addConstraint(first.constraint(equalTo: last))
             }
         }
 
         // flex 相对高度权重
         applyFlexWeights(flexViews, axis: .vertical)
     }
+    
+    func addConstraint(_ constraint: NSLayoutConstraint) {
+        constraints.append(ConstraintWrapper(constraint))
+    }
 
     // MARK: - Constraint Control
 
     func activateConstraints() {
-        NSLayoutConstraint.activate(constraints)
+        NSLayoutConstraint.activate(constraints.map{$0.constraint})
     }
 
     func deactivateConstraints() {
-        NSLayoutConstraint.deactivate(constraints)
+        NSLayoutConstraint.deactivate(constraints.map{$0.constraint})
         constraints.removeAll()
     }
 
@@ -456,6 +503,7 @@ final class FlexManager {
         do {
             let startMarge = horizontal ? insets.top : insets.leading
             let endMarge = horizontal ? insets.bottom : insets.trailing
+            let constraints = constraints.map { $0.constraint }
             constraints.forEach { cons in
                 guard let view = cons.item.view else { return }
                 let flexItem = view.flex
@@ -502,19 +550,19 @@ final class FlexManager {
         }
         switch cfg.alignSelf {
         case .start:
-            constraints.append(make(view.topAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
-            constraints.append(make(view.bottomAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
+            addConstraint(make(view.topAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
+            addConstraint(make(view.bottomAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
         case .center:
             let offsetY = (startSpacing - endSpacing) * 1
-            constraints.append(make(view.topAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
-            constraints.append(make(view.bottomAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
-            constraints.append(make(view.centerYAnchor.constraint(equalTo: centerAnchor, constant: offsetY), type: .center))
+            addConstraint(make(view.topAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
+            addConstraint(make(view.bottomAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
+            addConstraint(make(view.centerYAnchor.constraint(equalTo: centerAnchor, constant: offsetY), type: .center))
         case .end:
-            constraints.append(make(view.topAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
-            constraints.append(make(view.bottomAnchor.constraint(equalTo: endAnchor, constant: -endSpacing), type: .end))
+            addConstraint(make(view.topAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
+            addConstraint(make(view.bottomAnchor.constraint(equalTo: endAnchor, constant: -endSpacing), type: .end))
         case .fill:
-            constraints.append(make(view.topAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
-            constraints.append(make(view.bottomAnchor.constraint(equalTo: endAnchor, constant: -endSpacing), type: .end))
+            addConstraint(make(view.topAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
+            addConstraint(make(view.bottomAnchor.constraint(equalTo: endAnchor, constant: -endSpacing), type: .end))
         @unknown default:
             break
         }
@@ -536,19 +584,19 @@ final class FlexManager {
         }
         switch cfg.alignSelf {
         case .start:
-            constraints.append(make(view.leadingAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
-            constraints.append(make(view.trailingAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
+            addConstraint(make(view.leadingAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
+            addConstraint(make(view.trailingAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
         case .center:
             let offsetX = (startSpacing - endSpacing) * 1
-            constraints.append(make(view.leadingAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
-            constraints.append(make(view.trailingAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
-            constraints.append(make(view.centerXAnchor.constraint(equalTo: centerAnchor, constant: offsetX), type: .center))
+            addConstraint(make(view.leadingAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
+            addConstraint(make(view.trailingAnchor.constraint(lessThanOrEqualTo: endAnchor, constant: -endSpacing), type: .end))
+            addConstraint(make(view.centerXAnchor.constraint(equalTo: centerAnchor, constant: offsetX), type: .center))
         case .end:
-            constraints.append(make(view.leadingAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
-            constraints.append(make(view.trailingAnchor.constraint(equalTo: endAnchor, constant: -endSpacing), type: .end))
+            addConstraint(make(view.leadingAnchor.constraint(greaterThanOrEqualTo: startAnchor, constant: startSpacing), type: .start))
+            addConstraint(make(view.trailingAnchor.constraint(equalTo: endAnchor, constant: -endSpacing), type: .end))
         case .fill:
-            constraints.append(make(view.leadingAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
-            constraints.append(make(view.trailingAnchor.constraint(equalTo: endAnchor, constant: -endSpacing), type: .end))
+            addConstraint(make(view.leadingAnchor.constraint(equalTo: startAnchor, constant: startSpacing), type: .start))
+            addConstraint(make(view.trailingAnchor.constraint(equalTo: endAnchor, constant: -endSpacing), type: .end))
         @unknown default:
             break
         }
@@ -570,7 +618,7 @@ final class FlexManager {
             let dim: NSLayoutDimension = axis == .horizontal
                 ? view.widthAnchor : view.heightAnchor
             let multiplier = CGFloat(view.flex.flex) / firstFlex
-            constraints.append(dim.constraint(equalTo: firstDim, multiplier: multiplier))
+            addConstraint(dim.constraint(equalTo: firstDim, multiplier: multiplier))
         }
     }
 }

@@ -74,7 +74,7 @@ public  class FlexItem: NSObject {
         let arr = filterConstraint { constraint in
             return constraint.firstItem === view && constraint.firstAttribute == .leading && (constraint.relation == .equal || constraint.relation == .greaterThanOrEqual)
         }
-        if let cons = arr?.first {
+        if var cons = arr?.first {
             cons.constant = cons.constant - preMarge + marge
         }else {
             setStackViewNeedsUpdateConstraints()
@@ -93,7 +93,7 @@ public  class FlexItem: NSObject {
             }
             return false
         }
-        if let constraint = arr?.first {
+        if var constraint = arr?.first {
             let relation = constraint.relation
             if constraint.firstItem === view && constraint.firstAttribute == .trailing && (relation == .equal || relation == .lessThanOrEqual) {
                     constraint.constant = constraint.constant + preMarge - marge
@@ -112,7 +112,7 @@ public  class FlexItem: NSObject {
         let arr = filterConstraint { constraint in
             return constraint.firstItem === view && constraint.firstAttribute == .top && (constraint.relation == .equal || constraint.relation == .greaterThanOrEqual)
         }
-        if let cons = arr?.first {
+        if var cons = arr?.first {
             cons.constant = cons.constant - preMarge + marge
         }else {
             setStackViewNeedsUpdateConstraints()
@@ -131,7 +131,7 @@ public  class FlexItem: NSObject {
             }
             return false
         }
-        if let constraint = arr?.first {
+        if var constraint = arr?.first {
             let relation = constraint.relation
             if constraint.firstItem === view && constraint.firstAttribute == .bottom && (relation == .equal || relation == .lessThanOrEqual) {
                 constraint.constant = constraint.constant + preMarge - marge
@@ -154,14 +154,14 @@ public  class FlexItem: NSObject {
             let arr = filterConstraint { cons in
                 return cons.firstItem === view && cons.firstAttribute == .centerY && cons.relation == .equal
             }
-            if let cons = arr?.first {
+            if var cons = arr?.first {
                 cons.constant = (margin.top + inset.top - margin.bottom - inset.bottom) * 0.5
             }
         }else {
             let arr = filterConstraint { cons in
                 return cons.firstItem === view && cons.firstAttribute == .centerX && cons.relation == .equal
             }
-            if let cons = arr?.first {
+            if var cons = arr?.first {
                 cons.constant = (margin.leading + inset.leading - margin.trailing - inset.trailing) * 0.5
             }
         }
@@ -502,8 +502,8 @@ extension FlexItem {
     }
     
     func filterConstraint(
-        _ block: (NSLayoutConstraint) -> Bool
-    ) -> [NSLayoutConstraint]? {
+        _ block: (ConstraintWrapper) -> Bool
+    ) -> [ConstraintWrapper]? {
         guard let manager = stackView?.layoutManager else {
             return nil
         }
