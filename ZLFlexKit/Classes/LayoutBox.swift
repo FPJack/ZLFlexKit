@@ -61,6 +61,10 @@ public class LayoutBox: NSObject {
     private func addConstraint(_ constraint: NSLayoutConstraint?) {
         guard let constraint = constraint else { return }
         _lastConstraint = constraint
+        if let view = self.view, view.translatesAutoresizingMaskIntoConstraints {
+            view.translatesAutoresizingMaskIntoConstraints = false
+        }
+        constraint.isActive = true
         constraintsArray.add(constraint)
         if let view = view {            view.setNeedsUpdateConstraints()
         }

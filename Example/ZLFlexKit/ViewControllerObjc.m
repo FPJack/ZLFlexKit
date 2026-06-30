@@ -7,6 +7,7 @@
 //
 
 #import "ViewControllerObjc.h"
+#import <WebKit/WebKit.h>
 @import ZLFlexKit;
 @interface ViewControllerObjc ()
 @end
@@ -19,7 +20,16 @@
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.whiteColor;
     self.title = @"StackView OC 链式 Demo";
-   
+    WKWebView *webView = [[WKWebView alloc] init];
+    webView.zl_layout.addToFull(self.view);
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://192.168.200.216:8081/"]]];
+    
+    
+    WKNavigation *wk = [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://192.168.200.216:8081/"]]];
+    return;
+    
+    
+    
 
     // ── 滚动容器 ──────────────────────────────────────────────────────────
     UIScrollView *scroll = [[UIScrollView alloc] init];

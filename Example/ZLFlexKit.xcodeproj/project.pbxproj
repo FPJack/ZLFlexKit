@@ -13,6 +13,7 @@
 		607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDC1AFB9204008FA782 /* Images.xcassets */; };
 		607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDE1AFB9204008FA782 /* LaunchScreen.xib */; };
 		607FACEC1AFB9204008FA782 /* Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* Tests.swift */; };
+		847AD0F12FF3DC3E0088FB3E /* TableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847AD0F02FF3DC3E0088FB3E /* TableViewController.swift */; };
 		8482AF032FD69CF8003F549B /* FlexKitDemoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8482AF002FD69CF8003F549B /* FlexKitDemoViewController.swift */; };
 		8482AF042FD69CF8003F549B /* ViewControllerObjc.m in Sources */ = {isa = PBXBuildFile; fileRef = 8482AF022FD69CF8003F549B /* ViewControllerObjc.m */; };
 		D4DE31D6706ED63E686DFA7B /* Pods_ZLFlexKit_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41DA2794879788D1B9807A47 /* Pods_ZLFlexKit_Example.framework */; };
@@ -42,6 +43,7 @@
 		607FACE51AFB9204008FA782 /* ZLFlexKit_Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZLFlexKit_Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		607FACEA1AFB9204008FA782 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		607FACEB1AFB9204008FA782 /* Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests.swift; sourceTree = "<group>"; };
+		847AD0F02FF3DC3E0088FB3E /* TableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableViewController.swift; sourceTree = "<group>"; };
 		8482AEFC2FD69CE9003F549B /* ZLFlexKit_Example-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "ZLFlexKit_Example-Bridging-Header.h"; sourceTree = "<group>"; };
 		8482AF002FD69CF8003F549B /* FlexKitDemoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexKitDemoViewController.swift; sourceTree = "<group>"; };
 		8482AF012FD69CF8003F549B /* ViewControllerObjc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewControllerObjc.h; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 				8482AF002FD69CF8003F549B /* FlexKitDemoViewController.swift */,
 				8482AF012FD69CF8003F549B /* ViewControllerObjc.h */,
 				8482AF022FD69CF8003F549B /* ViewControllerObjc.m */,
+				847AD0F02FF3DC3E0088FB3E /* TableViewController.swift */,
 				607FACD91AFB9204008FA782 /* Main.storyboard */,
 				607FACDC1AFB9204008FA782 /* Images.xcassets */,
 				607FACDE1AFB9204008FA782 /* LaunchScreen.xib */,
@@ -321,6 +324,7 @@
 				8482AF032FD69CF8003F549B /* FlexKitDemoViewController.swift in Sources */,
 				8482AF042FD69CF8003F549B /* ViewControllerObjc.m in Sources */,
 				607FACD81AFB9204008FA782 /* ViewController.swift in Sources */,
+				847AD0F12FF3DC3E0088FB3E /* TableViewController.swift in Sources */,
 				607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
