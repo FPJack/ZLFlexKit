@@ -911,67 +911,479 @@ class DynamicDemoVC: UIViewController {
     }
 }
 
-// MARK: - ⑫ ZLLayout 链式约束
+// MARK: - ⑫ LayoutBox 链式约束 —— 全功能详解
 
+/// LayoutBox（`view.box`）是 ZLFlexKit 内置的通用约束 DSL，本 Demo 完整覆盖：
+///  ① top/leading/bottom/trailing 基础位置（含正负号约定）
+///  ② xxxTo(anchor:offset:) 相对任意 anchor 定位
+///  ③ >=（GreaterThanOrTo）/ <=（LessThanOrTo）关系变体
+///  ④ center / centerX / centerY / centerOffset 居中系列
+///  ⑤ width / height / min* / max* / size / square 尺寸约束
+///  ⑥ widthTo / heightTo 相对其他 dimension
+///  ⑦ edges / allEdges / edgesZero 贴边（bottom/trailing 自动取反）
+///  ⑧ addTo / addToFull / addSubview / addSubviewLayout 层级管理
+///  ⑨ NumberConvertible —— Int / Float / Double / CGFloat 通吃
+///  ⑩ update() 更新已有约束的 constant / priority
+///  ⑪ remake() 清空历史约束后整体重建
+///  ⑫ remove() 精细删除指定约束
+///  ⑬ clear() 全清所有约束
+///  ⑭ 综合实战：卡片布局
 class ZLLayoutDemoVC: UIViewController {
+
+    // 用于第 ⑩/⑪/⑫ 节动态演示的 view 与容器
+    private let updateBox   = UIView()
+    private let remakeBox   = UIView()
+    private let removeBox   = UIView()
+    private var isRemakeAlt = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .compatBackground
 
-        // ① 基础：top / leading / size（数字字面量 Int/CGFloat 均可）
-        let box1 = UIView()
-        box1.backgroundColor = colors[0]; box1.layer.cornerRadius = 6
-        view.addSubview(box1)
-        box1.box.top(80).leading(16).size(w: 80, h: 80)
-       
-        // ② addTo 链式
-        let box2 = UIView()
-        box2.backgroundColor = colors[1]; box2.layer.cornerRadius = 6
-        box2.box.addTo(view).top(80).leading(120).size(w: 80, h: 80)
+        // 外层滚动容器（VStackView + wrapScrollView）
+        let container = makeScrollableContainerStack()
 
-        // ③ addToFull — 贴满父视图
-        let container = UIView()
-        container.backgroundColor = .compatGray5; container.layer.cornerRadius = 8
-        view.addSubview(container)
-        container.box.top(180).leading(16).trailing(16).height(80)
-        let inner = UIView()
-        inner.backgroundColor = colors[2].withAlphaComponent(0.7)
-        inner.box.addToFull(container)
+        // ─────────── ① 基础位置：相对 superview ───────────
+        container.addViews {
+            sectionLabel("""
+            ① 基础位置：不带 To 的方法默认相对 superview
+               · top/leading 传正数=向内偏移
+               · bottom/trailing 使用原生 constant 语义，正数=向外扩，常传负数内缩
+            """)
+            makeCanvas(height: 120) { canvas in
+                let a = UIView.tinyBox(colors[0], text: "top+leading")
+                canvas.addSubview(a)
+                a.box.top(12).leading(12).size(w: 110, h: 36)
 
-        // ④ centerX / centerY
-        let box4 = UIView()
-        box4.backgroundColor = colors[3]; box4.layer.cornerRadius = 6
-        view.addSubview(box4)
-        box4.box.top(280).centerX().size(w: 80, h: 44)
+                let b = UIView.tinyBox(colors[1], text: "trailing(-12)")
+                canvas.addSubview(b)
+                b.box.top(12).trailing(-12).size(w: 130, h: 36)
 
-        // ⑤ addSubviewLayout
-        view.box.addSubviewLayout(UIView()) { layout in
-            layout.view?.backgroundColor = colors[4]
-            layout.view?.layer.cornerRadius = 6
-            layout.top(340).leading(16).size(w: 120, h: 44)
+                let c = UIView.tinyBox(colors[2], text: "bottom(-12)")
+                canvas.addSubview(c)
+                c.box.bottom(-12).leading(12).size(w: 110, h: 36)
+            }
         }
 
-        // ⑥ tapAction（点击变色）
-        let box6 = UIView()
-        box6.backgroundColor = colors[5]; box6.layer.cornerRadius = 6
-        view.addSubview(box6)
-       
+        // ─────────── ② 相对任意 anchor：xxxTo ───────────
+        container.addViews {
+            sectionLabel("""
+            ② xxxTo(anchor, offset:) —— 相对任意 anchor 定位
+               · A.leadingTo(B.trailingAnchor, offset: 8) 让 A 跟在 B 后面
+               · topTo/bottomTo 同理
+            """)
+            makeCanvas(height: 100) { canvas in
+                let a = UIView.tinyBox(colors[3], text: "A")
+                let b = UIView.tinyBox(colors[4], text: "B")
+                let c = UIView.tinyBox(colors[5], text: "C")
+                canvas.addSubview(a); canvas.addSubview(b); canvas.addSubview(c)
 
-        // 说明文字
-        let label = UILabel()
-        label.numberOfLines = 0; label.font = .systemFont(ofSize: 12); label.textColor = .gray
-        label.text = """
-        ① box1: top(80).leading(16).size(width:80,height:80)
-        ② box2: addTo(view).top(80).leading(120).size(...)
-        ③ container: inner.layout.addToFull(container)
-        ④ box4: top(280).centerX().size(...)
-        ⑤ 绿框: addSubviewLayout { layout in ... }
-        ⑥ 紫框: .tapAction { } 点击变色
+                a.box.centerY().leading(12).size(w: 60, h: 36)
+                b.box.centerY().leadingTo(a.trailingAnchor, offset: 8).size(w: 60, h: 36)
+                c.box.centerY().leadingTo(b.trailingAnchor, offset: 8).size(w: 60, h: 36)
+            }
+        }
 
-        ✅ 所有数字参数均支持 Int / Float / Double / CGFloat
-        """
-        view.addSubview(label)
-        label.box.top(400).leading(16).trailing(16)
+        // ─────────── ③ >= / <= 变体 ───────────
+        container.addViews {
+            sectionLabel("""
+            ③ 关系变体：每个位置方法都有 3 个版本
+               · xxx / xxxTo         →  ==
+               · xxxGreaterThanOrTo  →  >= 至少
+               · xxxLessThanOrTo     →  <= 至多
+            下方蓝色标签：宽度默认 40，但设置 minWidth(80)，最终显示 80
+            """)
+            makeCanvas(height: 80) { canvas in
+                let label = UILabel()
+                label.backgroundColor = colors[1]
+                label.textColor = .white
+                label.textAlignment = .center
+                label.text = "min≥80"
+                label.font = .systemFont(ofSize: 12)
+                label.layer.cornerRadius = 4
+                label.clipsToBounds = true
+                canvas.addSubview(label)
+                label.box
+                    .center()
+                    .height(36)
+                    .width(40)      // 期望值 40
+//                    .minWidth(80)   // 但保证 >= 80，最终生效 80
+            }
+        }
+
+        // ─────────── ④ 居中系列 ───────────
+        container.addViews {
+            sectionLabel("""
+            ④ 居中：center() / centerX() / centerY() / centerOffset(x:y:)
+            """)
+            makeCanvas(height: 140) { canvas in
+                let cx = UIView.tinyBox(colors[0], text: "centerX")
+                canvas.addSubview(cx)
+                cx.box.top(8).centerX().size(w: 100, h: 32)
+
+                let both = UIView.tinyBox(colors[2], text: "center()")
+                canvas.addSubview(both)
+                both.box.center().size(w: 100, h: 32)
+
+                let off = UIView.tinyBox(colors[4], text: "offset(60,20)")
+                canvas.addSubview(off)
+                off.box.centerOffset(x: 60, y: 20).size(w: 120, h: 32)
+            }
+        }
+
+        // ─────────── ⑤ 尺寸约束 ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑤ 尺寸：width/height/minWidth/maxWidth/minHeight/maxHeight/size(w:h:)/square(_:)
+            """)
+            makeCanvas(height: 110) { canvas in
+                let sq = UIView.tinyBox(colors[3], text: "square(64)")
+                canvas.addSubview(sq)
+                sq.box.top(12).leading(12).square(64)
+
+                let sz = UIView.tinyBox(colors[5], text: "size(120x40)")
+                canvas.addSubview(sz)
+                sz.box.top(12).leadingTo(sq.trailingAnchor, offset: 12).size(w: 120, h: 40)
+
+                let mm = UIView.tinyBox(colors[6], text: "min80/max140")
+                canvas.addSubview(mm)
+                mm.box
+                    .bottom(-12).leading(12).height(28)
+                    .minWidth(80).maxWidth(140)
+            }
+        }
+
+        // ─────────── ⑥ widthTo / heightTo ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑥ widthTo/heightTo：让宽/高等于另一个 view 的 dimension
+               · rightBox.widthTo(leftBox.widthAnchor)
+            """)
+            makeCanvas(height: 90) { canvas in
+                let left = UIView.tinyBox(colors[0], text: "leader")
+                let right = UIView.tinyBox(colors[1], text: "= leader.width")
+                canvas.addSubview(left); canvas.addSubview(right)
+
+                left.box.centerY().leading(12).size(w: 120, h: 40)
+                right.box
+                    .centerY()
+                    .leadingTo(left.trailingAnchor, offset: 12)
+                    .widthTo(left.widthAnchor)
+                    .height(40)
+            }
+        }
+
+        // ─────────── ⑦ edges / allEdges / edgesZero ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑦ 贴边（edges 系列）：
+               · edges(top:leading:bottom:trailing:) —— bottom/trailing 自动取反，传正数即内缩
+               · allEdges(16) —— 四边同 16 内缩
+               · edgesZero() —— 完全贴满
+            """)
+            makeCanvas(height: 120) { canvas in
+                let box1 = UIView(); box1.backgroundColor = colors[0].withAlphaComponent(0.35)
+                let inner1 = UIView.tinyBox(colors[0], text: "allEdges(8)")
+                canvas.addSubview(box1); box1.addSubview(inner1)
+                box1.box.top(8).leading(12).size(w: 150, h: 90)
+                inner1.box.allEdges(8)
+
+                let box2 = UIView(); box2.backgroundColor = colors[2].withAlphaComponent(0.35)
+                let inner2 = UIView.tinyBox(colors[2], text: "edges(4,8,4,8)")
+                canvas.addSubview(box2); box2.addSubview(inner2)
+                box2.box.top(8).trailing(-12).size(w: 160, h: 90)
+                inner2.box.edges(top: 4, leading: 8, bottom: 4, trailing: 8)
+            }
+        }
+
+        // ─────────── ⑧ 层级管理 API ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑧ 层级管理：
+               · addTo(parent)         把 self 加到 parent
+               · addToFull(parent)     加到 parent 并 edgesZero()
+               · addSubview(child)     把 child 加进来
+               · addSubviewLayout(child) { box in … }  加进来并立刻布局 child
+            """)
+            makeCanvas(height: 120) { canvas in
+                // addToFull 演示：黄色底铺满
+                let bg = UIView()
+                bg.backgroundColor = colors[3].withAlphaComponent(0.25)
+                bg.layer.cornerRadius = 6
+                canvas.addSubview(bg)
+                bg.box.top(8).leading(12).size(w: 160, h: 100)
+
+                let fill = UIView()
+                fill.backgroundColor = colors[3]
+                fill.layer.cornerRadius = 6
+                fill.box.addToFull(bg)  // 一句话铺满 bg，box 会内部执行 edgesZero()
+
+                // addSubviewLayout 演示：canvas.box.addSubviewLayout 一步添加+布局
+                canvas.box.addSubviewLayout(UIView.tinyBox(colors[5], text: "subviewLayout")) { box in
+                    box.top(8).trailing(-12).size(w: 140, h: 40)
+                }
+                canvas.box.addSubviewLayout(UIView.tinyBox(colors[6], text: "addSubview then box")) { box in
+                    box.bottom(-8).trailing(-12).size(w: 140, h: 40)
+                }
+            }
+        }
+
+        // ─────────── ⑨ NumberConvertible ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑨ 数值类型自由：Int / Int64 / UInt / Float / Double / CGFloat 均可直传
+            """)
+            makeCanvas(height: 80) { canvas in
+                let a = UIView.tinyBox(colors[0], text: "Int(12)")
+                let b = UIView.tinyBox(colors[1], text: "Double(12.5)")
+                let c = UIView.tinyBox(colors[2], text: "CGFloat(13)")
+                canvas.addSubview(a); canvas.addSubview(b); canvas.addSubview(c)
+                a.box.centerY().leading(Int(12)).size(w: 90, h: 36)
+                b.box.centerY().leadingTo(a.trailingAnchor, offset: Double(12.5)).size(w: 110, h: 36)
+                c.box.centerY().leadingTo(b.trailingAnchor, offset: CGFloat(13)).size(w: 110, h: 36)
+            }
+        }
+
+        // ─────────── ⑩ update() 更新 constant ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑩ update()：修改已有约束的 constant / priority
+               点击按钮切换 leading（16 ↔ 120）与 width（80 ↔ 200）
+               · 相同 (firstItem, secondItem, attr, relation) 的约束会被匹配并更新 constant
+            """)
+            makeCanvas(height: 80) { canvas in
+                canvas.addSubview(updateBox)
+                updateBox.backgroundColor = colors[4]
+                updateBox.layer.cornerRadius = 4
+                updateBox.box.top(16).leading(16).height(40).width(80)
+            }
+            makeButton("点我 update() 切换 leading & width") { [weak self] in
+                self?.demoUpdate()
+            }
+        }
+
+        // ─────────── ⑪ remake() 整体重建 ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑪ remake()：先删除该 view 全部历史约束，再激活本次链式的所有约束
+               适合“布局方式完全变了”的场景（比如横竖屏切换）
+            """)
+            makeCanvas(height: 120) { canvas in
+                canvas.addSubview(remakeBox)
+                remakeBox.backgroundColor = colors[5]
+                remakeBox.layer.cornerRadius = 4
+                remakeBox.box.top(12).leading(12).size(w: 100, h: 40)
+            }
+            makeButton("点我 remake() 切换整套布局") { [weak self] in
+                self?.demoRemake()
+            }
+        }
+
+        // ─────────── ⑫ remove() 精细删除 ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑫ remove()：删除“本次链式传入的”那几条约束（按 firstItem/attr/relation 匹配，不看 constant）
+               这里初始有 4 条约束，点击后删掉 width/height 两条，view 会退化到只剩位置约束
+            """)
+            makeCanvas(height: 100) { canvas in
+                canvas.addSubview(removeBox)
+                removeBox.backgroundColor = colors[6]
+                removeBox.layer.cornerRadius = 4
+                removeBox.box
+                    .top(12)
+                    .leading(12)
+                    .width(120)
+                    .height(60)
+            }
+            makeButton("点我 remove() 掉 top & leading 约束，添加center约束") { [weak self] in
+                self?.demoRemove()
+            }
+        }
+
+        // ─────────── ⑬ clear() 全清 ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑬ clear()：同步清空该 view 上的所有 LayoutBox 约束
+               注意：clear() 不需要 flush()，会立即生效
+            """)
+            let hint = UIView.tinyBox(colors[0], text: "点我 clear()")
+            makeCanvas(height: 80) { canvas in
+                canvas.addSubview(hint)
+                hint.box.center().size(w: 120, h: 36)
+                let tap = UITapGestureRecognizer(target: self, action: #selector(demoClear(_:)))
+                hint.isUserInteractionEnabled = true
+                hint.addGestureRecognizer(tap)
+                hint.tag = 9999
+            }
+        }
+
+        // ─────────── ⑭ 综合实战：卡片布局 ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑭ 综合实战：一张卡片（图标 + 标题 + 副标题 + 右侧按钮），全部用 LayoutBox 拼装
+            """)
+            makeCard()
+        }
+
+        // 尾部说明
+        container.addArrangedSubview(sectionLabel("""
+        📌 温馨提示：
+        · bottom/trailing 直接使用时不自动取反，请传负值；仅 edges(...) 会自动取反。
+        · update() 只更新 constant/priority；如果 attr 不同，会作为新约束追加。
+        · clear() 是同步的；update/remake/remove 内部自动 flush()。
+        · view.box 是同一实例（associated object 缓存），多次访问累积约束记录。
+        · 所有数值参数支持 NumberConvertible —— 直接写 Int/Double/CGFloat 均可。
+        """))
+    }
+
+    // MARK: - 动作
+
+    private var updateToggled = false
+    private func demoUpdate() {
+        updateToggled.toggle()
+        updateBox.box
+            .leading(updateToggled ? 120 : 16)
+            .width(updateToggled ? 200 : 80)
+            .update()   // 匹配已有约束，只更新 constant
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+    }
+
+    private func demoRemake() {
+        isRemakeAlt.toggle()
+        if isRemakeAlt {
+            // 完全换一套：改成右下、竖长条
+            remakeBox.box
+                .bottom(-12).trailing(-12).size(w: 40, h: 80)
+                .remake()
+        } else {
+            // 复位：左上、横条
+            remakeBox.box
+                .top(12).leading(12).size(w: 100, h: 40)
+                .remake()
+        }
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+    }
+
+    private var removeDone = false
+    private func demoRemove() {
+        guard !removeDone else { return }
+        removeDone = true
+        removeBox.box
+            .leading(0)
+            .top(0)
+            .remove()
+            .center()
+        // 匹配到 width、height 两条约束并 deactivate
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+    }
+
+    @objc private func demoClear(_ sender: UITapGestureRecognizer) {
+        guard let v = sender.view else { return }
+        v.box.clear()  // 清空后 view 将失去所有约束，回到无 frame 状态
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+    }
+
+    // MARK: - 卡片示例
+
+    private func makeCard() -> UIView {
+        let card = UIView()
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 10
+        card.layer.borderWidth = 1
+        card.layer.borderColor = UIColor.compatGray5.cgColor
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.heightAnchor.constraint(equalToConstant: 84).isActive = true
+
+        // 头像
+        let icon = UIView()
+        icon.backgroundColor = colors[4]
+        icon.layer.cornerRadius = 24
+        card.box.addSubviewLayout(icon) { box in
+            box.leading(12).centerY().square(48)
+        }
+
+        // 标题
+        let title = UILabel()
+        title.text = "ZLFlexKit"
+        title.font = .boldSystemFont(ofSize: 15)
+        card.box.addSubviewLayout(title) { box in
+            box.leadingTo(icon.trailingAnchor, offset: 12).top(16)
+        }
+
+        // 副标题
+        let subtitle = UILabel()
+        subtitle.text = "LayoutBox 链式约束 · 支持 update/remake/remove/clear"
+        subtitle.font = .systemFont(ofSize: 12)
+        subtitle.textColor = .gray
+        card.box.addSubviewLayout(subtitle) { box in
+            box.leadingTo(icon.trailingAnchor, offset: 12)
+                .topTo(title.bottomAnchor, offset: 4)
+                .trailing(-80)
+        }
+
+        // 右侧按钮
+        let btn = UIButton(type: .system)
+        btn.setTitle("Go", for: .normal)
+        btn.backgroundColor = colors[1]
+        btn.setTitleColor(.white, for: .normal)
+        btn.layer.cornerRadius = 14
+        btn.titleLabel?.font = .boldSystemFont(ofSize: 13)
+        card.box.addSubviewLayout(btn) { box in
+            box.trailing(-12).centerY().size(w: 56, h: 28)
+        }
+
+        return card
+    }
+
+    // MARK: - 辅助
+
+    /// 生成一块灰底“画布”：内部代码可任意用 box 摆放子 view
+    private func makeCanvas(height: CGFloat, config: (UIView) -> Void) -> UIView {
+        let canvas = UIView()
+        canvas.backgroundColor = .compatGray5
+        canvas.layer.cornerRadius = 6
+        canvas.translatesAutoresizingMaskIntoConstraints = false
+        canvas.heightAnchor.constraint(equalToConstant: height).isActive = true
+        config(canvas)
+        return canvas
+    }
+
+    private func makeButton(_ title: String, action: @escaping () -> Void) -> UIButton {
+        let btn = ClosureButton(type: .system)
+        btn.setTitle(title, for: .normal)
+        btn.backgroundColor = .compatGray5
+        btn.setTitleColor(.systemBlue, for: .normal)
+        btn.layer.cornerRadius = 6
+        btn.titleLabel?.font = .systemFont(ofSize: 13)
+        btn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        btn.action = action
+        btn.addTarget(btn, action: #selector(ClosureButton.trigger), for: .touchUpInside)
+        return btn
+    }
+}
+
+// MARK: - Demo 辅助类型
+
+/// 带 closure 的 UIButton（避免每个 demo 都再造一个 target）
+private final class ClosureButton: UIButton {
+    var action: (() -> Void)?
+    @objc func trigger() { action?() }
+}
+
+private extension UIView {
+    /// 生成带文字的小色块（不预设尺寸约束，方便 LayoutBox 完全掌控大小）
+    static func tinyBox(_ color: UIColor, text: String) -> UILabel {
+        let l = UILabel()
+        l.backgroundColor = color
+        l.textColor = .white
+        l.textAlignment = .center
+        l.font = .systemFont(ofSize: 11, weight: .semibold)
+        l.text = text
+        l.layer.cornerRadius = 4
+        l.clipsToBounds = true
+        l.adjustsFontSizeToFitWidth = true
+        l.minimumScaleFactor = 0.6
+        return l
     }
 }
 
