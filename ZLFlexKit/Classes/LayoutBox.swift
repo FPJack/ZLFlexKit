@@ -64,7 +64,7 @@ public class LayoutBox: NSObject {
         if let view = self.view, view.translatesAutoresizingMaskIntoConstraints {
             view.translatesAutoresizingMaskIntoConstraints = false
         }
-        constraint.isActive = true
+//        constraint.isActive = true
         constraintsArray.add(constraint)
         if let view = view {            view.setNeedsUpdateConstraints()
         }
@@ -414,6 +414,13 @@ public class LayoutBox: NSObject {
     public func addSubviewLayout(_ subview: UIView, layout: (LayoutBox) -> Void) -> Self {
         view?.addSubview(subview)
         layout(subview.box)
+        return self
+    }
+    
+    ///布局立即生效,cell自动计算高度布局的时候调用
+    @discardableResult
+    public func flush() -> Self {
+        view?.updateConstraintsIfNeeded()
         return self
     }
 }

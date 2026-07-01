@@ -42,7 +42,7 @@ class FlexKitDemoViewController: UITableViewController {
         ("⑱ 性能对比 - 系统 UIStackView",          "与 ZLStackView 同等 3层嵌套结构横向对比",          { PerfUIStackViewVC() }),
         ("⑲ 性能对比 - SnapKit 手动约束",          "UIView+SnapKit 手动约束，无 StackView 辅助",       { PerfSnapKitVC() }),
         ("⑳ 性能对比 - 纯 Frame 布局",             "零约束，手动计算 frame，最原始的布局方式",          { PerfFrameVC() }),
-        ("TableViewController",             "TableViewController",          { TableViewController() }),
+        ("TableViewController",             "cell自动计算高度",          { TableViewController() }),
     ]
 
     override func viewDidLoad() {
