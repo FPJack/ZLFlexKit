@@ -20,13 +20,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.whiteColor;
     self.title = @"StackView OC 链式 Demo";
-    WKWebView *webView = [[WKWebView alloc] init];
-    webView.zl_layout.addToFull(self.view);
-    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://192.168.200.216:8081/"]]];
-    
-    
-    WKNavigation *wk = [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://192.168.200.216:8081/"]]];
-    return;
+   
     
     
     
@@ -75,6 +69,8 @@
         .addView([self box:UIColor.systemGreenColor text:@"C" w:44 h:36]);
     [box addArrangedSubview:sv1];
 
+    
+    
     // ── ② setJustify(.fill) + flexValue ───────────────────────────────────
     [box addArrangedSubview:[self label:@"② setJustify(.fill) + view.flex.flexValue — 按比例分配宽度"]];
     ZLStackView *sv2 = [self makeStack:50];
