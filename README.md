@@ -347,33 +347,263 @@ label.zl_flex
 
 ## LayoutBox 用法（`view.box`）
 
-`LayoutBox` 可用于所有 `UIView`：
+`LayoutBox` 是 ZLFlexKit 内置的通用约束 DSL，用于 **非 StackView 场景** 或作为 StackView 布局的辅助工具。它是对 `NSLayoutAnchor` 的轻量封装，具备以下核心特性：
 
-- 位置：`top/leading/bottom/trailing`
-- 居中：`center/centerX/centerY/centerOffset`
-- 尺寸：`width/height/min/max/size/square`
-- 贴边：`edges/allEdges/edgesZero`
-- 层级：`addTo/addToFull/addSubview/addSubviewLayout`
-- 管理：`clear()/lastConstraint()`
+- **链式调用**：每个方法都返回 `Self`，可无限串联
+- **懒激活**：约束不会立即 active，会在下一次 `updateConstraints` 阶段统一激活（内部通过 swizzle 实现）
+- **自动 TAMR**：调用任何布局方法后自动把 `translatesAutoresizingMaskIntoConstraints = false`
+- **NumberConvertible**：所有数值参数支持 `Int / Int8~64 / UInt / Float / Double / CGFloat`，无需手动转换
+- **约束模式切换**：支持 `add / update / remake / remove / clear` 五种约束操作模式
+- **Swift 与 ObjC 双端**：Swift 用 `view.box`，ObjC 用 `view.zl_layout`
 
-示例：
+### 1. 入口
+
+| 语言 | 属性名 | 类型 |
+|------|--------|------|
+| Swift | `view.box` | `LayoutBox` |
+| Objective-C | `view.zl_layout` | `ZLLayout *`（类名保留 ObjC 别名） |
 
 ```swift
-let card = UIView()
-card.box
-    .addTo(view)
-    .top(100)
-    .leading(16)
-    .trailing(-16)
-    .height(120)
+// Swift
+let box = someView.box
+```
 
-let icon = UIImageView()
-card.box.addSubviewLayout(icon) { box in
+```objc
+// Objective-C
+ZLLayout *box = someView.zl_layout;
+```
+
+### 2. 位置约束（父视图相对）
+
+不带 `To` 后缀的方法，默认相对 `superview` 对应锚点。
+
+```swift
+view.box
+    .top(20)            // 距父视图顶部 20
+    .leading(16)        // 距父视图左边 16
+    .trailing(-16)      // ⚠️ 相对父视图 trailing，常用负值内缩
+    .bottom(-20)        // ⚠️ 相对父视图 bottom，常用负值内缩
+```
+
+> **重要**：`bottom` / `trailing` 使用 `constant` 原始语义，正值向外扩、负值向内缩，与 SnapKit 的自动取反不同，请注意符号约定。
+
+### 3. 相对任意 anchor 约束（`xxxTo`）
+
+```swift
+labelA.box.leadingTo(labelB.trailingAnchor, offset: 8)
+labelA.box.topTo(view.safeAreaLayoutGuide.topAnchor, offset: 12)
+labelA.box.bottomTo(labelB.topAnchor, offset: -8)
+```
+
+### 4. 大小关系（`>= / <=`）
+
+每个位置方法都有三个变体：
+
+| 方法 | 关系 | 说明 |
+|------|------|------|
+| `topTo(anchor, offset:)` | `==` | 严格等于 |
+| `topGreaterThanOrTo(anchor, offset:)` | `>=` | 至少 |
+| `topLessThanOrTo(anchor, offset:)` | `<=` | 至多 |
+
+`leading / trailing / top / bottom / centerX / centerY` 全部有 3 个变体。
+
+```swift
+// 保证 label 距父视图顶部至少 20
+label.box.topGreaterThanOrTo(view.topAnchor, offset: 20)
+// 限制 label 距底部最多 100
+label.box.bottomLessThanOrTo(view.bottomAnchor, offset: -100)
+```
+
+### 5. 居中
+
+```swift
+view.box.center()                        // 相对父视图水平+垂直居中
+view.box.centerX()                       // 相对父视图水平居中
+view.box.centerY(10)                     // 垂直居中，向下偏移 10
+view.box.centerOffset(x: 0, y: -20)      // 双向居中并偏移
+view.box.centerXTo(header.centerXAnchor) // 相对任意 anchor 居中
+```
+
+### 6. 尺寸
+
+```swift
+view.box.width(100)          // 固定宽
+view.box.height(44)          // 固定高
+view.box.size(w: 100, h: 44) // 同时设宽高
+view.box.square(48)          // 正方形
+
+view.box.minWidth(80)        // 最小宽
+view.box.maxWidth(200)       // 最大宽
+view.box.minHeight(40)
+view.box.maxHeight(120)
+
+// 与其他 dimension 相等
+labelA.box.widthTo(labelB.widthAnchor)
+labelA.box.heightTo(view.heightAnchor)
+```
+
+### 7. 贴边（Edges）
+
+```swift
+view.box.edgesZero()                                   // 四边全 0，贴紧父视图
+view.box.allEdges(16)                                  // 四边同值内缩 16
+view.box.edges(top: 8, leading: 16, bottom: 8, trailing: 16)
+// 注意：edges 内部自动为 bottom/trailing 取反，直接传正数即可
+```
+
+> **注意 edges 的语义特殊**：`edges(...)` 内部会对 bottom/trailing 自动取负，因此传入正数就是内缩值；而单独使用 `.bottom(_:)` / `.trailing(_:)` 时不会取反，需要自行传负值。
+
+### 8. 视图层级
+
+```swift
+// 添加到父视图
+child.box.addTo(parent)
+
+// 添加到父视图并贴四边
+child.box.addToFull(parent)
+
+// 添加子视图
+parent.box.addSubview(child)
+
+// 添加子视图并立即布局
+parent.box.addSubviewLayout(child) { box in
     box.leading(12).centerY().size(w: 24, h: 24)
 }
 ```
 
-ObjC 对应属性名为 `zl_layout`。
+`addSubviewLayout` 闭包中的 `box` 是 **子视图自己的** `LayoutBox`，可以直接链式布局。
+
+### 9. 综合示例
+
+```swift
+let card = UIView()
+let icon = UIImageView()
+let title = UILabel()
+let subtitle = UILabel()
+
+card.box
+    .addTo(view)
+    .top(100).leading(16).trailing(-16)
+    .height(80)
+
+icon.box
+    .addTo(card)
+    .leading(12).centerY()
+    .square(48)
+
+title.box
+    .addTo(card)
+    .leadingTo(icon.trailingAnchor, offset: 12)
+    .top(12).trailing(-12)
+
+subtitle.box
+    .addTo(card)
+    .leadingTo(icon.trailingAnchor, offset: 12)
+    .topTo(title.bottomAnchor, offset: 4)
+    .trailing(-12).bottom(-12)
+```
+
+### 10. 约束管理：update / remake / remove / clear
+
+`LayoutBox` 内部维护了每个 view 的约束存储，支持四种操作模式：
+
+| 方法 | 说明 | 适用场景 |
+|------|------|----------|
+| 默认（无操作） | 新增并激活约束 | 首次布局 |
+| `.update()` | 相同约束更新 constant / priority，新约束追加 | 修改已有约束数值 |
+| `.remake()` | 先删除所有历史约束，再重新添加 | 大幅重构布局 |
+| `.remove()` | 删除本次调用中传入的约束（按 firstItem/secondItem/attribute/relation 匹配） | 精细删除某组约束 |
+| `.clear()` | 清空所有历史约束（同步生效，不需要 flush） | 完全重置 |
+
+#### 10.1 update：修改现有约束数值
+
+```swift
+// 首次布局
+view.box.top(20).leading(16).width(100).height(44)
+
+// 一段时间后，把 top 从 20 改成 60、宽度从 100 改成 200
+view.box
+    .top(60)
+    .width(200)
+    .update()   // 匹配到相同 attribute 的约束，更新其 constant
+```
+
+#### 10.2 remake：整体重建
+
+```swift
+view.box
+    .allEdges(20)   // 新的约束
+    .remake()       // 先清空历史约束再激活这批
+```
+
+#### 10.3 remove：删除指定约束
+
+```swift
+view.box
+    .top(20)        // 传入要匹配删除的约束特征
+    .leading(16)
+    .remove()
+```
+
+> `remove` 根据 `firstItem / secondItem / firstAttribute / secondAttribute / relation` 精确匹配，不依赖 constant。
+
+#### 10.4 clear：全清
+
+```swift
+view.box.clear()    // 立即释放当前 view 上所有 LayoutBox 管理的约束
+```
+
+### 11. 立即生效（flush）
+
+由于约束是 **懒激活** 的，某些场景（如 UITableViewCell 自适应高度计算）需要立即生效：
+
+```swift
+view.box.top(10).leading(16).width(100).height(44)
+view.box.flush()   // 强制走一次 updateConstraintsIfNeeded()
+```
+
+`update() / remake() / remove()` 内部会自动调用 `flush()`，无需手动调用。
+
+### 12. 支持任意数值类型（NumberConvertible）
+
+```swift
+view.box.top(10)          // Int
+view.box.top(10.5)        // Double
+view.box.top(Float(8))    // Float
+view.box.top(CGFloat(12)) // CGFloat
+view.box.top(UInt(4))     // UInt
+```
+
+### 13. ObjC 链式用法
+
+所有 Swift 链式方法都通过 `@objc(...)` 计算属性暴露给 ObjC：
+
+```objc
+UIView *card = [UIView new];
+card.zl_layout
+    .addTo(self.view)
+    .top(100)
+    .leading(16)
+    .trailing(-16)
+    .height(120);
+
+UIImageView *icon = [UIImageView new];
+card.zl_layout.addSubviewLayout(icon, ^(ZLLayout *box) {
+    box.leading(12).centerY(0).square(24);
+});
+```
+
+⚠️ ObjC 侧数值参数是 `CGFloat`，需要 `centerY(0)` 显式传 0，不能省略。
+
+### 14. LayoutBox 常见坑
+
+1. **`bottom` / `trailing` 直接使用时不自动取反**，请传负值内缩。仅 `edges(top:leading:bottom:trailing:)` 会自动取反。
+2. **`update()` 只更新 constant/priority**：如果第二次调用的约束参与的 anchor 不同（firstItem 或 attribute 不同），会作为新约束追加，不会覆盖原来的。
+3. **`clear()` 会同步清除，不需要 flush**；其余模式（update/remake/remove）内部已经自动 flush。
+4. **在 `viewDidLoad` 里链式布局是安全的**，约束会在 runloop 下一个 update pass 激活；如果需要立即读取 frame，请调用 `flush()` 后再 `layoutIfNeeded()`。
+5. **不要与 `translatesAutoresizingMaskIntoConstraints = true` 混用**：LayoutBox 一旦被调用会强制关闭该属性。
+6. **一个 view 只会有一份 LayoutBox**（通过 associated object 缓存），多次访问 `view.box` 返回同一实例，因此内部约束记录是累积的。
+7. **`view.box.view` 弱引用**：`LayoutBox` 持有 view 是 `weak`，无循环引用风险；但也意味着 view 销毁后 `box` 不再可用。
 
 ---
 
@@ -405,6 +635,22 @@ ObjC 对应属性名为 `zl_layout`。
 - `Int/Float/Double`（表示间距）
 - `Spacer()` / `Spacer(min:)` / `Spacer(max:)` / `Spacer(value)`
 - `Optional<FlexType>`
+
+### `LayoutBox`（`view.box` / ObjC: `view.zl_layout`）
+
+- **位置（3 变体：`==` / `>=` / `<=`）**：
+  - `top / topTo / topGreaterThanOrTo / topLessThanOrTo`
+  - `leading / leadingTo / leadingGreaterThanOrTo / leadingLessThanOrTo`
+  - `bottom / bottomTo / bottomGreaterThanOrTo / bottomLessThanOrTo`
+  - `trailing / trailingTo / trailingGreaterThanOrTo / trailingLessThanOrTo`
+  - `centerX / centerXTo / centerXGreaterThanOrTo / centerXLessThanOrTo`
+  - `centerY / centerYTo / centerYGreaterThanOrTo / centerYLessThanOrTo`
+- **居中辅助**：`center()` `centerOffset(x:y:)`
+- **尺寸**：`width / height / minWidth / maxWidth / minHeight / maxHeight / size(w:h:) / square / widthTo / heightTo`
+- **贴边**：`edges(top:leading:bottom:trailing:)` `allEdges(_:)` `edgesZero()`（bottom/trailing 自动取反）
+- **层级**：`addTo(_:)` `addToFull(_:)` `addSubview(_:)` `addSubviewLayout(_:layout:)`
+- **约束管理**：`update()` `remake()` `remove()` `clear()` `flush()`
+- **数值类型**：任意 `NumberConvertible`（`Int/Int8~64/UInt/Float/Double/CGFloat`）
 
 ---
 
