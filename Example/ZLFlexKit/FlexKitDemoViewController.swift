@@ -925,15 +925,17 @@ class DynamicDemoVC: UIViewController {
 ///  ⑨ NumberConvertible —— Int / Float / Double / CGFloat 通吃
 ///  ⑩ update() 更新已有约束的 constant / priority
 ///  ⑪ remake() 清空历史约束后整体重建
-///  ⑫ remove() 精细删除指定约束
-///  ⑬ clear() 全清所有约束
-///  ⑭ 综合实战：卡片布局
+///  ⑫ id: / .id(_:) 打标签 + latestConstraint 读最近一条
+///  ⑬ constraints(withID:) 查询 + removeConstraints(withID:) 精细删除（替代旧 .remove()）
+///  ⑭ clear() 全清所有约束
+///  ⑮ 综合实战：卡片布局
 class ZLLayoutDemoVC: UIViewController {
 
-    // 用于第 ⑩/⑪/⑫ 节动态演示的 view 与容器
+    // 用于第 ⑩/⑪/⑫/⑬ 节动态演示的 view 与容器
     private let updateBox   = UIView()
     private let remakeBox   = UIView()
-    private let removeBox   = UIView()
+    private let queryBox    = UIView()   // ⑫ 打标签 + 查询
+    private let removeIDBox = UIView()   // ⑬ removeConstraints(withID:)
     private var isRemakeAlt = false
 
     override func viewDidLoad() {
@@ -1179,31 +1181,72 @@ class ZLLayoutDemoVC: UIViewController {
             }
         }
 
-        // ─────────── ⑫ remove() 精细删除 ───────────
+        // ─────────── ⑫ 打标签（id:）+ latestConstraint ───────────
         container.addViews {
             sectionLabel("""
-            ⑫ remove()：删除“本次链式传入的”那几条约束（按 firstItem/attr/relation 匹配，不看 constant）
-               这里初始有 4 条约束，点击后删掉 width/height 两条，view 会退化到只剩位置约束
+            ⑫ 打标签：所有约束方法都新增了 id: 可选参数，两种等价写法：
+               · 内联传入：view.box.top(20, id: "top-1")
+               · 链式覆盖：view.box.top(20).id("top-1")   // 给 latestConstraint 打
+            打完标签后可用 latestConstraint 拿最近生成的那条 NSLayoutConstraint。
+            下方 view 的 4 条约束都打了 tag，点击按钮弹窗查看 latestConstraint 的 identifier。
             """)
             makeCanvas(height: 100) { canvas in
-                canvas.addSubview(removeBox)
-                removeBox.backgroundColor = colors[6]
-                removeBox.layer.cornerRadius = 4
-                removeBox.box
-                    .top(12)
-                    .leading(12)
-                    .width(120)
-                    .height(60)
+                canvas.addSubview(queryBox)
+                queryBox.backgroundColor = colors[3]
+                queryBox.layer.cornerRadius = 4
+                let label = UILabel()
+                label.text = "tagged"
+                label.textColor = .white
+                label.textAlignment = .center
+                label.font = .systemFont(ofSize: 11, weight: .semibold)
+                queryBox.addSubview(label)
+                label.box.edgesZero()
+
+                queryBox.box
+                    .top(16, id: "Q-top")           // 方式一：id: 参数
+                    .leading(16).id("Q-leading")    // 方式二：.id(_:) 链式
+                    .width(140, id: "Q-w")
+                    .height(60, id: "Q-h")
             }
-            makeButton("点我 remove() 掉 top & leading 约束，添加center约束") { [weak self] in
-                self?.demoRemove()
+            makeButton("点我：查询 constraints(withID: \"Q-w\") + latestConstraint") { [weak self] in
+                self?.demoQueryID()
             }
         }
 
-        // ─────────── ⑬ clear() 全清 ───────────
+        // ─────────── ⑬ removeConstraints(withID:) 按 ID 精细删除 ───────────
         container.addViews {
             sectionLabel("""
-            ⑬ clear()：同步清空该 view 上的所有 LayoutBox 约束
+            ⑬ removeConstraints(withID:)：按 identifier 精确删除约束（替代旧 .remove()）
+               初始有 4 条约束（top/leading/width/height），全部打了 R-* tag
+               点击按钮删掉 R-w / R-h 两条 → view 尺寸塌陷，只剩 top+leading
+            """)
+            makeCanvas(height: 120) { canvas in
+                canvas.addSubview(removeIDBox)
+                removeIDBox.backgroundColor = colors[6]
+                removeIDBox.layer.cornerRadius = 4
+                let l = UILabel()
+                l.text = "tag & remove"
+                l.font = .systemFont(ofSize: 11, weight: .semibold)
+                l.textColor = .white
+                l.textAlignment = .center
+                removeIDBox.addSubview(l)
+                l.box.edgesZero()
+
+                removeIDBox.box
+                    .top(12, id: "R-top")
+                    .leading(12, id: "R-leading")
+                    .width(140, id: "R-w")
+                    .height(60, id: "R-h")
+            }
+            makeButton("点我：removeConstraints(withID:) 删掉 R-w & R-h") { [weak self] in
+                self?.demoRemoveByID()
+            }
+        }
+
+        // ─────────── ⑭ clear() 全清 ───────────
+        container.addViews {
+            sectionLabel("""
+            ⑭ clear()：同步清空该 view 上的所有 LayoutBox 约束
                注意：clear() 不需要 flush()，会立即生效
             """)
             let hint = UIView.tinyBox(colors[0], text: "点我 clear()")
@@ -1217,10 +1260,10 @@ class ZLLayoutDemoVC: UIViewController {
             }
         }
 
-        // ─────────── ⑭ 综合实战：卡片布局 ───────────
+        // ─────────── ⑮ 综合实战：卡片布局 ───────────
         container.addViews {
             sectionLabel("""
-            ⑭ 综合实战：一张卡片（图标 + 标题 + 副标题 + 右侧按钮），全部用 LayoutBox 拼装
+            ⑮ 综合实战：一张卡片（图标 + 标题 + 副标题 + 右侧按钮），全部用 LayoutBox 拼装
             """)
             makeCard()
         }
@@ -1230,7 +1273,8 @@ class ZLLayoutDemoVC: UIViewController {
         📌 温馨提示：
         · bottom/trailing 直接使用时不自动取反，请传负值；仅 edges(...) 会自动取反。
         · update() 只更新 constant/priority；如果 attr 不同，会作为新约束追加。
-        · clear() 是同步的；update/remake/remove 内部自动 flush()。
+        · v(最新) 已移除 .remove()，精细删除请用 id: / .id(_:) + removeConstraints(withID:)。
+        · clear() 与 removeConstraints(withID:) 是同步的；update / remake 内部自动 flush()。
         · view.box 是同一实例（associated object 缓存），多次访问累积约束记录。
         · 所有数值参数支持 NumberConvertible —— 直接写 Int/Double/CGFloat 均可。
         """))
@@ -1264,16 +1308,39 @@ class ZLLayoutDemoVC: UIViewController {
         UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
     }
 
-    private var removeDone = false
-    private func demoRemove() {
-        guard !removeDone else { return }
-        removeDone = true
-        removeBox.box
-            .remake()
-            .center()
-        // 匹配到 width、height 两条约束并 deactivate
-        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
-        view.box.height(3,id: "")
+    /// ⑫ 查询 identifier
+    private func demoQueryID() {
+        let matched = queryBox.box.constraints(withID: "Q-w") ?? []
+        let latestID = queryBox.box.latestConstraint?.identifier ?? "nil"
+        let latestConst = queryBox.box.latestConstraint?.constant ?? 0
+
+        let msg = """
+        constraints(withID: "Q-w")：
+          命中 \(matched.count) 条
+          第一条 constant = \(matched.first?.constant ?? 0)
+
+        latestConstraint：
+          identifier = \(latestID)
+          constant   = \(latestConst)
+
+        （latestConstraint 就是链式的最后一条约束，
+         这里是 .height(60, id: "Q-h") 生成的那条）
+        """
+        let a = UIAlertController(title: "identifier 查询", message: msg, preferredStyle: .alert)
+        a.addAction(.init(title: "OK", style: .cancel))
+        present(a, animated: true)
+    }
+
+    /// ⑬ 按 identifier 精细删除
+    private var didRemoveByID = false
+    private func demoRemoveByID() {
+        guard !didRemoveByID else { return }
+        didRemoveByID = true
+        // 精确删除宽高两条约束
+        removeIDBox.box.removeConstraints(withID: "R-w")
+        removeIDBox.box.removeConstraints(withID: "R-h")
+        // 位置约束（R-top / R-leading）仍然生效，view 会因失去尺寸约束而塌陷
+        UIView.animate(withDuration: 0.3) { self.view.layoutIfNeeded() }
     }
 
     @objc private func demoClear(_ sender: UITapGestureRecognizer) {
@@ -1311,7 +1378,7 @@ class ZLLayoutDemoVC: UIViewController {
 
         // 副标题
         let subtitle = UILabel()
-        subtitle.text = "LayoutBox 链式约束 · 支持 update/remake/remove/clear"
+        subtitle.text = "LayoutBox · 链式约束 · id/查询/删除/update/remake/clear"
         subtitle.font = .systemFont(ofSize: 12)
         subtitle.textColor = .gray
         card.box.addSubviewLayout(subtitle) { box in
