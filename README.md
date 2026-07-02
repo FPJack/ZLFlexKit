@@ -353,7 +353,8 @@ label.zl_flex
 - **懒激活**：约束不会立即 active，会在下一次 `updateConstraints` 阶段统一激活（内部通过 swizzle 实现）
 - **自动 TAMR**：调用任何布局方法后自动把 `translatesAutoresizingMaskIntoConstraints = false`
 - **NumberConvertible**：所有数值参数支持 `Int / Int8~64 / UInt / Float / Double / CGFloat`，无需手动转换
-- **约束模式切换**：支持 `add / update / remake / remove / clear` 五种约束操作模式
+- **约束模式切换**：`add / update / remake` 三种操作模式 + `clear()` 全清
+- **约束标识**：所有方法支持 `id:` 参数或链式 `.id(_:)`，配合 `constraints(withID:)` / `removeConstraints(withID:)` 精细管理
 - **Swift 与 ObjC 双端**：Swift 用 `view.box`，ObjC 用 `view.zl_layout`
 
 ### 1. 入口
@@ -503,17 +504,18 @@ subtitle.box
     .trailing(-12).bottom(-12)
 ```
 
-### 10. 约束管理：update / remake / remove / clear
+### 10. 约束管理：update / remake / clear
 
-`LayoutBox` 内部维护了每个 view 的约束存储，支持四种操作模式：
+`LayoutBox` 内部维护了每个 view 的约束存储，支持三种操作模式和一个全清方法：
 
 | 方法 | 说明 | 适用场景 |
 |------|------|----------|
 | 默认（无操作） | 新增并激活约束 | 首次布局 |
 | `.update()` | 相同约束更新 constant / priority，新约束追加 | 修改已有约束数值 |
 | `.remake()` | 先删除所有历史约束，再重新添加 | 大幅重构布局 |
-| `.remove()` | 删除本次调用中传入的约束（按 firstItem/secondItem/attribute/relation 匹配） | 精细删除某组约束 |
 | `.clear()` | 清空所有历史约束（同步生效，不需要 flush） | 完全重置 |
+
+> **精细删除请使用 identifier 机制**（见 [下一节](#11-按-identifier-精细管理约束)）：给约束打上 `id` 后，通过 `removeConstraints(withID:)` 精确删除。
 
 #### 10.1 update：修改现有约束数值
 
@@ -528,6 +530,8 @@ view.box
     .update()   // 匹配到相同 attribute 的约束，更新其 constant
 ```
 
+匹配规则：按 `(firstItem, secondItem, firstAttribute, secondAttribute, relation)` 五元组匹配，命中则更新 `constant/priority`；未命中的作为新约束追加。
+
 #### 10.2 remake：整体重建
 
 ```swift
@@ -536,24 +540,69 @@ view.box
     .remake()       // 先清空历史约束再激活这批
 ```
 
-#### 10.3 remove：删除指定约束
-
-```swift
-view.box
-    .top(20)        // 传入要匹配删除的约束特征
-    .leading(16)
-    .remove()
-```
-
-> `remove` 根据 `firstItem / secondItem / firstAttribute / secondAttribute / relation` 精确匹配，不依赖 constant。
-
-#### 10.4 clear：全清
+#### 10.3 clear：全清
 
 ```swift
 view.box.clear()    // 立即释放当前 view 上所有 LayoutBox 管理的约束
 ```
 
-### 11. 立即生效（flush）
+### 11. 按 identifier 精细管理约束
+
+自 v(最新) 起，`LayoutBox` 的所有约束方法都新增了 **`id: String?` 参数**，允许给单条约束打上标签，再通过标签查询/删除，是替代旧 `.remove()` 的推荐方案。
+
+#### 11.1 打标签的两种写法
+
+方式一：直接把 `id:` 传进方法：
+
+```swift
+view.box
+    .top(20,      id: "top-normal")
+    .leading(16,  id: "leading-normal")
+    .width(120,   id: "size-w")
+    .height(60,   id: "size-h")
+```
+
+方式二：链式 `.id(_:)` 给「最近一次添加的约束」打标签：
+
+```swift
+view.box
+    .top(20).id("top-normal")
+    .leading(16).id("leading-normal")
+    .width(120).id("size-w")
+    .height(60).id("size-h")
+```
+
+> `.id(_:)` 内部就是给 `latestConstraint.identifier` 赋值，两种写法完全等价。
+
+#### 11.2 查询约束
+
+```swift
+if let cs = view.box.constraints(withID: "size-w") {
+    print(cs.first?.constant)   // 120
+}
+```
+
+> 底层等价于 `view.constraints.filter { $0.identifier == id }`，因此也能查到「所有历史约束」而不仅是 tempConstraints 中的。
+
+#### 11.3 按 ID 删除
+
+```swift
+// 只删掉宽高相关的约束，位置约束保留
+view.box.removeConstraints(withID: "size-w")
+view.box.removeConstraints(withID: "size-h")
+```
+
+`removeConstraints(withID:)` 会同时清理 `constraints` 与 `tempConstraints` 两份存储，并对匹配到的约束调用 `isActive = false`，是**同步生效**的。
+
+#### 11.4 获取最近一条约束
+
+```swift
+view.box.top(20)
+let topConstraint = view.box.latestConstraint   // 拿到刚才 top 生成的那条 NSLayoutConstraint
+topConstraint?.priority = .defaultLow
+```
+
+### 12. 立即生效（flush）
 
 由于约束是 **懒激活** 的，某些场景（如 UITableViewCell 自适应高度计算）需要立即生效：
 
@@ -562,9 +611,9 @@ view.box.top(10).leading(16).width(100).height(44)
 view.box.flush()   // 强制走一次 updateConstraintsIfNeeded()
 ```
 
-`update() / remake() / remove()` 内部会自动调用 `flush()`，无需手动调用。
+`update() / remake()` 内部会自动调用 `flush()`，无需手动调用。`clear()` 与 `removeConstraints(withID:)` 是同步生效的，也不需要 flush。
 
-### 12. 支持任意数值类型（NumberConvertible）
+### 13. 支持任意数值类型（NumberConvertible）
 
 ```swift
 view.box.top(10)          // Int
@@ -574,7 +623,7 @@ view.box.top(CGFloat(12)) // CGFloat
 view.box.top(UInt(4))     // UInt
 ```
 
-### 13. ObjC 链式用法
+### 14. ObjC 链式用法
 
 所有 Swift 链式方法都通过 `@objc(...)` 计算属性暴露给 ObjC：
 
@@ -593,17 +642,19 @@ card.zl_layout.addSubviewLayout(icon, ^(ZLLayout *box) {
 });
 ```
 
-⚠️ ObjC 侧数值参数是 `CGFloat`，需要 `centerY(0)` 显式传 0，不能省略。
+⚠️ ObjC 侧数值参数是 `CGFloat`，需要 `centerY(0)` 显式传 0，不能省略。ObjC 侧目前不支持 `id:` 命名参数，如需给约束打标签请先在 Swift 侧包装或直接操作 `latestConstraint.identifier`。
 
-### 14. LayoutBox 常见坑
+### 15. LayoutBox 常见坑
 
 1. **`bottom` / `trailing` 直接使用时不自动取反**，请传负值内缩。仅 `edges(top:leading:bottom:trailing:)` 会自动取反。
 2. **`update()` 只更新 constant/priority**：如果第二次调用的约束参与的 anchor 不同（firstItem 或 attribute 不同），会作为新约束追加，不会覆盖原来的。
-3. **`clear()` 会同步清除，不需要 flush**；其余模式（update/remake/remove）内部已经自动 flush。
-4. **在 `viewDidLoad` 里链式布局是安全的**，约束会在 runloop 下一个 update pass 激活；如果需要立即读取 frame，请调用 `flush()` 后再 `layoutIfNeeded()`。
-5. **不要与 `translatesAutoresizingMaskIntoConstraints = true` 混用**：LayoutBox 一旦被调用会强制关闭该属性。
-6. **一个 view 只会有一份 LayoutBox**（通过 associated object 缓存），多次访问 `view.box` 返回同一实例，因此内部约束记录是累积的。
-7. **`view.box.view` 弱引用**：`LayoutBox` 持有 view 是 `weak`，无循环引用风险；但也意味着 view 销毁后 `box` 不再可用。
+3. **精细删除只能靠 identifier**：v(最新) 已移除 `.remove()` 模式，请使用 `id:` / `.id(_:)` + `removeConstraints(withID:)` 组合。
+4. **`clear()` / `removeConstraints(withID:)` 是同步的**，不需要 flush；而 `update() / remake()` 内部已经自动 flush。
+5. **在 `viewDidLoad` 里链式布局是安全的**，约束会在 runloop 下一个 update pass 激活；如果需要立即读取 frame，请调用 `flush()` 后再 `layoutIfNeeded()`。
+6. **不要与 `translatesAutoresizingMaskIntoConstraints = true` 混用**：LayoutBox 一旦被调用会强制关闭该属性。
+7. **一个 view 只会有一份 LayoutBox**（通过 associated object 缓存），多次访问 `view.box` 返回同一实例，因此内部约束记录是累积的。
+8. **`view.box.view` 弱引用**：`LayoutBox` 持有 view 是 `weak`，无循环引用风险；但也意味着 view 销毁后 `box` 不再可用。
+9. **`.id(_:)` 只作用于最近一条约束**：链式中间调用 `.id(_:)` 只会标记刚生成的那条，不要理解为"给之后所有约束打标签"。
 
 ---
 
@@ -649,7 +700,8 @@ card.zl_layout.addSubviewLayout(icon, ^(ZLLayout *box) {
 - **尺寸**：`width / height / minWidth / maxWidth / minHeight / maxHeight / size(w:h:) / square / widthTo / heightTo`
 - **贴边**：`edges(top:leading:bottom:trailing:)` `allEdges(_:)` `edgesZero()`（bottom/trailing 自动取反）
 - **层级**：`addTo(_:)` `addToFull(_:)` `addSubview(_:)` `addSubviewLayout(_:layout:)`
-- **约束管理**：`update()` `remake()` `remove()` `clear()` `flush()`
+- **约束模式**：`update()` `remake()` `clear()` `flush()`
+- **约束标识**：所有方法都有可选 `id: String?` 参数；链式 `.id(_:)` 打标签；`latestConstraint` 拿最近一条；`constraints(withID:)` 查询；`removeConstraints(withID:)` 精确删除
 - **数值类型**：任意 `NumberConvertible`（`Int/Int8~64/UInt/Float/Double/CGFloat`）
 
 ---
