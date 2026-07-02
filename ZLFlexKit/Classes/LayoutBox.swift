@@ -76,7 +76,6 @@ enum InstallMode {
     case add
     case update
     case remake
-    case remove
 }
 
 fileprivate class ConstraintStorage {
@@ -95,8 +94,6 @@ fileprivate class ConstraintStorage {
                 update()
             case .remake:
                 remake()
-            case .remove:
-                remove()
         }
     }
     
@@ -144,17 +141,6 @@ fileprivate class ConstraintStorage {
         }
         tempConstraints.removeAll()
     }
-    func remove(){
-        let constraintsSet = Set(constraints)
-        let updateConstraintsSet = Set(tempConstraints)
-        let intersection = constraintsSet.intersection(updateConstraintsSet)
-        NSLayoutConstraint.deactivate(intersection.map{$0.constraint})
-        self.constraints.removeAll{
-            intersection.contains($0)
-        }
-        tempConstraints.removeAll()
-        mode = .add
-    }
     
     func clear() {
         NSLayoutConstraint.deactivate(constraints.map{$0.constraint})
@@ -177,10 +163,7 @@ public class LayoutBox: NSObject {
     }
     
     
-    private weak var lastConstraint: NSLayoutConstraint? {
-       let storage = consStorge
-       return storage.tempConstraints.last?.constraint ?? storage.constraints.last?.constraint
-    }
+    
     
     lazy private var consStorge: ConstraintStorage = {
         let storage = self.view?.consStorge ?? ConstraintStorage()
@@ -194,8 +177,14 @@ public class LayoutBox: NSObject {
     
     
     
-    private func addConstraint(_ constraint: NSLayoutConstraint?) {
+    private func addConstraint(_ constraint: NSLayoutConstraint?,id: String? = nil) {
+        
         guard let constraint = constraint else { return }
+        
+        if let id = id {
+            constraint.identifier = id
+        }
+        
         if let view = self.view, view.translatesAutoresizingMaskIntoConstraints {
             view.translatesAutoresizingMaskIntoConstraints = false
         }
@@ -211,32 +200,30 @@ public class LayoutBox: NSObject {
     
     
     @discardableResult
-    public func centerX(_ x: NumberConvertible = 0) -> Self {
-        return centerXTo(view?.superview?.centerXAnchor, offset: x)
+    public func centerX(_ x: NumberConvertible = 0,id: String? = nil) -> Self {
+        return centerXTo(view?.superview?.centerXAnchor, offset: x,id: id)
     }
     
     @discardableResult
-    public func centerXTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func centerXTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.centerXAnchor.constraint(equalTo: anchor, constant: offset.cgFloat))
-        }
-        
-        
-        return self
-    }
-    
-    @discardableResult
-    public func centerXGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
-        if let anchor = anchor {
-            addConstraint(view?.centerXAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.centerXAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func centerXLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func centerXGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.centerXAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.centerXAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
+        }
+        return self
+    }
+    
+    @discardableResult
+    public func centerXLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
+        if let anchor = anchor {
+            addConstraint(view?.centerXAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
@@ -244,30 +231,30 @@ public class LayoutBox: NSObject {
     // MARK: - CenterY
     
     @discardableResult
-    public func centerY(_ y: NumberConvertible = 0) -> Self {
+    public func centerY(_ y: NumberConvertible = 0,id: String? = nil) -> Self {
         return centerYTo(view?.superview?.centerYAnchor, offset: y)
     }
     
     @discardableResult
-    public func centerYTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func centerYTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.centerYAnchor.constraint(equalTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.centerYAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func centerYGreaterThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func centerYGreaterThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.centerYAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.centerYAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func centerYLessThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func centerYLessThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.centerYAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.centerYAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
@@ -287,30 +274,30 @@ public class LayoutBox: NSObject {
     // MARK: - Top
     
     @discardableResult
-    public func top(_ top: NumberConvertible) -> Self {
+    public func top(_ top: NumberConvertible,id: String? = nil) -> Self {
         return topTo(view?.superview?.topAnchor, offset: top)
     }
     
     @discardableResult
-    public func topTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func topTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.topAnchor.constraint(equalTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.topAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func topGreaterThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func topGreaterThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.topAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.topAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func topLessThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func topLessThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.topAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.topAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
@@ -318,30 +305,30 @@ public class LayoutBox: NSObject {
     // MARK: - Leading
     
     @discardableResult
-    public func leading(_ leading: NumberConvertible) -> Self {
-        return leadingTo(view?.superview?.leadingAnchor, offset: leading)
+    public func leading(_ leading: NumberConvertible,id: String? = nil) -> Self {
+        return leadingTo(view?.superview?.leadingAnchor, offset: leading,id: id)
     }
     
     @discardableResult
-    public func leadingTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func leadingTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.leadingAnchor.constraint(equalTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.leadingAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func leadingGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func leadingGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.leadingAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.leadingAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func leadingLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func leadingLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.leadingAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.leadingAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
@@ -349,30 +336,30 @@ public class LayoutBox: NSObject {
     // MARK: - Bottom
     
     @discardableResult
-    public func bottom(_ bottom: NumberConvertible) -> Self {
-        return bottomTo(view?.superview?.bottomAnchor, offset: bottom)
+    public func bottom(_ bottom: NumberConvertible,id: String? = nil) -> Self {
+        return bottomTo(view?.superview?.bottomAnchor, offset: bottom,id: id)
     }
     
     @discardableResult
-    public func bottomTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func bottomTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.bottomAnchor.constraint(equalTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.bottomAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func bottomGreaterThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func bottomGreaterThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.bottomAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.bottomAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func bottomLessThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func bottomLessThanOrTo(_ anchor: NSLayoutYAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.bottomAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.bottomAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
@@ -380,30 +367,30 @@ public class LayoutBox: NSObject {
     // MARK: - Trailing
     
     @discardableResult
-    public func trailing(_ trailing: NumberConvertible) -> Self {
-        return trailingTo(view?.superview?.trailingAnchor, offset: trailing)
+    public func trailing(_ trailing: NumberConvertible,id: String? = nil) -> Self {
+        return trailingTo(view?.superview?.trailingAnchor, offset: trailing,id: id)
     }
     
     @discardableResult
-    public func trailingTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func trailingTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.trailingAnchor.constraint(equalTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.trailingAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func trailingGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func trailingGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.trailingAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.trailingAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
     
     @discardableResult
-    public func trailingLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0) -> Self {
+    public func trailingLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
-            addConstraint(view?.trailingAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat))
+            addConstraint(view?.trailingAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
@@ -412,27 +399,27 @@ public class LayoutBox: NSObject {
     
     /// 设置高度
     @discardableResult
-    public func height(_ height: NumberConvertible) -> Self {
-        addConstraint(view?.heightAnchor.constraint(equalToConstant: height.cgFloat))
+    public func height(_ height: NumberConvertible,id: String? = nil) -> Self {
+        addConstraint(view?.heightAnchor.constraint(equalToConstant: height.cgFloat),id: id)
         return self
     }
     
     /// 设置高度相等
     @discardableResult
-    public func heightTo(_ dimension: NSLayoutDimension) -> Self {
-        addConstraint(view?.heightAnchor.constraint(equalTo: dimension))
+    public func heightTo(_ dimension: NSLayoutDimension,id: String? = nil) -> Self {
+        addConstraint(view?.heightAnchor.constraint(equalTo: dimension),id: id)
         return self
     }
     
     @discardableResult
-    public func minHeight(_ height: NumberConvertible) -> Self {
-        addConstraint(view?.heightAnchor.constraint(greaterThanOrEqualToConstant: height.cgFloat))
+    public func minHeight(_ height: NumberConvertible,id: String? = nil) -> Self {
+        addConstraint(view?.heightAnchor.constraint(greaterThanOrEqualToConstant: height.cgFloat),id: id)
         return self
     }
     
     @discardableResult
-    public func maxHeight(_ height: NumberConvertible) -> Self {
-        addConstraint(view?.heightAnchor.constraint(lessThanOrEqualToConstant: height.cgFloat))
+    public func maxHeight(_ height: NumberConvertible,id: String? = nil) -> Self {
+        addConstraint(view?.heightAnchor.constraint(lessThanOrEqualToConstant: height.cgFloat),id: id)
         return self
     }
     
@@ -440,16 +427,49 @@ public class LayoutBox: NSObject {
     
     /// 设置宽度
     @discardableResult
-    public func width(_ width: NumberConvertible) -> Self {
-        addConstraint(view?.widthAnchor.constraint(equalToConstant: width.cgFloat))
+    public func width(_ width: NumberConvertible,id: String? = nil) -> Self {
+        addConstraint(view?.widthAnchor.constraint(equalToConstant: width.cgFloat),id: id)
         return self
     }
     
     /// 设置宽度相等
     @discardableResult
-    public func widthTo(_ dimension: NSLayoutDimension) -> Self {
-        addConstraint(view?.widthAnchor.constraint(equalTo: dimension))
+    public func widthTo(_ dimension: NSLayoutDimension,id: String? = nil) -> Self {
+        addConstraint(view?.widthAnchor.constraint(equalTo: dimension),id: id)
         return self
+    }
+    
+    
+    /// 获取最新添加的约束并设置约束标识符
+    @discardableResult
+    public func id(_ id: String) -> Self {
+        latestConstraint?.identifier = id
+        return self
+    }
+    
+    ///获取最新添加的约束
+    public var latestConstraint: NSLayoutConstraint? {
+       let storage = consStorge
+       return storage.tempConstraints.last?.constraint
+    }
+    
+    ///根据id获取约束对象
+    public func constraints(withID id: String) -> [NSLayoutConstraint]? {
+        view?.constraints.filter { $0.identifier == id }
+    }
+    ///根据id删除约束对象
+    public func removeConstraints(withID id: String) {
+       consStorge.tempConstraints.filter { $0.constraint.identifier == id }
+       .forEach {
+            $0.constraint.isActive = false
+            consStorge.tempConstraints.removeAll { $0.constraint.identifier == id }
+       }
+        
+        consStorge.constraints.filter { $0.constraint.identifier == id }
+        .forEach {
+             $0.constraint.isActive = false
+             consStorge.constraints.removeAll { $0.constraint.identifier == id }
+        }
     }
     
     @discardableResult
@@ -558,16 +578,6 @@ public class LayoutBox: NSObject {
     @discardableResult
     public func remake() -> Self {
         consStorge.mode = .remake
-        flush()
-        return self
-    }
-    
-    
-    /// 删除约束,立即更新约束
-    /// - Returns: <#description#>
-    @discardableResult
-    public func remove() -> Self {
-        consStorge.mode = .remove
         flush()
         return self
     }
@@ -822,10 +832,10 @@ public extension LayoutBox {
     
     
     
-    @objc(lastConstraint)
-    @available(swift, obsoleted: 1, renamed: "lastConstraint()")
-    var lastConstraintObjc: () -> NSLayoutConstraint? {
-        { self.lastConstraint }
+    @objc(latestConstraint)
+    @available(swift, obsoleted: 1, renamed: "latestConstraint()")
+    var latestConstraintObjc: () -> NSLayoutConstraint? {
+        { self.latestConstraint }
     }
     
     @objc(heightTo)
@@ -894,11 +904,7 @@ public extension LayoutBox {
         { self.remake() }
     }
     
-    @objc(remove)
-    @available(swift, obsoleted: 1, renamed: "remove()")
-    var removeObjc: () -> LayoutBox {
-        { self.remove() }
-    }
+    
 }
 
 

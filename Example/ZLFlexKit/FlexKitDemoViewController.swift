@@ -1269,12 +1269,11 @@ class ZLLayoutDemoVC: UIViewController {
         guard !removeDone else { return }
         removeDone = true
         removeBox.box
-            .leading(0)
-            .top(0)
-            .remove()
+            .remake()
             .center()
         // 匹配到 width、height 两条约束并 deactivate
         UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+        view.box.height(3,id: "")
     }
 
     @objc private func demoClear(_ sender: UITapGestureRecognizer) {

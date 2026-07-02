@@ -89,7 +89,7 @@
         .addView(f3);
     
     [box addArrangedSubview:sv2];
-    self.view.zl_layout.lastConstraint().constant = 200; // 修改最后一个约束为 200，演示动态更新布局
+    self.view.zl_layout.latestConstraint().constant = 200; // 修改最后一个约束为 200，演示动态更新布局
     
     
     
