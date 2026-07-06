@@ -53,8 +53,38 @@ struct ConstraintWrapper: Hashable {
     
     
     static func == (lhs: ConstraintWrapper, rhs: ConstraintWrapper) -> Bool {
-        return lhs.firstItem === rhs.firstItem &&
-            lhs.secondItem === rhs.secondItem &&
+        
+        let lItem1 = lhs.firstItem
+        let rItem1 = rhs.firstItem
+        let lItem2 = lhs.secondItem
+        let rItem2 = rhs.secondItem
+        let lConsItem = lhs.constraint.item
+        let rConsItem = rhs.constraint.item
+        
+        let res1: Bool
+        if lItem1 is LayoutGuide, rItem1 is LayoutGuide {
+            res1 = lConsItem.view === rConsItem.view && lConsItem.type == rConsItem.type
+                && lConsItem.type != .none
+//            print(" res1: \(res1)")
+        }else {
+            res1 = lItem1 === rItem1
+        }
+        
+        let res2: Bool
+        if lItem2 is LayoutGuide, rItem2 is LayoutGuide {
+            res2 = lConsItem.view === rConsItem.view && lConsItem.type == rConsItem.type && lConsItem.type != .none
+            print(" res2: \(res2)")
+
+        }else {
+            res2 = lItem2 === rItem2
+        }
+        
+        return
+//        lhs.firstItem === rhs.firstItem &&
+//            lhs.secondItem === rhs.secondItem &&
+        
+            res1 && res2 &&
+        
             lhs.firstAttribute == rhs.firstAttribute &&
             lhs.secondAttribute == rhs.secondAttribute &&
             lhs.relation == rhs.relation &&
@@ -70,8 +100,12 @@ struct ConstraintWrapper: Hashable {
         hasher.combine(multiplier)
         hasher.combine(constant)
         hasher.combine(priority)
-        hasher.combine(firstItem.map(ObjectIdentifier.init))
-        hasher.combine(secondItem.map(ObjectIdentifier.init))
+        if !(firstItem is LayoutGuide) {
+            hasher.combine(firstItem.map(ObjectIdentifier.init))
+        }
+        if !(secondItem is LayoutGuide) {
+            hasher.combine(secondItem.map(ObjectIdentifier.init))
+        }
     }
 }
 
@@ -114,7 +148,7 @@ final class FlexManager {
     }
     
     ///开启刷新优化
-    private var enableRefreshOptimization: Bool = false
+    private var enableRefreshOptimization: Bool = true
 
     // MARK: - Layout
 
@@ -211,15 +245,17 @@ final class FlexManager {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
                 let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
+                cons.item(view, .flexSpacingLeading)
+
                 nextXAnchor = guide.trailingAnchor
                 preTrailingMarge = 0.0
                 addConstraint(cons)
 
                 
                 
-                addConstraint(guide.widthAnchor.constraint(greaterThanOrEqualToConstant: 0))
+                addConstraint(guide.widthAnchor.constraint(greaterThanOrEqualToConstant: 0).item(view, .flexGtSpacingWidth))
                 if let dim = flexWidthDim {
-                    addConstraint(dim.constraint(equalTo: guide.widthAnchor))
+                    addConstraint(dim.constraint(equalTo: guide.widthAnchor).item(view, .flexEqSpacingWidth))
                 }
                 flexWidthDim = guide.widthAnchor
             }
@@ -231,6 +267,7 @@ final class FlexManager {
                     let guide = LayoutGuide()
                     guide.stackView = stackView
                     let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
+                    cons.item(view, .spacingLeading)
                     addConstraint(cons)
                     nextXAnchor = guide.trailingAnchor
                     preTrailingMarge = 0.0
@@ -269,11 +306,12 @@ final class FlexManager {
                 let guide = LayoutGuide()
                 guide.stackView = stackView
                 let cons = guide.leadingAnchor.constraint(equalTo: nextXAnchor,constant: preTrailingMarge)
+                cons.item(view, .eqSpacingLeading)
                 addConstraint(cons)
                 nextXAnchor = guide.trailingAnchor
                 preTrailingMarge = 0.0
                 if let dim = widthDim {
-                    addConstraint(guide.widthAnchor.constraint(equalTo: dim))
+                    addConstraint(guide.widthAnchor.constraint(equalTo: dim).item(view, .eqSpacingWidth))
                 }
                 widthDim = guide.widthAnchor
                 

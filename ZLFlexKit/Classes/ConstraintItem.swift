@@ -17,8 +17,15 @@ public enum LayoutConType: Int {
     case leading
     case trailing
     case spacing
+    case spacingLeading
     case minSpacing
     case maxSpacing
+    case flexSpacingLeading
+    case flexEqSpacingWidth
+    case flexGtSpacingWidth
+    case eqSpacingLeading
+    case eqSpacingWidth
+    case eqGtSpacingWidth
 }
 @objc(ZLConstraintItem)
 public class ConstraintItem: NSObject {
@@ -50,5 +57,12 @@ extension NSLayoutConstraint {
         )
 
         return obj
+    }
+    
+    @discardableResult
+    func item(_ view: UIView,_ type: LayoutConType) -> Self{
+        item.view = view
+        item.type = type
+        return self
     }
 }
