@@ -649,7 +649,8 @@ class SpacingDemoVC: UIViewController {
         currentSpacing = CGFloat(s.value)
         label.text = "第 1 个 view 后间距: \(Int(currentSpacing))pt"
         if let v = fixedSpacingView.arrangedViews.first {
-            fixedSpacingView.setCustomSpacing(currentSpacing, after: v)
+//            fixedSpacingView.setCustomSpacing(currentSpacing, after: v)
+            v.flex.spacing(currentSpacing)
         }
     }
 }

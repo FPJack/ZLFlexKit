@@ -175,11 +175,12 @@ public  class FlexItem: NSObject {
         get {_spacing > 0 ? _spacing : stackView?.spacing ?? 0 }
         set {
             let oldValue = spacing
-            _spacing = newValue
             if oldValue != newValue {
                 stackView?.setCustomSpacing(newValue, after: self.view)
 //                setStackViewNeedsUpdateConstraints()
             }
+            _spacing = newValue
+
         }
     }
     
@@ -190,11 +191,12 @@ public  class FlexItem: NSObject {
         get {_minSpacing }
         set {
             let oldValue = minSpacing
-            _minSpacing = newValue
             if oldValue != newValue {
                 stackView?.setCustomMinSpacing(newValue, after: self.view)
 //                setStackViewNeedsUpdateConstraints()
             }
+            _minSpacing = newValue
+
         }
     }
     
@@ -205,11 +207,11 @@ public  class FlexItem: NSObject {
         get { _maxSpacing }
         set {
             let oldValue = maxSpacing
-            _maxSpacing = newValue
             if oldValue != newValue {
 //                setStackViewNeedsUpdateConstraints()
                 stackView?.setCustomMaxSpacing(newValue, after: self.view)
             }
+            _maxSpacing = newValue
         }
     }
     
