@@ -177,7 +177,8 @@ public  class FlexItem: NSObject {
             let oldValue = spacing
             _spacing = newValue
             if oldValue != newValue {
-                setStackViewNeedsUpdateConstraints()
+                stackView?.setCustomSpacing(newValue, after: self.view)
+//                setStackViewNeedsUpdateConstraints()
             }
         }
     }
@@ -191,7 +192,8 @@ public  class FlexItem: NSObject {
             let oldValue = minSpacing
             _minSpacing = newValue
             if oldValue != newValue {
-                setStackViewNeedsUpdateConstraints()
+                stackView?.setCustomMinSpacing(newValue, after: self.view)
+//                setStackViewNeedsUpdateConstraints()
             }
         }
     }
@@ -205,7 +207,8 @@ public  class FlexItem: NSObject {
             let oldValue = maxSpacing
             _maxSpacing = newValue
             if oldValue != newValue {
-                setStackViewNeedsUpdateConstraints()
+//                setStackViewNeedsUpdateConstraints()
+                stackView?.setCustomMaxSpacing(newValue, after: self.view)
             }
         }
     }
@@ -475,6 +478,25 @@ public  class FlexItem: NSObject {
     @discardableResult
     public func square(_ side: NumberConvertible) -> Self {
         return size(w: side, h: side)
+    }
+    
+    
+    
+    /// 更新宽高约束 self.width(30).height(40).updateSize()，查询有没有设置宽高，已经设置了进行更新，没有则添加宽高
+    /// - Returns:
+    @discardableResult
+    public func updateSize() -> Self{
+        self.stackView?.box.update()
+        return self
+    }
+    
+    
+    /// 删除宽高约束,后面再设置宽高约束会重新添加
+    /// - Returns: <#description#>
+    @discardableResult
+    public func remakeSize() -> Self{
+        self.stackView?.box.remake()
+        return self
     }
 
     
