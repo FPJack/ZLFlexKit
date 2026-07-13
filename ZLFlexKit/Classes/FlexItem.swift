@@ -488,7 +488,7 @@ public  class FlexItem: NSObject {
     /// - Returns:
     @discardableResult
     public func updateSize() -> Self{
-        self.stackView?.box.update()
+        self.view?.box.update()
         return self
     }
     
@@ -497,7 +497,7 @@ public  class FlexItem: NSObject {
     /// - Returns: <#description#>
     @discardableResult
     public func remakeSize() -> Self{
-        self.stackView?.box.remake()
+        self.view?.box.remake()
         return self
     }
 
