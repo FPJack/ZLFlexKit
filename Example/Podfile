@@ -1,9 +1,25 @@
 use_frameworks!
 
-platform :ios, '11.0'
+platform :ios, '15.0'
 
 target 'ZLFlexKit_Example' do
   pod 'ZLFlexKit', :path => '../'
   pod 'SnapKit', '~> 5.0'
-pod 'RxSwift'
+  pod 'RxSwift'
 end
+
+# 统一把所有 Pods target 的 deployment target 拉到 15.0，
+# 避免新版 Xcode(SDK 最低仅支持 iOS 15) 报
+# "deployment target is set to 9.0/10.0/11.0, but the range of supported
+#  deployment target versions is 15.0 to 27.2.x" 错误
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+    end
+  end
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+  end
+end
+

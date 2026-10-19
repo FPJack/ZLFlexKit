@@ -47,6 +47,8 @@ class FlexKitDemoViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        UIView().box.width(3).height(10).width(33).height(3);
         title = "ZLFlexKit Demo"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         tableView.backgroundColor = .white

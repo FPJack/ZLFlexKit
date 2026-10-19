@@ -9,7 +9,7 @@
 import UIKit
 import ZLFlexKit
  class TableCell: UITableViewCell {
-    override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
         
@@ -22,19 +22,10 @@ import ZLFlexKit
         222222222222222222222222222222222222222222222222222222222222222
         333333333333333333333333333333333333333333333333333333333333333
         """
+        
+        label.box.addTo(contentView).edgesZero().flush()
 
-         VStackView {
-            UISwitch()
-            UISwitch()
-            UISwitch()
-            UISwitch()
-            UISwitch()
-            label
-        }.spacing(16)
-         .insets(.all(50))
-         .box
-         .addToFull(contentView)
-         .flush()
+        
 
     }
      
@@ -50,7 +41,7 @@ class TableViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.estimatedRowHeight = 100
-        tableView.rowHeight = UITableViewAutomaticDimension
+        tableView.rowHeight = UITableView.automaticDimension
         tableView.register(TableCell.self, forCellReuseIdentifier: "reuseIdentifier")
     }
 

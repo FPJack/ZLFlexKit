@@ -46,37 +46,37 @@ func testView2<T>() -> TestObj<T>? {
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-    var window: UIWindow?
+    // ⚠️ UIScene 适配后，window 由 SceneDelegate 持有，AppDelegate 不再声明 window
+    //    这里保留 var window 会导致系统走「兼容模式」，Scene 回调可能不触发。
 
-    
+    // MARK: - 进程级生命周期
 
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // 这里只做与界面无关的初始化：SDK 注册、日志、数据库…
+        // 界面搭建请放到 SceneDelegate.scene(_:willConnectTo:options:)
         return true
     }
 
-    func applicationWillResignActive(_ application: UIApplication) {
-        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-        // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
-    }
-
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-    }
-
-    func applicationWillEnterForeground(_ application: UIApplication) {
-        // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-    }
-
     func applicationWillTerminate(_ application: UIApplication) {
-        // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+        // App 即将终止（Scene 模式下不一定会调用，重要数据请在 sceneDidEnterBackground 保存）
     }
 
+    // MARK: - UIScene 配置分发
 
+    /// 系统每创建一个 scene session 都会问一次用哪套配置
+    /// 这里返回的配置名必须与 Info.plist → UIApplicationSceneManifest 中的 UISceneConfigurationName 一致
+    func application(_ application: UIApplication,
+                     configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        return UISceneConfiguration(name: "Default Configuration",
+                                    sessionRole: connectingSceneSession.role)
+    }
+
+    /// 用户在多任务界面上划关闭了某些窗口后回调
+    func application(_ application: UIApplication,
+                     didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
+        // 释放这些 session 对应的、不再需要的资源
+    }
 }
 
