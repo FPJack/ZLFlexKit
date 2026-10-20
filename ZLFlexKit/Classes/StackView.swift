@@ -421,9 +421,41 @@ open class StackView: UIView {
         return self
     }
     
-    
-    
-    
+    /// 降级为「纯布局容器」，消除渲染开销
+    ///
+    /// 适用于仅用于排版、没有任何视觉表现的嵌套 StackView：
+    /// 1. 清空背景色与 `layer.contents`，避免 CALayer 分配 backing store
+    /// 2. 关闭 `needsDisplayOnBoundsChange`，bounds 变化不再触发重绘
+    /// 3. 关闭 `clearsContextBeforeDrawing`，跳过无谓的上下文清理
+    /// 4. 可选关闭整个子树的触摸响应，彻底跳过 hitTest 遍历
+    ///
+    /// - Important: **绝对不要**调用 `layer.removeFromSuperlayer()`。
+    ///   `layer` 是 UIView 的宿主层，与 view 一对一绑死且被 view 强引用。
+    ///   把它从渲染树摘掉既省不了内存，还会导致自身及**所有子视图直接不可见**。
+    ///
+    /// - Note: 本方法只消除**渲染与命中测试**开销，不会减少约束数量，
+    ///         也无法移除这一层 UIView。若要彻底去掉中间 UIView，
+    ///         只能改用 `UILayoutGuide` 方案。
+    ///
+    /// - Parameter disableTouch: 是否同时关闭触摸响应。
+    ///   仅当容器内**没有任何**可交互子视图时才可传 `true`，
+    ///   否则子视图将无法响应点击。默认 `false`。
+    /// - Returns: self，支持链式调用
+    @discardableResult
+    open func thin(disableTouch: Bool = false) -> Self {
+        // 渲染层减负：没有背景色和 contents，CALayer 就不会分配 backing store
+        backgroundColor                  = nil
+        isOpaque                         = false
+        layer.contents                   = nil
+        layer.needsDisplayOnBoundsChange = false
+        clearsContextBeforeDrawing       = false
+        contentMode                      = .redraw
+        // 命中测试减负（可选）
+        if disableTouch {
+            isUserInteractionEnabled = false
+        }
+        return self
+    }
 }
 
 // MARK: - OC链式API
@@ -727,6 +759,35 @@ extension StackView {
             return self
         }
     }
+    
+    
+    
+    /// 降级为纯布局容器，消除渲染开销
+    @objc(thin)
+    @available(swift, obsoleted: 1, renamed: "thin(disableTouch:)")
+    open var thinObjc: () -> StackView {
+        {
+            self.thin()
+            return self
+        }
+    }
+    
+    
+    
+    /// 降级为纯布局容器，并指定是否同时关闭触摸响应
+    @objc(thinDisableTouch)
+    @available(swift, obsoleted: 1, renamed: "thin(disableTouch:)")
+    open var thinDisableTouchObjc: (_ disableTouch: Bool) -> StackView {
+        {
+            disableTouch in
+            self.thin(disableTouch: disableTouch)
+            return self
+        }
+    }
+    
+    
+    
+  
 }
 
 extension StackView {
