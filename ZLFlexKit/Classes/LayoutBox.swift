@@ -175,6 +175,30 @@ public class LayoutBox: NSObject {
         _ = UIView._zlSwizzleOnce
     }
     
+    /// 依赖 superview 但调用时 view 还没有 superview 的约束，暂存到加入父视图后再生成
+    private var pendingSuperviewOps: [(LayoutBox, UIView) -> Void] = []
+    
+    /// 有 superview 立即执行，否则暂存
+    private func withSuperview(_ op: @escaping (LayoutBox, UIView) -> Void) -> Self {
+        if let superview = view?.superview {
+            op(self, superview)
+        } else {
+            pendingSuperviewOps.append(op)
+        }
+        return self
+    }
+    
+    /// 是否有等待 superview 的约束
+    var hasPendingSuperviewConstraints: Bool { !pendingSuperviewOps.isEmpty }
+    
+    /// view 加入父视图后调用：生成之前暂存的相对 superview 的约束
+    func applyPendingSuperviewConstraints() {
+        guard let superview = view?.superview, !pendingSuperviewOps.isEmpty else { return }
+        let ops = pendingSuperviewOps
+        pendingSuperviewOps.removeAll()
+        ops.forEach { $0(self, superview) }
+    }
+    
     
     
     private func addConstraint(_ constraint: NSLayoutConstraint?,id: String? = nil) {
@@ -201,7 +225,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func centerX(_ x: NumberConvertible = 0,id: String? = nil) -> Self {
-        return centerXTo(view?.superview?.centerXAnchor, offset: x,id: id)
+        return withSuperview { box, sv in box.centerXTo(sv.centerXAnchor, offset: x, id: id) }
     }
     
     @discardableResult
@@ -232,7 +256,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func centerY(_ y: NumberConvertible = 0,id: String? = nil) -> Self {
-        return centerYTo(view?.superview?.centerYAnchor, offset: y)
+        return withSuperview { box, sv in box.centerYTo(sv.centerYAnchor, offset: y, id: id) }
     }
     
     @discardableResult
@@ -275,7 +299,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func top(_ top: NumberConvertible,id: String? = nil) -> Self {
-        return topTo(view?.superview?.topAnchor, offset: top)
+        return withSuperview { box, sv in box.topTo(sv.topAnchor, offset: top, id: id) }
     }
     
     @discardableResult
@@ -306,7 +330,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func leading(_ leading: NumberConvertible,id: String? = nil) -> Self {
-        return leadingTo(view?.superview?.leadingAnchor, offset: leading,id: id)
+        return withSuperview { box, sv in box.leadingTo(sv.leadingAnchor, offset: leading, id: id) }
     }
     
     @discardableResult
@@ -337,7 +361,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func bottom(_ bottom: NumberConvertible,id: String? = nil) -> Self {
-        return bottomTo(view?.superview?.bottomAnchor, offset: bottom,id: id)
+        return withSuperview { box, sv in box.bottomTo(sv.bottomAnchor, offset: bottom, id: id) }
     }
     
     @discardableResult
@@ -368,7 +392,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func trailing(_ trailing: NumberConvertible,id: String? = nil) -> Self {
-        return trailingTo(view?.superview?.trailingAnchor, offset: trailing,id: id)
+        return withSuperview { box, sv in box.trailingTo(sv.trailingAnchor, offset: trailing, id: id) }
     }
     
     @discardableResult
@@ -503,12 +527,12 @@ public class LayoutBox: NSObject {
     /// 贴紧父视图四边（参数布局）
     @discardableResult
     public func edges(top: NumberConvertible, leading: NumberConvertible, bottom: NumberConvertible, trailing: NumberConvertible) -> Self {
-        guard let superview = view?.superview else { return self }
-        addConstraint(view?.topAnchor.constraint(equalTo: superview.topAnchor, constant: top.cgFloat))
-        addConstraint(view?.leadingAnchor.constraint(equalTo: superview.leadingAnchor, constant: leading.cgFloat))
-        addConstraint(view?.bottomAnchor.constraint(equalTo: superview.bottomAnchor, constant: -bottom.cgFloat))
-        addConstraint(view?.trailingAnchor.constraint(equalTo: superview.trailingAnchor, constant: -trailing.cgFloat))
-        return self
+        return withSuperview { box, superview in
+            box.addConstraint(box.view?.topAnchor.constraint(equalTo: superview.topAnchor, constant: top.cgFloat))
+            box.addConstraint(box.view?.leadingAnchor.constraint(equalTo: superview.leadingAnchor, constant: leading.cgFloat))
+            box.addConstraint(box.view?.bottomAnchor.constraint(equalTo: superview.bottomAnchor, constant: -bottom.cgFloat))
+            box.addConstraint(box.view?.trailingAnchor.constraint(equalTo: superview.trailingAnchor, constant: -trailing.cgFloat))
+        }
     }
     
     /// 贴紧父视图四边，参数相同。allEdges(10) 等价于 edges(top:10, leading:10, bottom:10, trailing:10)

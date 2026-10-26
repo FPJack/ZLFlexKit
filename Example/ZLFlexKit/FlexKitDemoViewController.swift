@@ -42,6 +42,7 @@ class FlexKitDemoViewController: UITableViewController {
         ("⑱ 性能对比 - 系统 UIStackView",          "与 ZLStackView 同等 3层嵌套结构横向对比",          { PerfUIStackViewVC() }),
         ("⑲ 性能对比 - SnapKit 手动约束",          "UIView+SnapKit 手动约束，无 StackView 辅助",       { PerfSnapKitVC() }),
         ("⑳ 性能对比 - 纯 Frame 布局",             "零约束，手动计算 frame，最原始的布局方式",          { PerfFrameVC() }),
+        ("㉑ ZStackView - 层叠布局",                "DSL 添加子视图：ZStackView { } / addViews { }", { ZStackDemoVC() }),
         ("TableViewController",             "cell自动计算高度",          { TableViewController() }),
     ]
 
@@ -2480,3 +2481,92 @@ class PerfFrameVC: UIViewController {
     }
 }
 
+
+// MARK: - ㉑ ZStackView DSL 添加子视图
+
+/// ZStackView 只负责用 DSL 添加子视图（后添加的在上层），
+/// 子视图的位置/尺寸可以直接在 DSL 里用 view.box 链式书写。
+class ZStackDemoVC: UIViewController {
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .compatBackground
+        let stack = makeScrollableContainerStack()
+
+        // ① DSL 中直接写 box 约束
+        stack.addView(sectionLabel("① DSL 中直接写 view.box 约束：按书写顺序添加，后面的在上层"))
+        let bg = UIView()
+        bg.backgroundColor = .compatGray5
+        bg.layer.cornerRadius = 8
+        let red = UIView.colored(.systemRed, text: "1", size: .zero)
+        let blue = UIView.colored(.systemBlue, text: "2", size: .zero)
+        let green = UIView.colored(.systemGreen, text: "3", size: .zero)
+
+        let z1 = ZStackView {
+            bg.box.edgesZero()
+            red.box.top(16).leading(16).size(w: 80, h: 60)
+            blue.box.top(32).leading(48).size(w: 80, h: 60)
+            green.box.top(48).leading(80).size(w: 80, h: 60)
+        }
+        z1.box.height(120)
+        stack.addView(z1)
+
+        // ② 条件 / 循环 / 可选
+        stack.addView(sectionLabel("② DSL 支持 if / if-else / for-in / 可选 view（nil 自动忽略）\n未被添加的分支不会生成任何约束"))
+        let showBadge = true
+        let isVip = false
+        let optionalView: UIView? = nil
+        let cards = (0..<4).map { UIView.colored(colors[$0], text: "\($0)", size: .zero) }
+
+        let z2 = ZStackView {
+            for (i, card) in cards.enumerated() {
+                card.box.top(10 + i * 10).leading(10 + i * 20).size(w: 70, h: 50)
+            }
+            if showBadge {
+                UIView.colored(.black, text: "if", size: .zero)
+                    .box.top(8).trailing(-8).size(w: 30, h: 20)
+            }
+            if isVip {
+                UIView.colored(.systemYellow, text: "VIP", size: .zero)
+                    .box.bottom(-8).trailing(-8).size(w: 44, h: 20)
+            } else {
+                UIView.colored(.gray, text: "else", size: .zero)
+                    .box.bottom(-8).trailing(-8).size(w: 44, h: 20)
+            }
+            optionalView
+        }
+        z2.backgroundColor = .compatGray5
+        z2.layer.cornerRadius = 8
+        z2.box.height(120)
+        stack.addView(z2)
+
+        // ③ 混写：view / box / addViews 追加
+        stack.addView(sectionLabel("③ view 与 box 可混写；addViews { } 追加子视图，支持链式"))
+        let plain = UIView.colored(.systemTeal, text: "固定尺寸", size: CGSize(width: 70, height: 30))
+        let z3 = ZStackView {
+            UIView.colored(.systemIndigo, text: "center", size: .zero)
+                .box.center().size(w: 160, h: 50)
+            plain                       // 普通 view，后面再自己约束也可以
+        }
+        .addViews {
+            UIView.colored(.systemPink, text: "addViews 追加", size: .zero)
+                .box.top(6).trailing(-6).size(w: 100, h: 24)
+        }
+        plain.box.bottom(-6).leading(6)
+        z3.backgroundColor = .compatGray5
+        z3.layer.cornerRadius = 8
+        z3.box.height(80)
+        stack.addView(z3)
+
+        // ④ 注意事项
+        stack.addView(sectionLabel("""
+        ④ 注意事项
+        1. ZStackView 只负责添加子视图，不做布局；约束可以直接在 DSL 里用 view.box 写。
+        2. 层级 = 书写顺序，后写的在上层。
+        3. top / leading / bottom / trailing / centerX / centerY / center / edges 等相对父视图的约束，
+           在 DSL 中会先暂存，等加入 ZStackView 后才生成。
+        4. xxxTo(anchor) 引用其他 view 的 anchor 时，两个 view 必须最终处于同一视图树中。
+        5. DSL 中只能写 UIView / view.box / 可选 UIView，不支持数字 / Spacer。
+        """))
+    }
+}
