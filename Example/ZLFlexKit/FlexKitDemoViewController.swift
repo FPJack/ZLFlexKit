@@ -2558,15 +2558,73 @@ class ZStackDemoVC: UIViewController {
         z3.box.height(80)
         stack.addView(z3)
 
-        // ④ 注意事项
+        // ④ 内边距 insets：构造时设置 + 动态修改
+        stack.addView(sectionLabel("④ insets 内边距：ZStackView(insets:) { } 构造时设置（可选）\n子视图的 top/leading/edges/center 等相对 insetsGuide 布局，拖动滑块动态修改"))
+        let insetBg = UIView()
+        insetBg.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.25)
+        insetBg.layer.borderColor = UIColor.systemBlue.cgColor
+        insetBg.layer.borderWidth = 1
+        let z4 = ZStackView(insets: .init(top: 10, leading: 10, bottom: 10, trailing: 10)) {
+            insetBg.box.edgesZero()                     // 贴 insetsGuide，直观显示内容区
+            UIView.colored(.systemRed, text: "TL", size: .zero)
+                .box.top(0).leading(0).size(w: 36, h: 24)
+            UIView.colored(.systemGreen, text: "BR", size: .zero)
+                .box.bottom(0).trailing(0).size(w: 36, h: 24)
+            UIView.colored(.systemIndigo, text: "center", size: .zero)
+                .box.center().size(w: 70, h: 30)
+        }
+        z4.backgroundColor = .compatGray5
+        z4.layer.cornerRadius = 8
+        z4.box.height(140)
+        stack.addView(z4)
+
+        let insetLabel = UILabel()
+        insetLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .medium)
+        insetLabel.text = "insets = 10"
+        stack.addView(insetLabel)
+
+        let slider = UISlider()
+        slider.minimumValue = 0
+        slider.maximumValue = 40
+        slider.value = 10
+        slider.addAction(UIAction { [weak z4, weak insetLabel] action in
+            guard let s = action.sender as? UISlider, let z4 = z4 else { return }
+            let v = CGFloat(Int(s.value))
+            insetLabel?.text = "insets = \(Int(v))"
+            z4.insets = .init(top: v, leading: v, bottom: v, trailing: v)   // 修改即生效
+            UIView.animate(withDuration: 0.15) { z4.layoutIfNeeded() }
+        }, for: .valueChanged)
+        stack.addView(slider)
+
+        let seg = UISegmentedControl(items: ["四边相同", "仅上下", "仅左右", "不对称"])
+        seg.selectedSegmentIndex = 0
+        seg.addAction(UIAction { [weak z4, weak slider, weak insetLabel] action in
+            guard let z4 = z4, let seg = action.sender as? UISegmentedControl else { return }
+            let v = CGFloat(Int(slider?.value ?? 10))
+            switch seg.selectedSegmentIndex {
+            case 1:  z4.insets = .init(top: v, leading: 0, bottom: v, trailing: 0)
+            case 2:  z4.insets = .init(top: 0, leading: v, bottom: 0, trailing: v)
+            case 3:  z4.insets = .init(top: 4, leading: 30, bottom: 20, trailing: 8)
+            default: z4.insets = .init(top: v, leading: v, bottom: v, trailing: v)
+            }
+            let i = z4.insets
+            insetLabel?.text = "insets = (t:\(Int(i.top)) l:\(Int(i.leading)) b:\(Int(i.bottom)) r:\(Int(i.trailing)))"
+            UIView.animate(withDuration: 0.25) { z4.layoutIfNeeded() }
+        }, for: .valueChanged)
+        stack.addView(seg)
+
+        // ⑤ 注意事项
         stack.addView(sectionLabel("""
-        ④ 注意事项
+        ⑤ 注意事项
         1. ZStackView 只负责添加子视图，不做布局；约束可以直接在 DSL 里用 view.box 写。
         2. 层级 = 书写顺序，后写的在上层。
         3. top / leading / bottom / trailing / centerX / centerY / center / edges 等相对父视图的约束，
            在 DSL 中会先暂存，等加入 ZStackView 后才生成。
         4. xxxTo(anchor) 引用其他 view 的 anchor 时，两个 view 必须最终处于同一视图树中。
         5. DSL 中只能写 UIView / view.box / 可选 UIView，不支持数字 / Spacer。
+        6. insets 作用于 insetsGuide：相对父视图的 top/leading/bottom/trailing/center/edges 会自动内缩；
+           xxxTo(anchor) 传入的是什么锚点就约束到什么，不受 insets 影响。
+        7. 修改 insets 只更新约束 constant，想要动画请在 animate 中调用 layoutIfNeeded()。
         """))
     }
 }

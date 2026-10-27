@@ -60,14 +60,58 @@ public struct ZStackViewBuilder {
 @objc(ZLZStackView)
 open class ZStackView: UIView {
 
+    /// 内边距，修改时同步更新 insetsGuide 的四边间距
+    public var insets: NSDirectionalEdgeInsets = .zero {
+        didSet { updateInsetsGuide() }
+    }
+
+    /// 根据 insets 内缩后的区域，初始化时自动添加到 ZStackView
+    public let insetsGuide = UILayoutGuide()
+
+    private var guideTop:      NSLayoutConstraint!
+    private var guideLeading:  NSLayoutConstraint!
+    private var guideBottom:   NSLayoutConstraint!
+    private var guideTrailing: NSLayoutConstraint!
+
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupInsetsGuide()
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupInsetsGuide()
+    }
+
+    private func setupInsetsGuide() {
+        addLayoutGuide(insetsGuide)
+        guideTop      = insetsGuide.topAnchor.constraint(equalTo: topAnchor)
+        guideLeading  = insetsGuide.leadingAnchor.constraint(equalTo: leadingAnchor)
+        guideBottom   = insetsGuide.bottomAnchor.constraint(equalTo: bottomAnchor)
+        guideTrailing = insetsGuide.trailingAnchor.constraint(equalTo: trailingAnchor)
+        NSLayoutConstraint.activate([guideTop, guideLeading, guideBottom, guideTrailing])
+        updateInsetsGuide()
+    }
+
+    private func updateInsetsGuide() {
+        guideTop?.constant      = insets.top
+        guideLeading?.constant  = insets.leading
+        guideBottom?.constant   = -insets.bottom
+        guideTrailing?.constant = -insets.trailing
+    }
+
     /// DSL 构造
     ///
-    ///     ZStackView {
+    ///     ZStackView(insets: .init(top: 8, leading: 8, bottom: 8, trailing: 8)) {
     ///         bgView.box.edgesZero()
     ///         red.box.top(16).leading(16).size(w: 80, h: 60)
     ///     }
-    public convenience init(@ZStackViewBuilder builder: () -> [ZStackViewDSL]) {
+    ///
+    /// - Parameter insets: 内边距，可选，默认 .zero
+    public convenience init(insets: NSDirectionalEdgeInsets = .zero,
+                            @ZStackViewBuilder builder: () -> [ZStackViewDSL]) {
         self.init(frame: .zero)
+        self.insets = insets
         addViews(builder: builder)
     }
 

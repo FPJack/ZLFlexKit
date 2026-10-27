@@ -150,6 +150,43 @@ fileprivate class ConstraintStorage {
     }
 }
 
+/// ZStackView 的内容区锚点：全部返回 insetsGuide 对应的锚点
+/// 注意：不能直接 override topAnchor 等系统锚点，insetsGuide 自身是约束到这些锚点上的，覆盖后会自引用失效
+private extension ZStackView {
+    var contentTopAnchor:      NSLayoutYAxisAnchor { insetsGuide.topAnchor }
+    var contentBottomAnchor:   NSLayoutYAxisAnchor { insetsGuide.bottomAnchor }
+    var contentLeadingAnchor:  NSLayoutXAxisAnchor { insetsGuide.leadingAnchor }
+    var contentTrailingAnchor: NSLayoutXAxisAnchor { insetsGuide.trailingAnchor }
+    var contentLeftAnchor:     NSLayoutXAxisAnchor { insetsGuide.leftAnchor }
+    var contentRightAnchor:    NSLayoutXAxisAnchor { insetsGuide.rightAnchor }
+    var contentCenterXAnchor:  NSLayoutXAxisAnchor { insetsGuide.centerXAnchor }
+    var contentCenterYAnchor:  NSLayoutYAxisAnchor { insetsGuide.centerYAnchor }
+    var contentWidthAnchor:    NSLayoutDimension   { insetsGuide.widthAnchor }
+    var contentHeightAnchor:   NSLayoutDimension   { insetsGuide.heightAnchor }
+}
+
+/// LayoutBox 相对父视图布局时使用：父视图是 ZStackView 时取 insetsGuide 锚点，否则取自身锚点
+private extension UIView {
+    var boxTopAnchor: NSLayoutYAxisAnchor {
+        (self as? ZStackView)?.contentTopAnchor ?? topAnchor
+    }
+    var boxBottomAnchor: NSLayoutYAxisAnchor {
+        (self as? ZStackView)?.contentBottomAnchor ?? bottomAnchor
+    }
+    var boxLeadingAnchor: NSLayoutXAxisAnchor {
+        (self as? ZStackView)?.contentLeadingAnchor ?? leadingAnchor
+    }
+    var boxTrailingAnchor: NSLayoutXAxisAnchor {
+        (self as? ZStackView)?.contentTrailingAnchor ?? trailingAnchor
+    }
+    var boxCenterXAnchor: NSLayoutXAxisAnchor {
+        (self as? ZStackView)?.contentCenterXAnchor ?? centerXAnchor
+    }
+    var boxCenterYAnchor: NSLayoutYAxisAnchor {
+        (self as? ZStackView)?.contentCenterYAnchor ?? centerYAnchor
+    }
+}
+
 
 
 @objc(ZLLayout)
@@ -225,7 +262,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func centerX(_ x: NumberConvertible = 0,id: String? = nil) -> Self {
-        return withSuperview { box, sv in box.centerXTo(sv.centerXAnchor, offset: x, id: id) }
+        return withSuperview { box, sv in box.centerXTo(sv.boxCenterXAnchor, offset: x, id: id) }
     }
     
     @discardableResult
@@ -256,7 +293,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func centerY(_ y: NumberConvertible = 0,id: String? = nil) -> Self {
-        return withSuperview { box, sv in box.centerYTo(sv.centerYAnchor, offset: y, id: id) }
+        return withSuperview { box, sv in box.centerYTo(sv.boxCenterYAnchor, offset: y, id: id) }
     }
     
     @discardableResult
@@ -299,7 +336,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func top(_ top: NumberConvertible,id: String? = nil) -> Self {
-        return withSuperview { box, sv in box.topTo(sv.topAnchor, offset: top, id: id) }
+        return withSuperview { box, sv in box.topTo(sv.boxTopAnchor, offset: top, id: id) }
     }
     
     @discardableResult
@@ -330,7 +367,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func leading(_ leading: NumberConvertible,id: String? = nil) -> Self {
-        return withSuperview { box, sv in box.leadingTo(sv.leadingAnchor, offset: leading, id: id) }
+        return withSuperview { box, sv in box.leadingTo(sv.boxLeadingAnchor, offset: leading, id: id) }
     }
     
     @discardableResult
@@ -361,7 +398,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func bottom(_ bottom: NumberConvertible,id: String? = nil) -> Self {
-        return withSuperview { box, sv in box.bottomTo(sv.bottomAnchor, offset: bottom, id: id) }
+        return withSuperview { box, sv in box.bottomTo(sv.boxBottomAnchor, offset: bottom, id: id) }
     }
     
     @discardableResult
@@ -392,7 +429,7 @@ public class LayoutBox: NSObject {
     
     @discardableResult
     public func trailing(_ trailing: NumberConvertible,id: String? = nil) -> Self {
-        return withSuperview { box, sv in box.trailingTo(sv.trailingAnchor, offset: trailing, id: id) }
+        return withSuperview { box, sv in box.trailingTo(sv.boxTrailingAnchor, offset: trailing, id: id) }
     }
     
     @discardableResult
@@ -528,10 +565,10 @@ public class LayoutBox: NSObject {
     @discardableResult
     public func edges(top: NumberConvertible, leading: NumberConvertible, bottom: NumberConvertible, trailing: NumberConvertible) -> Self {
         return withSuperview { box, superview in
-            box.addConstraint(box.view?.topAnchor.constraint(equalTo: superview.topAnchor, constant: top.cgFloat))
-            box.addConstraint(box.view?.leadingAnchor.constraint(equalTo: superview.leadingAnchor, constant: leading.cgFloat))
-            box.addConstraint(box.view?.bottomAnchor.constraint(equalTo: superview.bottomAnchor, constant: -bottom.cgFloat))
-            box.addConstraint(box.view?.trailingAnchor.constraint(equalTo: superview.trailingAnchor, constant: -trailing.cgFloat))
+            box.addConstraint(box.view?.topAnchor.constraint(equalTo: superview.boxTopAnchor, constant: top.cgFloat))
+            box.addConstraint(box.view?.leadingAnchor.constraint(equalTo: superview.boxLeadingAnchor, constant: leading.cgFloat))
+            box.addConstraint(box.view?.bottomAnchor.constraint(equalTo: superview.boxBottomAnchor, constant: -bottom.cgFloat))
+            box.addConstraint(box.view?.trailingAnchor.constraint(equalTo: superview.boxTrailingAnchor, constant: -trailing.cgFloat))
         }
     }
     

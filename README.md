@@ -5,6 +5,7 @@
 - 同时支持 Swift 链式、Result Builder DSL、Objective-C 链式 block API
 - 支持主轴分布、交叉轴对齐、单项 flex 权重、最小/最大间距、弹性空白
 - 内置 `LayoutBox`（`view.box`）快速约束 DSL
+- 内置 `ZStackView` 层叠容器，DSL 添加子视图 + `insets` 内边距
 
 > 本 README 内容基于当前仓库 `ZLFlexKit/Classes` 源码整理。
 
@@ -19,6 +20,7 @@
 - [Swift 详细用法](#swift-详细用法)
 - [Objective-C 详细用法](#objective-c-详细用法)
 - [LayoutBox 用法（`view.box`）](#layoutbox-用法-viewbox)
+- [ZStackView 层叠容器](#zstackview-层叠容器)
 - [API 速查](#api-速查)
 - [注意事项（逐条）](#注意事项逐条)
 - [常见问题](#常见问题)
@@ -69,6 +71,7 @@
 - `EdgeInsets` 轻量结构体
 - `wrapScrollView()` 一键包裹滚动容器
 - `LayoutBox` 约束 DSL（`view.box`）
+- `ZStackView` 层叠容器（DSL 添加子视图、`insets` / `insetsGuide`）
 
 ---
 
@@ -655,6 +658,131 @@ card.zl_layout.addSubviewLayout(icon, ^(ZLLayout *box) {
 7. **一个 view 只会有一份 LayoutBox**（通过 associated object 缓存），多次访问 `view.box` 返回同一实例，因此内部约束记录是累积的。
 8. **`view.box.view` 弱引用**：`LayoutBox` 持有 view 是 `weak`，无循环引用风险；但也意味着 view 销毁后 `box` 不再可用。
 9. **`.id(_:)` 只作用于最近一条约束**：链式中间调用 `.id(_:)` 只会标记刚生成的那条，不要理解为"给之后所有约束打标签"。
+10. **没有父视图时，相对父视图的约束会先暂存**：`top / leading / bottom / trailing / centerX / centerY / center / edges` 在 view 还没有 superview 时不会生成约束，而是先暂存，直到调用 `applyPendingSuperviewConstraints()`（目前只有 `ZStackView` 的 DSL 会自动调用）。其他场景请先 `addSubview` 再写这些约束。
+11. **暂存的约束不要接 `.id(_:)`**：暂存时约束还没生成，`.id("x")` 会打到前一条已生成的约束上；请改用参数写法 `top(16, id: "x")`。
+12. **父视图是 `ZStackView` 时，相对父视图的约束贴的是 `insetsGuide`**：即自动扣除 `insets`；`xxxTo(anchor)` 不受影响。
+
+---
+
+## ZStackView 层叠容器
+
+`ZStackView` 是一个**只负责用 DSL 添加子视图**的层叠容器：
+
+- 按书写顺序 `addSubview`，**后写的在上层**
+- 不做任何自动布局，子视图位置/尺寸由你用 `view.box` 决定
+- DSL 中可直接写 `view.box` 链式约束，加入容器后自动生效
+- 支持 `insets` 内边距（内部通过 `insetsGuide` 实现）
+
+### 1. 基本用法
+
+```swift
+let bg = UIView()
+let red = UIView()
+let blue = UIView()
+
+let z = ZStackView {
+    bg.box.edgesZero()                                  // 最底层，铺满
+    red.box.top(16).leading(16).size(w: 80, h: 60)
+    blue.box.top(32).leading(48).size(w: 80, h: 60)    // 在 red 之上
+}
+z.box.height(120)
+```
+
+### 2. DSL 中可以写什么
+
+| 写法 | 说明 |
+|---|---|
+| `view` | 普通 `UIView`，加入后可再自行约束 |
+| `view.box.xxx()` | `LayoutBox` 链式约束，加入容器后自动生成 |
+| `optionalView` | `UIView?`，`nil` 自动忽略 |
+| `if` / `if-else` | 条件分支，未命中的分支既不添加 view 也不生成约束 |
+| `for-in` | 循环批量添加 |
+
+```swift
+ZStackView {
+    for (i, card) in cards.enumerated() {
+        card.box.top(10 + i * 10).leading(10 + i * 20).size(w: 70, h: 50)
+    }
+    if showBadge {
+        badge.box.top(8).trailing(-8).size(w: 30, h: 20)
+    }
+    if isVip {
+        vipTag.box.bottom(-8).trailing(-8)
+    } else {
+        normalTag.box.bottom(-8).trailing(-8)
+    }
+    optionalView        // nil 时忽略
+}
+```
+
+> ⚠️ 不支持数字和 `Spacer()`：它们是 `StackView` 的间距语义，层叠布局没有间距概念。
+
+### 3. 追加子视图：`addViews { }`
+
+```swift
+let z = ZStackView {
+    content.box.center().size(w: 160, h: 50)
+}
+.addViews {                                 // 返回 Self，可链式
+    tag.box.top(6).trailing(-6).size(w: 100, h: 24)
+}
+```
+
+### 4. 内边距 `insets`
+
+#### 4.1 构造时设置（可选，默认 `.zero`）
+
+```swift
+let z = ZStackView(insets: .init(top: 10, leading: 10, bottom: 10, trailing: 10)) {
+    bg.box.edgesZero()                               // 贴内缩后的内容区
+    tl.box.top(0).leading(0).size(w: 36, h: 24)      // 内容区左上角
+    br.box.bottom(0).trailing(0).size(w: 36, h: 24)  // 内容区右下角
+    center.box.center().size(w: 70, h: 30)           // 内容区居中
+}
+```
+
+#### 4.2 动态修改
+
+```swift
+z.insets = .init(top: 20, leading: 30, bottom: 20, trailing: 30)
+UIView.animate(withDuration: 0.25) { z.layoutIfNeeded() }   // 需要动画时
+```
+
+修改 `insets` 只更新 `insetsGuide` 四条约束的 `constant`，不会重建约束，开销很小。
+
+#### 4.3 `insetsGuide`
+
+`ZStackView` 初始化时自动 `addLayoutGuide(insetsGuide)`，四边分别等于容器四边内缩 `insets`。
+
+| 约束写法 | 相对对象 | 是否受 insets 影响 |
+|---|---|---|
+| `top / leading / bottom / trailing` | `insetsGuide` | ✅ |
+| `centerX / centerY / center / centerOffset` | `insetsGuide` | ✅ |
+| `edges / allEdges / edgesZero` | `insetsGuide` | ✅ |
+| `topTo(anchor)` 等 `xxxTo` | 你传入的 anchor | ❌ |
+
+需要贴容器本身（忽略内边距）时，显式传容器锚点：
+
+```swift
+cover.box.topTo(z.topAnchor).leadingTo(z.leadingAnchor)
+```
+
+需要相对内容区做 `>=` / `<=` 关系时，传 `insetsGuide` 的锚点：
+
+```swift
+label.box.trailingLessThanOrTo(z.insetsGuide.trailingAnchor)
+```
+
+### 5. ZStackView 注意事项
+
+1. **只负责添加子视图，不做布局**：纯 `UIView` 没有固有尺寸，不设宽高就是 0。
+2. **层级 = 书写顺序**：后写的在上层；`addViews` 追加的在已有子视图之上。
+3. **相对父视图的约束会先暂存**：DSL 中 view 还没有父视图，`top/leading/center/edges` 等先暂存，`addSubview` 后由 `ZStackView` 自动补上。
+4. **暂存约束不要接 `.id(_:)`**：请用 `top(16, id: "x")` 参数写法。
+5. **`xxxTo(anchor)` 引用其他 view 时**，两个 view 最终必须在同一视图树中，否则激活约束会崩溃。
+6. **条件分支未命中的 view 没有父视图**：不要在 DSL 外再对它写相对父视图的约束。
+7. **超出容器的部分**：用负偏移让子视图超出边界时，保持 `clipsToBounds = false`（默认）才可见。
+8. **`insets` 只影响相对父视图的约束**：容器自身尺寸仍由外部约束或子视图约束决定。
 
 ---
 
@@ -686,6 +814,13 @@ card.zl_layout.addSubviewLayout(icon, ^(ZLLayout *box) {
 - `Int/Float/Double`（表示间距）
 - `Spacer()` / `Spacer(min:)` / `Spacer(max:)` / `Spacer(value)`
 - `Optional<FlexType>`
+
+### `ZStackView`
+
+- 构造：`ZStackView { ... }` / `ZStackView(insets:) { ... }`
+- 追加：`addViews { ... }`（返回 Self）
+- 内边距：`insets: NSDirectionalEdgeInsets`（可动态修改）、`insetsGuide: UILayoutGuide`（只读）
+- DSL 内可写：`UIView` / `view.box.xxx()` / `UIView?` / `if` / `if-else` / `for-in`
 
 ### `LayoutBox`（`view.box` / ObjC: `view.zl_layout`）
 
