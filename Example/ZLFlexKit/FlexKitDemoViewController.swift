@@ -43,6 +43,7 @@ class FlexKitDemoViewController: UITableViewController {
         ("⑲ 性能对比 - SnapKit 手动约束",          "UIView+SnapKit 手动约束，无 StackView 辅助",       { PerfSnapKitVC() }),
         ("⑳ 性能对比 - 纯 Frame 布局",             "零约束，手动计算 frame，最原始的布局方式",          { PerfFrameVC() }),
         ("㉑ ZStackView - 层叠布局",                "DSL 添加子视图：ZStackView { } / addViews { }", { ZStackDemoVC() }),
+        ("㉒ WrapStackView - 自动换行",             "标签流式布局：justify / align / flex / lineSpacing / 动态增删", { WrapDemoVC() }),
         ("TableViewController",             "cell自动计算高度",          { TableViewController() }),
     ]
 
@@ -2627,4 +2628,640 @@ class ZStackDemoVC: UIViewController {
         7. 修改 insets 只更新约束 constant，想要动画请在 animate 中调用 layoutIfNeeded()。
         """))
     }
+}
+
+// MARK: - ㉒ WrapStackView 自动换行
+
+/// WrapStackView 完整 demo：覆盖全部属性 / 方法 / DSL / 多行垂直布局 / 嵌套 / cell 自动算高
+class WrapDemoVC: UIViewController {
+
+    private let words = ["Swift", "iOS", "Auto Layout", "Flex", "ZLFlexKit", "UIKit",
+                         "DSL", "弹性布局", "自动换行", "LayoutGuide", "SnapKit", "RxSwift", "CocoaPods"]
+
+    // MARK: 辅助
+
+    /// 有内容尺寸的标签（没有固定宽高约束，可被 fill / fillEqually / flex 拉伸）
+    private func tag(_ text: String, _ color: UIColor = .systemBlue, font: CGFloat = 13) -> UILabel {
+        let l = PaddingTagLabel()
+        l.text = text
+        l.font = .systemFont(ofSize: font, weight: .medium)
+        l.textColor = .white
+        l.backgroundColor = color
+        l.textAlignment = .center
+        l.layer.cornerRadius = 6
+        l.clipsToBounds = true
+        return l
+    }
+
+    /// 灰底圆角容器，方便看清 WrapStackView 的边界
+    @discardableResult
+    private func wrapBox(_ w: WrapStackView) -> WrapStackView {
+        w.backgroundColor = .compatGray5
+        w.layer.cornerRadius = 8
+        return w
+    }
+
+    private func note(_ text: String) -> UILabel {
+        let l = UILabel()
+        l.text = text
+        l.font = .systemFont(ofSize: 12)
+        l.textColor = .systemRed
+        l.numberOfLines = 0
+        return l
+    }
+
+    /// 标题 + 滑块 + 当前值
+    private func slider(_ title: String, min: Float, max: Float, value: Float,
+                        onChange: @escaping (CGFloat) -> Void) -> UIView {
+        let name = UILabel()
+        name.text = title
+        name.font = .systemFont(ofSize: 12)
+        name.box.width(92)
+        let valueLabel = UILabel()
+        valueLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        valueLabel.text = "\(Int(value))"
+        valueLabel.box.width(28)
+        let s = UISlider()
+        s.minimumValue = min
+        s.maximumValue = max
+        s.value = value
+        s.addAction(UIAction { [weak valueLabel] a in
+            guard let s = a.sender as? UISlider else { return }
+            let v = CGFloat(Int(s.value))
+            valueLabel?.text = "\(Int(v))"
+            onChange(v)
+        }, for: .valueChanged)
+        return HStackView {
+            name
+            s.flex.flex(1)
+            valueLabel
+        }.spacing(6)
+    }
+
+    private func segment(_ items: [String], selected: Int = 0,
+                         onChange: @escaping (Int) -> Void) -> UISegmentedControl {
+        let seg = UISegmentedControl(items: items)
+        seg.selectedSegmentIndex = selected
+        seg.apportionsSegmentWidthsByContent = true
+        seg.addAction(UIAction { a in
+            guard let s = a.sender as? UISegmentedControl else { return }
+            onChange(s.selectedSegmentIndex)
+        }, for: .valueChanged)
+        return seg
+    }
+
+    private func animateLayout() {
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+    }
+
+    // MARK: viewDidLoad
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .compatBackground
+        let stack = makeScrollableContainerStack()
+
+        section1_DSL(stack)
+        section2_Playground(stack)
+        section3_MultiLineVertical(stack)
+        section4_FillFlex(stack)
+        section5_MarginSpacing(stack)
+        section6_Dynamic(stack)
+        section7_ContentChange(stack)
+        section8_NestedWrapInWrap(stack)
+        section9_NestedCards(stack)
+        section10_NestedStackView(stack)
+        section11_CellAutoHeight(stack)
+        section12_Notes(stack)
+    }
+
+    // MARK: ① DSL + 链式
+
+    private func section1_DSL(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ① DSL 构造 + 链式配置
+        · 构造：WrapStackView(justify:align:spacing:lineSpacing:insets:) { }
+        · 链式：.justify() .align() .gap() .lineGap() .insets() .wrap() .maxLayoutWidth()
+        · DSL 内支持 UIView / FlexItem / for-in / if / 可选 view / 数字间距 / Spacer(值)
+        """))
+        let showHot = true
+        let optionalView: UIView? = nil
+        let w = wrapBox(WrapStackView {
+            for (i, word) in words.prefix(6).enumerated() {
+                tag(word, colors[i % colors.count])
+            }
+            if showHot { tag("🔥 if 条件", .systemRed) }
+            optionalView                                  // nil 自动忽略
+            tag("FlexItem", .systemIndigo).flex.margin(.init(t: 0, s: 0, b: 0, e: 0))
+            24                                            // 前一个 view 后面间距 24
+            tag("前面间距 24", .systemGray)
+            Spacer(4)                                     // Spacer(值) 等价数字
+            tag("前面间距 4", .systemGray)
+        }
+        .justify(.start)
+        .align(.center)
+        .gap(8)
+        .lineGap(8)
+        .insets(.all(10)))
+        stack.addView(w)
+    }
+
+    // MARK: ② 属性面板
+
+    private func section2_Playground(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ② 属性面板：所有容器属性实时调节
+        justifyContent / alignment / spacing / lineSpacing / insets / isWrapEnabled / numberOfLines
+        （"Swift" 和 "UIKit" 设置了 flex = 1，用于观察 fill 效果）
+        """))
+
+        let fonts: [CGFloat] = [13, 18, 11, 22, 14, 12, 16, 11, 20, 13]
+        let items = (0..<10).map { i -> UILabel in
+            tag(words[i], colors[i % colors.count], font: fonts[i])
+        }
+        items[0].flex.flex = 1
+        items[5].flex.flex = 1
+
+        let w = wrapBox(WrapStackView(spacing: 8, lineSpacing: 8, insets: .all(10)) {
+            for v in items { v }
+        })
+
+        let info = note("")
+        let refreshInfo = { [weak w, weak info] in
+            guard let w = w else { return }
+            info?.text = "numberOfLines = \(w.numberOfLines)   arrangedViews = \(w.arrangedViews.count)"
+        }
+        w.linesDidChange = { _ in refreshInfo() }
+
+        let justifies: [(String, Justify)] = [("start", .start), ("center", .center), ("end", .end),
+                                              ("between", .spaceBetween), ("around", .spaceAround),
+                                              ("evenly", .spaceEvenly), ("fill", .fill), ("fillEq", .fillEqually)]
+        let aligns: [(String, FlexItemCrossAlign)] = [("start", .start), ("center", .center),
+                                                      ("end", .end), ("fill", .fill)]
+
+        stack.addView(segment(justifies.map { $0.0 }) { [weak self] i in
+            w.justifyContent = justifies[i].1
+            self?.animateLayout()
+        })
+        stack.addView(segment(aligns.map { "align " + $0.0 }, selected: 1) { [weak self] i in
+            w.alignment = aligns[i].1
+            self?.animateLayout()
+        })
+        stack.addView(slider("spacing", min: 0, max: 30, value: 8) { [weak self] v in
+            w.spacing = v; self?.animateLayout()
+        })
+        stack.addView(slider("lineSpacing", min: 0, max: 30, value: 8) { [weak self] v in
+            w.lineSpacing = v; self?.animateLayout()
+        })
+        stack.addView(slider("insets", min: 0, max: 40, value: 10) { [weak self] v in
+            w.insets = .init(top: v, leading: v, bottom: v, trailing: v); self?.animateLayout()
+        })
+
+        let sw = UISwitch()
+        sw.isOn = true
+        sw.addAction(UIAction { [weak self] a in
+            guard let s = a.sender as? UISwitch else { return }
+            w.isWrapEnabled = s.isOn
+            self?.animateLayout()
+        }, for: .valueChanged)
+        let swLabel = UILabel()
+        swLabel.text = "isWrapEnabled（关闭 = 强制单行，放不下压缩）"
+        swLabel.font = .systemFont(ofSize: 12)
+        stack.addView(HStackView { swLabel; Spacer(); sw })
+
+        stack.addView(info)
+        stack.addView(w)
+        DispatchQueue.main.async { refreshInfo() }
+    }
+
+    // MARK: ③ 多行垂直方向布局
+
+    private func section3_MultiLineVertical(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ③ 多行垂直方向布局
+        · 行从上往下排列：第一行贴 insets.top，行与行之间隔 lineSpacing，最后一行贴 insets.bottom
+        · 每行行高 = 本行最高的 view（含 margin.top / bottom）
+        · alignment 决定矮的 view 在本行里靠上 / 居中 / 靠下 / 拉满
+        · 橙色 alignSelf = .end 单独覆盖；紫色 margin.top = 16 在行内往下偏移
+        · 容器高度 = 所有行高 + 行间距 + 上下 insets，自动撑开，下方内容跟着移动
+        """))
+
+        let heights: [CGFloat] = [30, 60, 24, 44, 36, 70, 28, 50, 40]
+        let widths: [CGFloat] = [60, 50, 90, 70, 80, 56, 100, 64, 72]
+        let blocks = (0..<heights.count).map { i in
+            UIView.colored(colors[i % colors.count], text: "h\(Int(heights[i]))",
+                           size: CGSize(width: widths[i], height: heights[i]))
+        }
+        blocks[2].backgroundColor = .systemOrange
+        blocks[2].flex.alignSelf = .end
+        blocks[4].backgroundColor = .systemPurple
+        blocks[4].flex.margin = .init(top: 16, leading: 0, bottom: 0, trailing: 0)
+
+        let w = wrapBox(WrapStackView(align: .start, spacing: 8, lineSpacing: 12, insets: .all(10)) {
+            for b in blocks { b }
+        })
+
+        let aligns: [(String, FlexItemCrossAlign)] = [("start", .start), ("center", .center), ("end", .end)]
+        stack.addView(segment(aligns.map { "行内 align " + $0.0 }) { [weak self] i in
+            w.alignment = aligns[i].1
+            self?.animateLayout()
+        })
+        stack.addView(slider("lineSpacing", min: 0, max: 40, value: 12) { [weak self] v in
+            w.lineSpacing = v; self?.animateLayout()
+        })
+
+        let lineInfo = note("")
+        w.linesDidChange = { [weak lineInfo] n in lineInfo?.text = "当前 \(n) 行，容器高度随行数变化" }
+        stack.addView(lineInfo)
+
+        var tallCount = 0
+        let add = UIButton(type: .system)
+        add.setTitle("➕ 追加一个高 80 的块（行数 / 行高 / 容器高度一起变）", for: .normal)
+        add.titleLabel?.font = .systemFont(ofSize: 13)
+        add.addAction(UIAction { [weak self] _ in
+            tallCount += 1
+            w.addArrangedSubview(UIView.colored(.systemTeal, text: "h80-\(tallCount)",
+                                                size: CGSize(width: 70, height: 80)))
+            self?.animateLayout()
+        }, for: .touchUpInside)
+        stack.addView(add)
+        stack.addView(w)
+
+        let below = UILabel()
+        below.text = "⬆️ 我在 WrapStackView 下方，它变高时我会自动下移"
+        below.font = .systemFont(ofSize: 12)
+        below.textColor = .gray
+        stack.addView(below)
+    }
+
+    // MARK: ④ fill / flex / fillEqually
+
+    private func section4_FillFlex(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ④ fill + flex / fillEqually：都是"按行"生效
+        · fill：本行 flex > 0 的 view 按比例瓜分剩余空间，本行没有 flex 时按 start 排列
+        · fillEqually：本行所有 view 等宽填满（不要给子 view 固定宽度，否则约束冲突）
+        """))
+        stack.addView(WrapStackView {
+            tag("固定", .systemGray)
+            tag("flex 1").flex.flex(1)
+            tag("flex 2", .systemGreen).flex.flex(2)
+            tag("这一项比较长，放不下会换到下一行", .systemOrange)
+            tag("flex 1", .systemPink).flex.flex(1)
+        }
+        .justify(.fill).gap(8).lineGap(8).insets(.all(10))
+        .then { wrapBox($0) })
+
+        stack.addView(WrapStackView {
+            for (i, word) in words.prefix(7).enumerated() { tag(word, colors[i % colors.count]) }
+        }
+        .justify(.fillEqually).gap(6).lineGap(6).insets(.all(10))
+        .then { wrapBox($0) })
+    }
+
+    // MARK: ⑤ margin / 单项 spacing
+
+    private func section5_MarginSpacing(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑤ 复用 FlexItem 的 margin / spacing
+        · view.flex.margin：四个方向外边距（leading/trailing 参与分行宽度计算）
+        · view.flex.spacing：该 view 后面的间距，优先于容器 spacing（换行后不生效于行首）
+        · 修改 flex 配置后需调用 setNeedsRelayout()
+        """))
+        let a = tag("margin 左右 12", .systemPurple)
+        a.flex.margin = .init(top: 0, leading: 12, bottom: 0, trailing: 12)
+        let b = tag("spacing 30 →", .systemGreen)
+        b.flex.spacing = 30
+        let w = wrapBox(WrapStackView(spacing: 6, lineSpacing: 6, insets: .all(10)) {
+            tag("A"); a; tag("B"); b; tag("C"); tag("D"); tag("E")
+        })
+        stack.addView(segment(["margin 12", "margin 0", "margin 30"]) { [weak self] i in
+            let v: CGFloat = [12, 0, 30][i]
+            a.flex.margin = .init(top: 0, leading: v, bottom: 0, trailing: v)
+            w.setNeedsRelayout()                          // ⚠️ FlexItem 修改需手动刷新
+            self?.animateLayout()
+        })
+        stack.addView(w)
+    }
+
+    // MARK: ⑥ 动态增删
+
+    private func section6_Dynamic(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑥ 动态操作：addArrangedSubview / insertArrangedSubview(at:) / removeArrangedSubview /
+        removeAllArrangedSubviews / isHidden（自动刷新）；arrangedViews 不含隐藏，allArrangedViews 含隐藏
+        """))
+        let w = wrapBox(WrapStackView(spacing: 6, lineSpacing: 6, insets: .all(10)) {
+            for w in words.prefix(4) { tag(w) }
+        })
+        let info = note("")
+        let refresh = { [weak w, weak info] in
+            guard let w = w else { return }
+            info?.text = "arrangedViews = \(w.arrangedViews.count)   allArrangedViews = \(w.allArrangedViews.count)   lines = \(w.numberOfLines)"
+        }
+        w.linesDidChange = { _ in refresh() }
+        var n = 4
+        stack.addView(segment(["➕ 末尾", "⬅️ 插到开头", "➖ 删末尾", "👁 隐藏/显示首个", "🗑 清空"], selected: -1) { [weak self] i in
+            guard let self = self else { return }
+            switch i {
+            case 0:
+                w.addArrangedSubview(self.tag(self.words[n % self.words.count], colors[n % colors.count])); n += 1
+            case 1:
+                w.insertArrangedSubview(self.tag("插入\(n)", .systemRed), at: 0); n += 1
+            case 2:
+                w.removeArrangedSubview(w.allArrangedViews.last)
+            case 3:
+                w.allArrangedViews.first?.isHidden.toggle()
+            default:
+                w.removeAllArrangedSubviews()
+            }
+            self.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }.then { $0.isMomentary = true })
+        stack.addView(info)
+        stack.addView(w)
+        DispatchQueue.main.async { refresh() }
+    }
+
+    // MARK: ⑦ 修改内容按需换行
+
+    private func section7_ContentChange(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑦ 修改内容自动按需换行：只改 text，不调任何刷新方法
+        放得下就不换行，放不下才换行；变短后自动合并回上一行
+        """))
+        let editTag = tag("编辑我", .systemRed)
+        let w = wrapBox(WrapStackView(spacing: 8, lineSpacing: 8, insets: .all(10)) {
+            tag("用户名", .systemBlue)
+            editTag
+            tag("VIP", .systemOrange)
+            tag("刚刚", .systemGray)
+        })
+        let lines = note("行数：1（放得下 → 不换行）")
+        w.linesDidChange = { [weak lines] n in
+            lines?.text = "行数：\(n)  \(n > 1 ? "（放不下 → 已换行）" : "（放得下 → 不换行）")"
+        }
+        let field = UITextField()
+        field.borderStyle = .roundedRect
+        field.text = "编辑我"
+        field.clearButtonMode = .whileEditing
+        field.addAction(UIAction { [weak self] a in
+            guard let tf = a.sender as? UITextField else { return }
+            editTag.text = (tf.text ?? "").isEmpty ? " " : tf.text
+            self?.animateLayout()
+        }, for: .editingChanged)
+        stack.addView(field)
+        stack.addView(segment(["加长", "缩短", "超长(独占一行)"], selected: -1) { [weak self, weak field] i in
+            let text = editTag.text ?? ""
+            switch i {
+            case 0:  editTag.text = text + "很长"
+            case 1:  editTag.text = text.count > 2 ? String(text.dropLast(2)) : "短"
+            default: editTag.text = String(repeating: "超长内容", count: 8)
+            }
+            field?.text = editTag.text
+            self?.animateLayout()
+        }.then { $0.isMomentary = true })
+        stack.addView(lines)
+        stack.addView(w)
+
+        // fill + flex 下改内容
+        let title = tag("短标题", .systemIndigo)
+        let w2 = wrapBox(WrapStackView {
+            title
+            tag("flex 1 占满剩余", .systemGreen).flex.flex(1)
+        }.justify(.fill).gap(8).lineGap(8).insets(.all(10)))
+        stack.addView(note("fill + flex 下改内容：剩余空间重新分给 flex view，太长时换行，变短后恢复"))
+        stack.addView(segment(["短标题", "中等长度标题", "很长很长很长很长很长的标题"]) { [weak self] i in
+            title.text = ["短标题", "中等长度标题", "很长很长很长很长很长的标题"][i]
+            self?.animateLayout()
+        })
+        stack.addView(w2)
+    }
+
+    // MARK: ⑧ 嵌套：WrapStackView 里放 WrapStackView
+
+    private func section8_NestedWrapInWrap(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑧ 嵌套 A：WrapStackView 里嵌套 WrapStackView（表单行）
+        · 外层 fill：左侧标题固定，内层 Wrap 设置 flex = 1 占满剩余宽度
+        · 内层自己换行，外层的行高跟着内层高度变化
+        · 嵌套的 WrapStackView 按"最宽的单个子 view"参与外层分行（minContentWidth）
+        """))
+        let inner = WrapStackView {
+            for (i, w) in ["Swift", "ObjC", "UIKit"].enumerated() { tag(w, colors[i]) }
+        }.gap(6).lineGap(6)
+
+        let titleLabel = UILabel()
+        titleLabel.text = "技能："
+        titleLabel.font = .boldSystemFont(ofSize: 14)
+
+        let outer = wrapBox(WrapStackView {
+            titleLabel
+            inner.flex.flex(1)
+        }.justify(.fill).align(.start).gap(8).insets(.all(10)))
+
+        var n = 0
+        let more = ["SwiftUI", "Combine", "RxSwift", "Auto Layout", "Core Animation", "Metal", "Instruments"]
+        stack.addView(segment(["➕ 内层加标签", "➖ 内层删标签"], selected: -1) { [weak self] i in
+            if i == 0 {
+                inner.addArrangedSubview(self?.tag(more[n % more.count], colors[n % colors.count])); n += 1
+            } else {
+                inner.removeArrangedSubview(inner.allArrangedViews.last)
+            }
+            self?.animateLayout()
+        }.then { $0.isMomentary = true })
+        stack.addView(outer)
+    }
+
+    // MARK: ⑨ 嵌套：卡片网格
+
+    private func section9_NestedCards(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑨ 嵌套 B：卡片网格（外层 Wrap → VStackView 卡片 → 内层 Wrap 标签）
+        · 卡片固定宽 150，外层按卡片宽度换行，形成网格
+        · 卡片内标签数量不同 → 卡片高度不同 → 外层 align(.start) 让同一行卡片顶部对齐
+        """))
+        let data: [(String, [String])] = [
+            ("iOS", ["Swift", "UIKit", "SwiftUI"]),
+            ("布局", ["Auto Layout", "Flex", "Wrap", "Stack", "Guide"]),
+            ("响应式", ["RxSwift"]),
+            ("工具", ["CocoaPods", "SPM", "Xcode", "Instruments"]),
+        ]
+        let cards = data.enumerated().map { (i, item) -> UIView in
+            let title = UILabel()
+            title.text = item.0
+            title.font = .boldSystemFont(ofSize: 14)
+            let tags = WrapStackView {
+                for t in item.1 { tag(t, colors[i % colors.count], font: 11) }
+            }.gap(4).lineGap(4)
+            let card = VStackView(justify: .start, align: .fill, spacing: 6, insets: .all(8)) {
+                title
+                tags
+            }
+            card.backgroundColor = .white
+            card.layer.cornerRadius = 8
+            card.layer.borderColor = UIColor.lightGray.cgColor
+            card.layer.borderWidth = 0.5
+            card.box.width(150)
+            return card
+        }
+        let outer = wrapBox(WrapStackView {
+            for c in cards { c }
+        }.justify(.spaceEvenly).align(.start).gap(8).lineGap(8).insets(.all(8)))
+        stack.addView(outer)
+    }
+
+    // MARK: ⑩ 和 StackView 互相嵌套
+
+    private func section10_NestedStackView(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑩ 嵌套 C：WrapStackView ⇄ StackView 互相嵌套
+        · Wrap 里放 HStackView（头像 + 名字）作为一个整体参与换行
+        · Wrap 放进 VStackView 中，上下内容随 Wrap 高度自适应（本页面本身就是 VStackView）
+        """))
+        func user(_ name: String, _ color: UIColor) -> UIView {
+            let avatar = UIView.colored(color, text: String(name.prefix(1)), size: CGSize(width: 28, height: 28))
+            avatar.layer.cornerRadius = 14
+            let label = UILabel()
+            label.text = name
+            label.font = .systemFont(ofSize: 13)
+            let h = HStackView { avatar; label }.spacing(6).align(.center).insets(.init(t: 4, s: 4, b: 4, e: 10))
+            h.backgroundColor = .white
+            h.layer.cornerRadius = 18
+            return h
+        }
+        let wrap = WrapStackView {
+            for (i, n) in ["张三", "李四", "王小五", "赵六六", "钱七", "孙八八八", "周九"].enumerated() {
+                user(n, colors[i % colors.count])
+            }
+        }.gap(8).lineGap(8)
+
+        let header = UILabel()
+        header.text = "VStackView 头部"
+        header.font = .boldSystemFont(ofSize: 14)
+        let footer = UILabel()
+        footer.text = "VStackView 底部（跟随 Wrap 高度）"
+        footer.font = .systemFont(ofSize: 12)
+        footer.textColor = .gray
+        let card = VStackView(justify: .start, align: .fill, spacing: 8, insets: .all(10)) {
+            header
+            wrap
+            footer
+        }
+        card.backgroundColor = .compatGray5
+        card.layer.cornerRadius = 8
+        stack.addView(card)
+    }
+
+    // MARK: ⑪ cell 自动算高 + preferredMaxLayoutWidth
+
+    private func section11_CellAutoHeight(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑪ UITableViewCell 自动算高 + preferredMaxLayoutWidth
+        cell 首次算高时 WrapStackView 还没有宽度，用 preferredMaxLayoutWidth（.maxLayoutWidth(w)）辅助分行
+        """))
+        let btn = UIButton(type: .system)
+        btn.setTitle("打开 cell 自动算高示例 ›", for: .normal)
+        btn.addAction(UIAction { [weak self] _ in
+            self?.navigationController?.pushViewController(WrapCellDemoVC(), animated: true)
+        }, for: .touchUpInside)
+        stack.addView(btn)
+    }
+
+    // MARK: ⑫ 注意事项
+
+    private func section12_Notes(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑫ 注意事项
+        1. 只支持水平主轴换行，行从上往下排列；宽度由外部决定，高度由内容撑开，不要给固定高度。
+        2. 子 view 需要有宽度：UILabel 等有内容尺寸即可；纯 UIView 要设 width 约束或 flex.width。
+        3. justifyContent / alignment 按行生效；fill 只拉伸本行 flex>0 的 view；fillEqually 是行内等宽。
+        4. fill(有 flex) / fillEqually 会改变子 view 宽度，子 view 不要再有固定宽度约束，否则冲突。
+        5. 单个 view 比一行还宽时独占一行，宽度被压到行宽（多行 UILabel 记得 numberOfLines = 0）。
+        6. 修改 view.flex 的 flex / margin / spacing / alignSelf 后调用 setNeedsRelayout()；
+           增删 view、isHidden、容器属性、子 view 内容变化都会自动刷新。
+        7. 嵌套 WrapStackView 时，内层按最宽的单个子 view 参与外层分行；需要占满剩余宽度时给内层 flex。
+        8. cell 自动算高时设置 preferredMaxLayoutWidth，避免首次没有宽度。
+        9. DSL 中数字 / Spacer(值) = 前一个 view 后面的间距；Spacer() 弹性空白不支持。
+        10. isWrapEnabled = false 时强制单行，放不下的 view 会按抗压缩优先级被压缩。
+        """))
+    }
+}
+
+// MARK: - ⑪ cell 自动算高
+
+private class WrapTagCell: UITableViewCell {
+    let titleLabel = UILabel()
+    let wrap = WrapStackView().gap(6).lineGap(6)
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+        titleLabel.font = .boldSystemFont(ofSize: 15)
+        let v = VStackView(justify: .start, align: .fill, spacing: 8, insets: .init(t: 12, s: 16, b: 12, e: 16)) {
+            titleLabel
+            wrap
+        }
+        v.box.addTo(contentView).edgesZero().flush()   // box 约束是延迟生效的，cell 算高前要 flush
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func configure(title: String, tags: [String], maxWidth: CGFloat) {
+        titleLabel.text = title
+        wrap.preferredMaxLayoutWidth = maxWidth           // 首次算高时还没有 bounds，用它分行
+        wrap.removeAllArrangedSubviews()
+        for (i, t) in tags.enumerated() {
+            let l = PaddingTagLabel()
+            l.text = t
+            l.font = .systemFont(ofSize: 12)
+            l.textColor = .white
+            l.backgroundColor = colors[i % colors.count]
+            l.layer.cornerRadius = 6
+            l.clipsToBounds = true
+            wrap.addArrangedSubview(l)
+        }
+    }
+}
+
+class WrapCellDemoVC: UITableViewController {
+    private let all = ["Swift", "iOS", "Auto Layout", "Flex", "ZLFlexKit", "UIKit", "DSL", "弹性布局",
+                       "自动换行", "LayoutGuide", "SnapKit", "RxSwift", "CocoaPods", "SwiftUI", "Combine"]
+    private lazy var rows: [(String, [String])] = (0..<30).map { i in
+        ("第 \(i) 行：\(i % 5 * 3 + 1) 个标签", Array(all.prefix(i % 5 * 3 + 1)))
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "cell 自动算高"
+        tableView.register(WrapTagCell.self, forCellReuseIdentifier: "cell")
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 80
+    }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { rows.count }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! WrapTagCell
+        let row = rows[indexPath.row]
+        cell.configure(title: row.0, tags: row.1, maxWidth: tableView.bounds.width - 32)
+        return cell
+    }
+}
+
+// MARK: - 辅助
+
+/// 带内边距的标签
+private class PaddingTagLabel: UILabel {
+    override var intrinsicContentSize: CGSize {
+        let s = super.intrinsicContentSize
+        return CGSize(width: s.width + 16, height: s.height + 8)
+    }
+}
+
+private protocol WrapDemoThen {}
+extension UIView: WrapDemoThen {}
+private extension WrapDemoThen {
+    @discardableResult
+    func then(_ block: (Self) -> Void) -> Self { block(self); return self }
 }
