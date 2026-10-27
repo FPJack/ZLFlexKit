@@ -221,15 +221,17 @@ public class LayoutBox: NSObject {
             op(self, superview)
         } else {
             pendingSuperviewOps.append(op)
+            // 标记需要更新约束，加入父视图后的 updateConstraints 中统一补上
+            view?.setNeedsUpdateConstraints()
         }
         return self
     }
     
     /// 是否有等待 superview 的约束
-    var hasPendingSuperviewConstraints: Bool { !pendingSuperviewOps.isEmpty }
+   fileprivate var hasPendingSuperviewConstraints: Bool { !pendingSuperviewOps.isEmpty }
     
     /// view 加入父视图后调用：生成之前暂存的相对 superview 的约束
-    func applyPendingSuperviewConstraints() {
+   fileprivate func applyPendingSuperviewConstraints() {
         guard let superview = view?.superview, !pendingSuperviewOps.isEmpty else { return }
         let ops = pendingSuperviewOps
         pendingSuperviewOps.removeAll()
@@ -1013,6 +1015,12 @@ public extension UIView {
     }()
     
     @objc private func zl_updateConstraints() {
+        // 只读取已有的 LayoutBox，不要用 self.box（会给每个 UIView 都创建一个）
+        // 必须在 activeConstraints 之前：补上的约束会进入 tempConstraints，本轮一起激活
+        if let box = objc_getAssociatedObject(self, &zlLayoutKey) as? LayoutBox,
+           box.hasPendingSuperviewConstraints {
+            box.applyPendingSuperviewConstraints()
+        }
         consStorge.activeConstraints()
         zl_updateConstraints()
     }

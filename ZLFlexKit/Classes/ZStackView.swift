@@ -121,8 +121,6 @@ open class ZStackView: UIView {
         builder().forEach { component in
             if let view = component.getZStackView() {
                 addSubview(view)
-                // DSL 中写的 top/leading/center/edges 等相对父视图的约束，此时才有 superview，统一补上
-                view.box.applyPendingSuperviewConstraints()
             }
         }
         return self
