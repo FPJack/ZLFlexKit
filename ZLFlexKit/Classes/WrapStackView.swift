@@ -10,7 +10,8 @@
 //  3. 行内按 justifyContent / alignment / flex / margin / spacing 生成约束
 //  4. layoutSubviews 中宽度变化导致分行结果变化时，才重建约束
 //
-//  复用：FlexItem（view.flex 的 flex / margin / spacing / alignSelf）、StackViewBuilder DSL
+//  复用：FlexItem（view.flex 的 flex / margin / spacing / alignSelf / 尺寸）、StackViewBuilder DSL
+//  FlexItem 属性变化通过 FlexContainer 协议通知本容器，自动重新布局
 //  不继承 StackView：StackView.updateConstraints 会驱动 FlexManager 生成整套单行约束，与换行约束冲突
 //
 
@@ -77,6 +78,8 @@ open class WrapStackView: UIView {
     private var installedGuides: [UILayoutGuide] = []
     private var lastSignature: [[ObjectIdentifier]] = []
     private var measuredWidths: [ObjectIdentifier: CGFloat] = [:]
+    /// 自身有固定宽度约束（width == 常量）的 view，fill 模式下不参与 flex 拉伸
+    private var fixedWidthViews: Set<ObjectIdentifier> = []
     private var needsRebuild = true
 
     /// 行高收紧优先级：略高于 UILabel 默认 hugging(250)，低于 compression(750)
@@ -123,37 +126,47 @@ open class WrapStackView: UIView {
     }
 
     @objc open func removeArrangedSubview(_ view: UIView?) {
-        guard let view = view, let index = allViews.firstIndex(of: view) else { return }
-        allViews.remove(at: index)
-        hiddenObservations[ObjectIdentifier(view)] = nil
-        view.removeFromSuperview()
-        setNeedsRelayout()
+        guard let view = view, allViews.contains(view) else { return }
+        view.removeFromSuperview()          // 清理逻辑统一在 willRemoveSubview 中
     }
 
     @objc open func removeAllArrangedSubviews() {
         allViews.forEach { $0.removeFromSuperview() }
-        allViews.removeAll()
-        hiddenObservations.removeAll()
+    }
+
+    /// 子 view 离开本容器（removeArrangedSubview / removeFromSuperview / 被加到别的父视图）时统一清理
+    open override func willRemoveSubview(_ subview: UIView) {
+        super.willRemoveSubview(subview)
+        guard let index = allViews.firstIndex(of: subview) else { return }
+        allViews.remove(at: index)
+        hiddenObservations[ObjectIdentifier(subview)] = nil
+        detach(subview)
         setNeedsRelayout()
     }
 
-    /// 修改了子 view 的 flex 配置（flex / margin / spacing / alignSelf）或尺寸后调用，强制重新分行与布局。
-    /// 注意：FlexItem 的修改只会自动通知 StackView，WrapStackView 需要手动调用本方法
+    /// 标记需要重新分行与布局（下一次布局时统一重建一次，多次调用不会重复重建）。
+    /// 子 view 的 view.flex 属性、isHidden、增删 view、容器属性变化都会自动调用，一般无需手动调用；
+    /// 只有修改了无法感知的状态（例如直接改子 view 自己的约束 constant）时才需要手动调用
     @objc open func setNeedsRelayout() {
         needsRebuild = true
         setNeedsUpdateConstraints()
         setNeedsLayout()
-        superview?.setNeedsLayout()
+//        superview?.setNeedsLayout()
     }
 
     private func attach(_ view: UIView) {
         view.translatesAutoresizingMaskIntoConstraints = false
+        view.flex.container = self
         addSubview(view)
         hiddenObservations[ObjectIdentifier(view)] = view.observe(\.isHidden, options: [.old, .new]) { [weak self] _, change in
             guard change.oldValue != change.newValue else { return }
             self?.setNeedsRelayout()
         }
         setNeedsRelayout()
+    }
+
+    private func detach(_ view: UIView) {
+        if view.flex.container === self { view.flex.container = nil }
     }
 
     // MARK: - Layout entry
@@ -234,6 +247,7 @@ open class WrapStackView: UIView {
 
     private func computeLines(maxWidth: CGFloat) -> [[UIView]] {
         measuredWidths.removeAll(keepingCapacity: true)
+        fixedWidthViews.removeAll(keepingCapacity: true)
         var lines: [[UIView]] = []
         var current: [UIView] = []
         var used: CGFloat = 0
@@ -243,6 +257,15 @@ open class WrapStackView: UIView {
             let base = measureWidth(of: view)
             measuredWidths[ObjectIdentifier(view)] = base
             let w = base + m.leading + m.trailing
+
+            // 独占一行：结束当前行，自己单独成一行，后面的 view 从新行开始
+            if view.flex.exclusiveLine {
+                if !current.isEmpty { lines.append(current) }
+                lines.append([view])
+                current = []
+                used = 0
+                continue
+            }
 
             if let prev = current.last {
                 let gap = spacing(after: prev)
@@ -286,6 +309,7 @@ open class WrapStackView: UIView {
 
         let width: CGFloat
         if let fixed = fixed {
+            fixedWidthViews.insert(ObjectIdentifier(view))
             width = fixed
         } else if let nested = view as? WrapStackView {
             // 嵌套的 WrapStackView 本身可以换行：按最小内容宽度（最宽的单个子 view）参与分行
@@ -318,11 +342,9 @@ open class WrapStackView: UIView {
         return s > 0 ? s : max(0, spacing)
     }
 
-    /// FlexItem 未设置 alignSelf 时返回 nil（跟随容器 alignment）
+    /// 单独设置了 alignSelf 用它，否则跟随容器 alignment
     private func crossAlign(of view: UIView) -> FlexItemCrossAlign {
-        let explicit = Mirror(reflecting: view.flex).children
-            .first { $0.label == "_alignSelf" }?.value as? FlexItemCrossAlign
-        return explicit ?? alignment
+        view.flex.explicitAlignSelf ?? alignment
     }
 
     // MARK: - Build constraints
@@ -431,7 +453,8 @@ open class WrapStackView: UIView {
             cons.append(centered)
         case .fill:
             cons.append(zeroLead)
-            let flexViews = views.filter { $0.flex.flex > 0 }
+            // 有固定宽度的 view 即使设置了 flex 也不拉伸（固定宽度优先），避免与撑满整行冲突
+            let flexViews = views.filter { $0.flex.flex > 0 && !fixedWidthViews.contains(ObjectIdentifier($0)) }
             if !flexViews.isEmpty {
                 cons.append(zeroTrail)
                 addFlexGrow(flexViews, cons: &cons)
@@ -533,6 +556,23 @@ extension WrapStackView {
     }
 }
 
+// MARK: - 独占一行
+
+extension WrapStackView {
+    /// 设置某个子 view 是否独占一行（等价于 view.flex.exclusiveLine = exclusive，自动重新布局）
+    @objc(setExclusiveLine:forView:)
+    open func setExclusiveLine(_ exclusive: Bool, for view: UIView?) {
+        guard let view = view, allViews.contains(view) else { return }
+        view.flex.exclusiveLine = exclusive
+    }
+
+    /// 是否独占一行
+    @objc(isExclusiveLineForView:)
+    open func isExclusiveLine(for view: UIView) -> Bool {
+        view.flex.exclusiveLine
+    }
+}
+
 // MARK: - 链式配置（方法名避开同名属性）
 
 extension WrapStackView {
@@ -543,4 +583,17 @@ extension WrapStackView {
     @discardableResult public func insets(_ v: EdgeInsets) -> Self { insets = v.directionalEdgeInsets; return self }
     @discardableResult public func wrap(_ v: Bool) -> Self { isWrapEnabled = v; return self }
     @discardableResult public func maxLayoutWidth(_ v: NumberConvertible) -> Self { preferredMaxLayoutWidth = v.cgFloat; return self }
+}
+
+// MARK: - FlexContainer
+
+extension WrapStackView: FlexContainer {
+    /// 子 view 的 FlexItem 属性变化 → 标记重新布局（同一 runloop 内多次修改只重建一次）
+    public func flexItemDidChange(_ item: FlexItem) {
+        setNeedsRelayout()
+    }
+
+    public var flexDefaultAlignment: FlexItemCrossAlign { alignment }
+
+    public var flexDefaultSpacing: CGFloat { max(0, spacing) }
 }

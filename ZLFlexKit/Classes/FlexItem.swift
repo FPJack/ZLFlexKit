@@ -17,6 +17,17 @@ public enum FlexItemCrossAlign: Int {
 }
 
 
+/// 能承载 FlexItem 的非 StackView 容器（如 WrapStackView）。
+/// StackView 仍走原有的 stackView / markedUpdateConstraints 路径，不受影响
+public protocol FlexContainer: AnyObject {
+    /// 子 view 的 FlexItem 布局属性（flex / margin / spacing / alignSelf / 尺寸等）发生变化
+    func flexItemDidChange(_ item: FlexItem)
+    /// 子 view 未单独设置 alignSelf 时的对齐方式
+    var flexDefaultAlignment: FlexItemCrossAlign { get }
+    /// 子 view 未单独设置 spacing 时的间距
+    var flexDefaultSpacing: CGFloat { get }
+}
+
 @objc(ZLFlexItem)
 public  class FlexItem: NSObject {
     private var observation: NSKeyValueObservation?
@@ -43,6 +54,10 @@ public  class FlexItem: NSObject {
     
     /// 所在的StackView
     public weak var stackView: StackView?
+    
+    
+    /// 所在的非 StackView 容器（如 WrapStackView），由容器在添加 / 移除子 view 时设置
+    public weak var container: FlexContainer?
     
     
     private var _margin: NSDirectionalEdgeInsets = .zero
@@ -172,7 +187,7 @@ public  class FlexItem: NSObject {
     
     ///  view后面的间距
     public var spacing: CGFloat {
-        get {_spacing > 0 ? _spacing : stackView?.spacing ?? 0 }
+        get {_spacing > 0 ? _spacing : stackView?.spacing ?? container?.flexDefaultSpacing ?? 0 }
         set {
             let oldValue = spacing
             if oldValue != newValue {
@@ -180,6 +195,7 @@ public  class FlexItem: NSObject {
 //                setStackViewNeedsUpdateConstraints()
             }
             _spacing = newValue
+            if oldValue != newValue { notifyContainer() }
 
         }
     }
@@ -196,6 +212,7 @@ public  class FlexItem: NSObject {
 //                setStackViewNeedsUpdateConstraints()
             }
             _minSpacing = newValue
+            if oldValue != newValue { notifyContainer() }
 
         }
     }
@@ -212,6 +229,16 @@ public  class FlexItem: NSObject {
                 stackView?.setCustomMaxSpacing(newValue, after: self.view)
             }
             _maxSpacing = newValue
+            if oldValue != newValue { notifyContainer() }
+        }
+    }
+    
+    
+    /// 是否独占一行（仅 WrapStackView 生效）：前后都会换行，该 view 单独占据一行
+    public var exclusiveLine: Bool = false {
+        didSet {
+            guard exclusiveLine != oldValue else { return }
+            notifyContainer()          // 只有 WrapStackView 使用，StackView 不读取该属性
         }
     }
     
@@ -242,7 +269,7 @@ public  class FlexItem: NSObject {
     /// 单个item的对齐方式，默认为nil，表示跟随StackView的alignment属性
     public var alignSelf: FlexItemCrossAlign {
         get {
-            _alignSelf ?? (stackView?.alignment ?? .center)
+            _alignSelf ?? (stackView?.alignment ?? container?.flexDefaultAlignment ?? .center)
         }
         set {
             isSetAlign = true
@@ -259,10 +286,15 @@ public  class FlexItem: NSObject {
     
     
     
+    /// 单独设置过的 alignSelf，未设置时为 nil（跟随容器的 alignment）
+    public var explicitAlignSelf: FlexItemCrossAlign? { _alignSelf }
+    
+    
     /// view的高度，默认为0，表示自适应
     public var height: CGFloat = -1 {
         didSet {
             view?.box.height(height)
+            notifyContainer()
         }
     }
     
@@ -271,6 +303,7 @@ public  class FlexItem: NSObject {
     public var width: CGFloat = 0 {
         didSet {
             view?.box.width(width)
+            notifyContainer()
         }
     }
     
@@ -280,6 +313,7 @@ public  class FlexItem: NSObject {
     public var minWidth: CGFloat = 0 {
         didSet {
             view?.box.minWidth(minWidth)
+            notifyContainer()
         }
     }
     
@@ -288,6 +322,7 @@ public  class FlexItem: NSObject {
     public var maxWidth: CGFloat = 0 {
         didSet {
             view?.box.maxWidth(maxWidth)
+            notifyContainer()
         }
     }
     
@@ -296,6 +331,7 @@ public  class FlexItem: NSObject {
     public var minHeight: CGFloat = 0 {
         didSet {
             view?.box.minHeight(minHeight)
+            notifyContainer()
         }
     }
     
@@ -304,6 +340,7 @@ public  class FlexItem: NSObject {
     public var maxHeight: CGFloat = 0 {
         didSet {
             view?.box.maxHeight(maxHeight)
+            notifyContainer()
         }
     }
     
@@ -312,6 +349,7 @@ public  class FlexItem: NSObject {
     public var size: CGSize = .zero {
         didSet {
             view?.box.size(w: size.width, h: size.height)
+            notifyContainer()
         }
     }
     
@@ -374,6 +412,14 @@ public  class FlexItem: NSObject {
     @discardableResult
     public func maxSpacing(_ spacing: NumberConvertible) -> Self {
         self.maxSpacing = spacing.cgFloat
+        return self
+    }
+    
+    
+    /// 设置是否独占一行（仅 WrapStackView 生效）
+    @discardableResult
+    public func exclusiveLine(_ exclusive: Bool = true) -> Self {
+        self.exclusiveLine = exclusive
         return self
     }
     
@@ -515,10 +561,22 @@ public  class FlexItem: NSObject {
 
 extension FlexItem {
     func setStackViewNeedsUpdateConstraints() {
+        // StackView：原逻辑，行为不变
+        if let view = self.view,
+           let stackView = self.stackView,
+           view.superview == stackView {
+            stackView.markedUpdateConstraints()
+            return
+        }
+        notifyContainer()
+    }
+    
+    /// 只通知非 StackView 容器；view 当前不在该容器中时不通知（例如已被移到 StackView）
+    func notifyContainer() {
         guard let view = self.view,
-              let stackView = self.stackView,
-              view.superview == stackView else { return }
-        stackView.markedUpdateConstraints()
+              let container = self.container,
+              view.superview === (container as AnyObject) else { return }
+        container.flexItemDidChange(self)
     }
     
     func setSpacingWithoutUpdate(_ spacing: CGFloat) {
@@ -575,6 +633,15 @@ public extension FlexItem {
     @available(swift, obsoleted: 1, renamed: "maxSpacing(_:)")
     var maxSpacingObjc: (_ spacing: CGFloat) -> FlexItem {
         { spacing in self.maxSpacing = spacing; return self }
+    }
+    
+    
+    
+    /// 设置是否独占一行（仅 WrapStackView 生效）
+    @objc(exclusiveLine)
+    @available(swift, obsoleted: 1, renamed: "exclusiveLine(_:)")
+    var exclusiveLineObjc: (_ exclusive: Bool) -> FlexItem {
+        { exclusive in self.exclusiveLine = exclusive; return self }
     }
     
     

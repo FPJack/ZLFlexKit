@@ -2726,6 +2726,8 @@ class WrapDemoVC: UIViewController {
         section3_MultiLineVertical(stack)
         section4_FillFlex(stack)
         section5_MarginSpacing(stack)
+        section5b_DynamicFlexItem(stack)
+        section5c_ExclusiveLine(stack)
         section6_Dynamic(stack)
         section7_ContentChange(stack)
         section8_NestedWrapInWrap(stack)
@@ -2753,6 +2755,7 @@ class WrapDemoVC: UIViewController {
             if showHot { tag("🔥 if 条件", .systemRed) }
             optionalView                                  // nil 自动忽略
             tag("FlexItem", .systemIndigo).flex.margin(.init(t: 0, s: 0, b: 0, e: 0))
+            tag("⬇︎ exclusiveLine() 独占一行", .systemPurple).flex.exclusiveLine()
             24                                            // 前一个 view 后面间距 24
             tag("前面间距 24", .systemGray)
             Spacer(4)                                     // Spacer(值) 等价数字
@@ -2926,7 +2929,7 @@ class WrapDemoVC: UIViewController {
         ⑤ 复用 FlexItem 的 margin / spacing
         · view.flex.margin：四个方向外边距（leading/trailing 参与分行宽度计算）
         · view.flex.spacing：该 view 后面的间距，优先于容器 spacing（换行后不生效于行首）
-        · 修改 flex 配置后需调用 setNeedsRelayout()
+        · 布局完成后再修改 view.flex 属性会自动重新布局，无需手动刷新
         """))
         let a = tag("margin 左右 12", .systemPurple)
         a.flex.margin = .init(top: 0, leading: 12, bottom: 0, trailing: 12)
@@ -2938,10 +2941,197 @@ class WrapDemoVC: UIViewController {
         stack.addView(segment(["margin 12", "margin 0", "margin 30"]) { [weak self] i in
             let v: CGFloat = [12, 0, 30][i]
             a.flex.margin = .init(top: 0, leading: v, bottom: 0, trailing: v)
-            w.setNeedsRelayout()                          // ⚠️ FlexItem 修改需手动刷新
+            // 只改 view.flex，WrapStackView 通过 FlexContainer 自动收到通知并重新布局
             self?.animateLayout()
         })
         stack.addView(w)
+    }
+
+    // MARK: ⑤-2 布局完成后动态修改 view.flex
+
+    private func section5b_DynamicFlexItem(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑤-2 布局完成后动态修改 view.flex（全部自动重新布局，不调用任何刷新方法）
+        先点选一个标签（红框为当前选中），再修改它的 flex / margin / spacing / alignSelf / exclusiveLine / width / height
+        · 容器 justify = fill：flex > 0 的 view 按比例瓜分本行剩余空间
+        · width 变大放不下会自动换行，变小又会合并回上一行
+        · 一次改多个属性（"批量"按钮）只会重建一次约束
+        """))
+
+        let names = ["Swift", "UIKit", "Flex", "Wrap", "DSL", "Guide"]
+        let items = names.enumerated().map { tag($1, colors[$0 % colors.count]) }
+        let w = wrapBox(WrapStackView(justify: .fill, align: .start, spacing: 8, lineSpacing: 8, insets: .all(10)) {
+            for v in items { v }
+        })
+
+        var selected: UIView = items[0]
+        let state = note("")
+        let refresh = { [weak w, weak state] in
+            guard let w = w else { return }
+            let f = selected.flex
+            let m = f.margin
+            let a: [FlexItemCrossAlign: String] = [.start: "start", .center: "center", .end: "end", .fill: "fill"]
+            state?.text = """
+            选中「\((selected as? UILabel)?.text ?? "")」 flex=\(f.flex)  spacing=\(Int(f.spacing))  \
+            margin(t\(Int(m.top)) l\(Int(m.leading)) b\(Int(m.bottom)) r\(Int(m.trailing)))  \
+            alignSelf=\(a[f.alignSelf] ?? "")\(f.explicitAlignSelf == nil ? "(跟随容器)" : "")  \
+            独占一行=\(f.exclusiveLine ? "是" : "否")  实际宽=\(Int(selected.frame.width))  lines=\(w.numberOfLines)
+            """
+        }
+        let select = { (v: UIView) in
+            items.forEach { $0.layer.borderWidth = 0 }
+            v.layer.borderWidth = 2
+            v.layer.borderColor = UIColor.systemRed.cgColor
+            selected = v
+            refresh()
+        }
+        for v in items {
+            v.isUserInteractionEnabled = true
+            v.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dynamicTagTapped(_:))))
+        }
+        dynamicSelect = select
+        w.linesDidChange = { _ in refresh() }
+
+        let apply = { [weak self] (change: (FlexItem) -> Void) in
+            change(selected.flex)                       // 只改 view.flex
+            self?.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }
+
+        stack.addView(segment(["flex 0", "flex 1", "flex 2", "flex 3"], selected: -1) { i in
+            apply { $0.flex = i }
+        }.then { $0.isMomentary = true })
+        stack.addView(segment(["margin 0", "左右 12", "上 16", "四周 6"], selected: -1) { i in
+            let m: [NSDirectionalEdgeInsets] = [
+                .zero, .init(top: 0, leading: 12, bottom: 0, trailing: 12),
+                .init(top: 16, leading: 0, bottom: 0, trailing: 0), .init(top: 6, leading: 6, bottom: 6, trailing: 6)]
+            apply { $0.margin = m[i] }
+        }.then { $0.isMomentary = true })
+        stack.addView(segment(["后间距 0", "后间距 20", "后间距 40"], selected: -1) { i in
+            apply { $0.spacing = [0, 20, 40][i] }
+        }.then { $0.isMomentary = true })
+        stack.addView(segment(["align start", "center", "end", "fill"], selected: -1) { i in
+            apply { $0.alignSelf = [.start, .center, .end, .fill][i] }
+        }.then { $0.isMomentary = true })
+        stack.addView(segment(["独占一行 开", "独占一行 关"], selected: -1) { i in
+            apply { $0.exclusiveLine = (i == 0) }      // flex 属性控制，自动重新分行
+        }.then { $0.isMomentary = true })
+        stack.addView(segment(["宽 auto", "宽 60", "宽 160", "宽 260", "高 44"], selected: -1) { i in
+            apply { f in
+                switch i {
+                case 0: f.view?.box.clear()      // 清掉 width/height 约束，回到内容宽度
+                case 4: f.height(44).updateSize()
+                default: f.width([60, 160, 260][i - 1]).updateSize()   // updateSize：更新已有宽度约束，避免重复添加
+                }
+            }
+        }.then { $0.isMomentary = true })
+        stack.addView(segment(["批量：flex2+margin+end", "全部重置"], selected: -1) { [weak self] i in
+            if i == 0 {
+                // 同一 runloop 内多次修改，只会在下一次布局时重建一次
+                selected.flex.flex = 2
+                selected.flex.margin = .init(top: 0, leading: 8, bottom: 0, trailing: 8)
+                selected.flex.alignSelf = .end
+                selected.flex.spacing = 16
+            } else {
+                for v in items {
+                    v.flex.flex = 0
+                    v.flex.margin = .zero
+                    v.flex.spacing = 0
+                    v.flex.alignSelf = .start
+                    v.flex.exclusiveLine = false
+                    v.box.clear()
+                }
+            }
+            self?.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }.then { $0.isMomentary = true })
+
+        stack.addView(state)
+        stack.addView(w)
+        DispatchQueue.main.async { select(items[0]) }
+    }
+
+    private var dynamicSelect: ((UIView) -> Void)?
+
+    // MARK: ⑤-3 单独一行 exclusiveLine
+
+    private func section5c_ExclusiveLine(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑤-3 让某个 view 单独占一行（exclusiveLine）
+        · 两种写法：view.flex.exclusiveLine = true / .flex.exclusiveLine()，或 wrap.setExclusiveLine(true, for: view)
+        · 独占的 view 前后都会换行；行内仍按 justifyContent 排列（fill + flex 时会撑满整行）
+        · 点击任意标签切换它是否独占一行（这里用的是 setExclusiveLine 方法），自动重新分行
+        """))
+
+        // 典型场景：标题独占一行 + 标签流 + 分割线独占一行 + 底部按钮撑满
+        let title = tag("📌 标题：DSL 中 .flex.exclusiveLine() 独占一行", .systemIndigo)
+        let divider = UIView()
+        divider.backgroundColor = .lightGray
+        divider.flex.height(1).flex(1).exclusiveLine()        // 分割线：独占一行 + flex 撑满
+        let button = tag("撑满整行的按钮（独占 + flex）", .systemGreen)
+
+        let tags = ["Swift", "UIKit", "Flex", "Wrap", "DSL", "Guide", "Layout", "Stack"].enumerated().map {
+            tag($1, colors[$0 % colors.count])
+        }
+        let w = wrapBox(WrapStackView(justify: .fill, align: .center, spacing: 8, lineSpacing: 8, insets: .all(10)) {
+            title.flex.exclusiveLine()                        // DSL 中直接声明独占一行
+            for t in tags { t }
+            divider
+            button.flex.flex(1).exclusiveLine()
+        })
+
+        let info = note("")
+        let refresh = { [weak w, weak info] in
+            guard let w = w else { return }
+            let names = w.arrangedViews.compactMap { v -> String? in
+                guard w.isExclusiveLine(for: v) else { return nil }
+                return (v as? UILabel)?.text.map { String($0.prefix(6)) } ?? "分割线"
+            }
+            info?.text = "当前 \(w.numberOfLines) 行；独占一行的 view：\(names.joined(separator: "、"))"
+        }
+        w.linesDidChange = { _ in refresh() }
+
+        exclusiveToggle = { [weak self, weak w] v in
+            guard let w = w else { return }
+            w.setExclusiveLine(!w.isExclusiveLine(for: v), for: v)   // 方法形式
+            v.layer.borderWidth = w.isExclusiveLine(for: v) ? 2 : 0
+            v.layer.borderColor = UIColor.systemRed.cgColor
+            self?.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }
+        for v in [title] + tags + [button] {
+            v.isUserInteractionEnabled = true
+            v.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(exclusiveTagTapped(_:))))
+        }
+
+        stack.addView(segment(["第 3 个独占", "全部取消独占", "恢复初始"], selected: -1) { [weak self] i in
+            switch i {
+            case 0:
+                w.setExclusiveLine(true, for: tags[2])
+                tags[2].layer.borderWidth = 2
+                tags[2].layer.borderColor = UIColor.systemRed.cgColor
+            case 1:
+                w.arrangedViews.forEach { w.setExclusiveLine(false, for: $0); $0.layer.borderWidth = 0 }
+            default:
+                w.arrangedViews.forEach { w.setExclusiveLine(false, for: $0); $0.layer.borderWidth = 0 }
+                [title, divider, button].forEach { $0.flex.exclusiveLine = true }   // flex 属性形式
+            }
+            self?.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }.then { $0.isMomentary = true })
+        stack.addView(info)
+        stack.addView(w)
+        DispatchQueue.main.async { refresh() }
+    }
+
+    private var exclusiveToggle: ((UIView) -> Void)?
+
+    @objc private func exclusiveTagTapped(_ g: UITapGestureRecognizer) {
+        if let v = g.view { exclusiveToggle?(v) }
+    }
+
+    @objc private func dynamicTagTapped(_ g: UITapGestureRecognizer) {
+        if let v = g.view { dynamicSelect?(v) }
     }
 
     // MARK: ⑥ 动态增删
@@ -3178,12 +3368,17 @@ class WrapDemoVC: UIViewController {
         3. justifyContent / alignment 按行生效；fill 只拉伸本行 flex>0 的 view；fillEqually 是行内等宽。
         4. fill(有 flex) / fillEqually 会改变子 view 宽度，子 view 不要再有固定宽度约束，否则冲突。
         5. 单个 view 比一行还宽时独占一行，宽度被压到行宽（多行 UILabel 记得 numberOfLines = 0）。
-        6. 修改 view.flex 的 flex / margin / spacing / alignSelf 后调用 setNeedsRelayout()；
-           增删 view、isHidden、容器属性、子 view 内容变化都会自动刷新。
+        6. 布局完成后修改 view.flex（flex / margin / spacing / alignSelf / width / height 等）、增删 view、
+           isHidden、容器属性、子 view 内容变化都会自动重新布局；同一 runloop 多次修改只重建一次。
+           只有直接改子 view 自己的约束 constant 等无法感知的情况才需要手动 setNeedsRelayout()。
+           修改已有宽高时用 flex.width(x).updateSize()，否则会追加一条新的宽度约束导致冲突。
         7. 嵌套 WrapStackView 时，内层按最宽的单个子 view 参与外层分行；需要占满剩余宽度时给内层 flex。
         8. cell 自动算高时设置 preferredMaxLayoutWidth，避免首次没有宽度。
         9. DSL 中数字 / Spacer(值) = 前一个 view 后面的间距；Spacer() 弹性空白不支持。
         10. isWrapEnabled = false 时强制单行，放不下的 view 会按抗压缩优先级被压缩。
+        11. exclusiveLine 只在 WrapStackView 中生效（StackView 忽略）；独占的 view 前后都换行，
+            行内仍按 justifyContent 排列，想撑满整行可配合 justify(.fill) + flex(1)。
+            isWrapEnabled = false 时 exclusiveLine 依然生效（强制单行只影响普通 view）。
         """))
     }
 }
