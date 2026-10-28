@@ -2565,7 +2565,7 @@ class ZStackDemoVC: UIViewController {
         insetBg.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.25)
         insetBg.layer.borderColor = UIColor.systemBlue.cgColor
         insetBg.layer.borderWidth = 1
-        let z4 = ZStackView(insets: .init(top: 10, leading: 10, bottom: 10, trailing: 10)) {
+        let z4 = ZStackView(insets: .init(t: 10, s: 10, b: 10, e: 10)) {
             insetBg.box.edgesZero()                     // 贴 insetsGuide，直观显示内容区
             UIView.colored(.systemRed, text: "TL", size: .zero)
                 .box.top(0).leading(0).size(w: 36, h: 24)
@@ -2592,7 +2592,7 @@ class ZStackDemoVC: UIViewController {
             guard let s = action.sender as? UISlider, let z4 = z4 else { return }
             let v = CGFloat(Int(s.value))
             insetLabel?.text = "insets = \(Int(v))"
-            z4.insets = .init(top: v, leading: v, bottom: v, trailing: v)   // 修改即生效
+            z4.insets = .init(t: v, s: v, b: v, e: v)   // 修改即生效
             UIView.animate(withDuration: 0.15) { z4.layoutIfNeeded() }
         }, for: .valueChanged)
         stack.addView(slider)
@@ -2603,13 +2603,13 @@ class ZStackDemoVC: UIViewController {
             guard let z4 = z4, let seg = action.sender as? UISegmentedControl else { return }
             let v = CGFloat(Int(slider?.value ?? 10))
             switch seg.selectedSegmentIndex {
-            case 1:  z4.insets = .init(top: v, leading: 0, bottom: v, trailing: 0)
-            case 2:  z4.insets = .init(top: 0, leading: v, bottom: 0, trailing: v)
-            case 3:  z4.insets = .init(top: 4, leading: 30, bottom: 20, trailing: 8)
-            default: z4.insets = .init(top: v, leading: v, bottom: v, trailing: v)
+            case 1:  z4.insets = .init(t: v, s: 0, b: v, e: 0)
+            case 2:  z4.insets = .init(t: 0, s: v, b: 0, e: v)
+            case 3:  z4.insets = .init(t: 4, s: 30, b: 20, e: 8)
+            default: z4.insets = .init(t: v, s: v, b: v, e: v)
             }
             let i = z4.insets
-            insetLabel?.text = "insets = (t:\(Int(i.top)) l:\(Int(i.leading)) b:\(Int(i.bottom)) r:\(Int(i.trailing)))"
+            insetLabel?.text = "insets = (t:\(Int(i.t)) l:\(Int(i.s)) b:\(Int(i.b)) r:\(Int(i.e)))"
             UIView.animate(withDuration: 0.25) { z4.layoutIfNeeded() }
         }, for: .valueChanged)
         stack.addView(seg)
@@ -2711,7 +2711,7 @@ class WrapDemoVC: UIViewController {
     }
 
     private func animateLayout() {
-//        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
     }
 
     // MARK: viewDidLoad
@@ -2723,7 +2723,11 @@ class WrapDemoVC: UIViewController {
         
         
         do {
-            let view =  WrapStackView (justify: .start,align: .center,spacing: 10,lineSpacing: 10,){
+            
+            let view =  WrapStackView (justify: .start,
+                                       align: .center,
+                                       spacing: 10,
+                                       lineSpacing: 10){
                 UISwitch()
                 Spacer()
                 UISwitch()
@@ -2731,6 +2735,7 @@ class WrapDemoVC: UIViewController {
                 UISwitch()
                 UISwitch().flex.exclusiveLine()
             }
+            
             stack.addArrangedSubview(view)
         }
 

@@ -61,7 +61,7 @@ public struct ZStackViewBuilder {
 open class ZStackView: UIView {
 
     /// 内边距，修改时同步更新 insetsGuide 的四边间距
-    public var insets: NSDirectionalEdgeInsets = .zero {
+    public var insets: EdgeInsets = .zero {
         didSet { updateInsetsGuide() }
     }
 
@@ -94,10 +94,10 @@ open class ZStackView: UIView {
     }
 
     private func updateInsetsGuide() {
-        guideTop?.constant      = insets.top
-        guideLeading?.constant  = insets.leading
-        guideBottom?.constant   = -insets.bottom
-        guideTrailing?.constant = -insets.trailing
+        guideTop?.constant      = insets.t
+        guideLeading?.constant  = insets.s
+        guideBottom?.constant   = -insets.b
+        guideTrailing?.constant = -insets.e
     }
 
     /// DSL 构造
@@ -108,7 +108,7 @@ open class ZStackView: UIView {
     ///     }
     ///
     /// - Parameter insets: 内边距，可选，默认 .zero
-    public convenience init(insets: NSDirectionalEdgeInsets = .zero,
+    public convenience init(insets: EdgeInsets = .zero,
                             @ZStackViewBuilder builder: () -> [ZStackViewDSL]) {
         self.init(frame: .zero)
         self.insets = insets
