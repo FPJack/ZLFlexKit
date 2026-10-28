@@ -77,10 +77,18 @@ open class WrapStackView: UIView {
     private var installedConstraints: [NSLayoutConstraint] = []
     private var installedGuides: [UILayoutGuide] = []
     private var lastSignature: [[ObjectIdentifier]] = []
-    private var measuredWidths: [ObjectIdentifier: CGFloat] = [:]
     /// 自身有固定宽度约束（width == 常量）的 view，fill 模式下不参与 flex 拉伸
     private var fixedWidthViews: Set<ObjectIdentifier> = []
+    /// 强制重建约束（增删 view、容器属性、FlexItem 属性、isHidden 变化）
     private var needsRebuild = true
+    /// 需要重新分行检查（分行结果不变则不重建）：子 view 尺寸变化、嵌套 Wrap 内容变化
+    private var needsLineCheck = true
+    /// 上一次分行使用的宽度，宽度不变且无脏标记时跳过 computeLines
+    private var lastLineWidth: CGFloat = -1
+    /// 上一次布局完成后各子 view 的宽度快照，用于低成本感知内容变化（改文字/字体等）
+    private var childWidthSnapshot: [ObjectIdentifier: CGFloat] = [:]
+    /// 本次 rebuildIfNeeded 是否真正执行了 computeLines
+    private var didComputeLines = false
 
     /// 行高收紧优先级：略高于 UILabel 默认 hugging(250)，低于 compression(750)
     private let lineHugPriority = UILayoutPriority(260)
@@ -177,18 +185,35 @@ open class WrapStackView: UIView {
     }
 
     open override func layoutSubviews() {
-        // 宽度变化 → 分行结果变化 → 重建约束，并让父视图重新布局以更新自身高度
-        if rebuildIfNeeded(containerWidth: bounds.width) {
-            superview?.setNeedsLayout()
-        }
+        // ① 有脏标记或宽度变化时才分行（快路径：什么都没变时不调用 computeLines）
+        var rebuilt = rebuildIfNeeded(containerWidth: bounds.width)
+        let checkedBefore = didComputeLines
         super.layoutSubviews()
+
+        // ② 本轮没分过行，但子 view 实际宽度变了（改文字/字体/嵌套内容变化）→ 补一次分行检查
+        if !checkedBefore, childWidthsChanged() {
+            needsLineCheck = true
+            if rebuildIfNeeded(containerWidth: bounds.width) {
+                rebuilt = true
+                super.layoutSubviews()
+            }
+        }
+        recordChildWidths()
+
+        // 分行变化会改变自身高度：让父视图重新布局；嵌套在外层 Wrap 中时通知外层重新分行检查
+        if rebuilt {
+//            superview?.setNeedsLayout()
+            (superview as? WrapStackView)?.setNeedsLineCheck()
+        }
     }
 
     open override func systemLayoutSizeFitting(_ targetSize: CGSize,
                                                withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority,
                                                verticalFittingPriority: UILayoutPriority) -> CGSize {
-        // 指定了宽度的算高（如 cell 自动算高）：先按目标宽度分行
+        // 指定了宽度的算高（如 cell 自动算高）：先按目标宽度分行。
+        // cell 复用时只改了文字不会有任何脏标记，所以这里始终做一次分行检查
         if targetSize.width > 0, targetSize.width < UIView.layoutFittingExpandedSize.width {
+            needsLineCheck = true
             rebuildIfNeeded(containerWidth: targetSize.width)
         }
         return super.systemLayoutSizeFitting(targetSize,
@@ -196,11 +221,35 @@ open class WrapStackView: UIView {
                                              verticalFittingPriority: verticalFittingPriority)
     }
 
+    /// 只标记"需要分行检查"：分行结果不变时不重建约束
+    fileprivate func setNeedsLineCheck() {
+        needsLineCheck = true
+        setNeedsLayout()
+    }
+
+    // MARK: - Child size tracking
+
+    private func childWidthsChanged() -> Bool {
+        let views = arrangedViews
+        guard views.count == childWidthSnapshot.count else { return true }
+        for v in views {
+            guard let old = childWidthSnapshot[ObjectIdentifier(v)],
+                  abs(old - v.bounds.width) < 0.5 else { return true }
+        }
+        return false
+    }
+
+    private func recordChildWidths() {
+        childWidthSnapshot.removeAll(keepingCapacity: true)
+        for v in arrangedViews { childWidthSnapshot[ObjectIdentifier(v)] = v.bounds.width }
+    }
+
     // MARK: - Rebuild
 
     /// - Returns: 是否重建了约束
     @discardableResult
     private func rebuildIfNeeded(containerWidth: CGFloat) -> Bool {
+        didComputeLines = false
         let width = containerWidth > 0 ? containerWidth : preferredMaxLayoutWidth
         guard width > 0 else {
             // 宽度未知：不分行，只放一个低优先级高度占位，等拿到宽度再布局
@@ -212,6 +261,12 @@ open class WrapStackView: UIView {
             }
             return false
         }
+
+        // 快路径：没有任何脏标记且宽度没变，分行结果不可能变化，直接跳过
+        guard needsRebuild || needsLineCheck || abs(width - lastLineWidth) >= 0.5 else { return false }
+        lastLineWidth = width
+        needsLineCheck = false
+        didComputeLines = true
 
         let available = isWrapEnabled
             ? max(0, width - insets.leading - insets.trailing)
@@ -246,7 +301,6 @@ open class WrapStackView: UIView {
     // MARK: - Line breaking
 
     private func computeLines(maxWidth: CGFloat) -> [[UIView]] {
-        measuredWidths.removeAll(keepingCapacity: true)
         fixedWidthViews.removeAll(keepingCapacity: true)
         var lines: [[UIView]] = []
         var current: [UIView] = []
@@ -255,7 +309,6 @@ open class WrapStackView: UIView {
         for view in arrangedViews {
             let m = view.flex.margin
             let base = measureWidth(of: view)
-            measuredWidths[ObjectIdentifier(view)] = base
             let w = base + m.leading + m.trailing
 
             // 独占一行：结束当前行，自己单独成一行，后面的 view 从新行开始
@@ -407,7 +460,13 @@ open class WrapStackView: UIView {
         cons.append(trail.leadingAnchor.constraint(equalTo: last.trailingAnchor, constant: last.flex.margin.trailing))
         cons.append(trail.trailingAnchor.constraint(equalTo: line.trailingAnchor))
 
-        let isSpaceMode = [.spaceBetween, .spaceAround, .spaceEvenly].contains(justifyContent) && count > 1
+        // 与 CSS flex-grow 一致：本行有 flex > 0（且无固定宽度）的 view 时，剩余空间全部按权重分给它们，
+        // 此时 justifyContent 的分布方式不再起作用（等价于 fill）；fillEqually 忽略 flex，保持行内等宽
+        let flexViews = justifyContent == .fillEqually ? [] :
+            views.filter { $0.flex.flex > 0 && !fixedWidthViews.contains(ObjectIdentifier($0)) }
+        let justify: Justify = flexViews.isEmpty ? justifyContent : .fill
+
+        let isSpaceMode = [.spaceBetween, .spaceAround, .spaceEvenly].contains(justify) && count > 1
         var firstGap: UILayoutGuide?
 
         for (i, view) in views.enumerated() {
@@ -444,7 +503,7 @@ open class WrapStackView: UIView {
         let zeroTrail = trail.widthAnchor.constraint(equalToConstant: 0)
         let centered  = lead.widthAnchor.constraint(equalTo: trail.widthAnchor)
 
-        switch justifyContent {
+        switch justify {
         case .start:
             cons.append(zeroLead)
         case .end:
@@ -454,7 +513,6 @@ open class WrapStackView: UIView {
         case .fill:
             cons.append(zeroLead)
             // 有固定宽度的 view 即使设置了 flex 也不拉伸（固定宽度优先），避免与撑满整行冲突
-            let flexViews = views.filter { $0.flex.flex > 0 && !fixedWidthViews.contains(ObjectIdentifier($0)) }
             if !flexViews.isEmpty {
                 cons.append(zeroTrail)
                 addFlexGrow(flexViews, cons: &cons)

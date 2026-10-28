@@ -2720,6 +2720,18 @@ class WrapDemoVC: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .compatBackground
         let stack = makeScrollableContainerStack()
+        
+        
+        do {
+            let view =  WrapStackView (justify: .start,align: .center,spacing: 10,lineSpacing: 10,){
+                UISwitch()
+                UIView().flex.flex(1)
+                UISwitch()
+                UIView().flex.flex(1)
+                UISwitch()
+            }
+            stack.addArrangedSubview(view)
+        }
 
         section1_DSL(stack)
         section2_Playground(stack)
@@ -2735,6 +2747,20 @@ class WrapDemoVC: UIViewController {
         section10_NestedStackView(stack)
         section11_CellAutoHeight(stack)
         section12_Notes(stack)
+        
+//        let view =  WrapStackView (align: .start,spacing: 10,lineSpacing: 10,){
+//            UISwitch()
+//            UIView().flex.flex(1)
+//            UISwitch()
+//            UIView().flex.flex(1)
+//            UISwitch()
+//            UISwitch().flex.exclusiveLine()
+//            UISwitch()
+//            UISwitch().flex.align(.start)
+//            UISwitch().flex.exclusiveLine()
+//        }
+//        stack.addArrangedSubview(view)
+//
     }
 
     // MARK: ① DSL + 链式
@@ -2775,15 +2801,14 @@ class WrapDemoVC: UIViewController {
         stack.addView(sectionLabel("""
         ② 属性面板：所有容器属性实时调节
         justifyContent / alignment / spacing / lineSpacing / insets / isWrapEnabled / numberOfLines
-        （"Swift" 和 "UIKit" 设置了 flex = 1，用于观察 fill 效果）
+        （选中 fill 时 "Swift" 和 "UIKit" 设置 flex = 1，观察 fill 效果；
+          其余模式下 flex = 0 —— 有 flex 的行会被撑满，justify 对该行不再生效）
         """))
 
         let fonts: [CGFloat] = [13, 18, 11, 22, 14, 12, 16, 11, 20, 13]
         let items = (0..<10).map { i -> UILabel in
             tag(words[i], colors[i % colors.count], font: fonts[i])
         }
-        items[0].flex.flex = 1
-        items[5].flex.flex = 1
 
         let w = wrapBox(WrapStackView(spacing: 8, lineSpacing: 8, insets: .all(10)) {
             for v in items { v }
@@ -2804,6 +2829,9 @@ class WrapDemoVC: UIViewController {
 
         stack.addView(segment(justifies.map { $0.0 }) { [weak self] i in
             w.justifyContent = justifies[i].1
+            let flexValue = justifies[i].1 == .fill ? 1 : 0
+            items[0].flex.flex = flexValue
+            items[5].flex.flex = flexValue
             self?.animateLayout()
         })
         stack.addView(segment(aligns.map { "align " + $0.0 }, selected: 1) { [weak self] i in
@@ -3365,7 +3393,7 @@ class WrapDemoVC: UIViewController {
         ⑫ 注意事项
         1. 只支持水平主轴换行，行从上往下排列；宽度由外部决定，高度由内容撑开，不要给固定高度。
         2. 子 view 需要有宽度：UILabel 等有内容尺寸即可；纯 UIView 要设 width 约束或 flex.width。
-        3. justifyContent / alignment 按行生效；fill 只拉伸本行 flex>0 的 view；fillEqually 是行内等宽。
+        3. justifyContent / alignment 按行生效；某行有 flex>0 的 view 时（与 CSS flex-grow 一致），无论 justify 是什么，剩余空间都按权重分给它们，该行的 justify 不再生效；fillEqually 忽略 flex，行内等宽。
         4. fill(有 flex) / fillEqually 会改变子 view 宽度，子 view 不要再有固定宽度约束，否则冲突。
         5. 单个 view 比一行还宽时独占一行，宽度被压到行宽（多行 UILabel 记得 numberOfLines = 0）。
         6. 布局完成后修改 view.flex（flex / margin / spacing / alignSelf / width / height 等）、增删 view、
@@ -3433,7 +3461,17 @@ class WrapCellDemoVC: UITableViewController {
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 80
     }
+    override func viewWillTransition(
+        to size: CGSize,
+        with coordinator: UIViewControllerTransitionCoordinator
+    ) {
+        super.viewWillTransition(to: size, with: coordinator)
 
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            guard let self else { return }
+            self.tableView.reloadData()
+        }
+    }
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { rows.count }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
