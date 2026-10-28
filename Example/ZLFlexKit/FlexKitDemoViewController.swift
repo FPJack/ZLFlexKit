@@ -2711,7 +2711,7 @@ class WrapDemoVC: UIViewController {
     }
 
     private func animateLayout() {
-        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+//        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
     }
 
     // MARK: viewDidLoad
@@ -2725,10 +2725,11 @@ class WrapDemoVC: UIViewController {
         do {
             let view =  WrapStackView (justify: .start,align: .center,spacing: 10,lineSpacing: 10,){
                 UISwitch()
-                UIView().flex.flex(1)
+                Spacer()
                 UISwitch()
-                UIView().flex.flex(1)
+                Spacer()
                 UISwitch()
+                UISwitch().flex.exclusiveLine()
             }
             stack.addArrangedSubview(view)
         }
@@ -2738,6 +2739,7 @@ class WrapDemoVC: UIViewController {
         section3_MultiLineVertical(stack)
         section4_FillFlex(stack)
         section5_MarginSpacing(stack)
+        section5d_ElasticSpacing(stack)
         section5b_DynamicFlexItem(stack)
         section5c_ExclusiveLine(stack)
         section6_Dynamic(stack)
@@ -2770,7 +2772,7 @@ class WrapDemoVC: UIViewController {
         ① DSL 构造 + 链式配置
         · 构造：WrapStackView(justify:align:spacing:lineSpacing:insets:) { }
         · 链式：.justify() .align() .gap() .lineGap() .insets() .wrap() .maxLayoutWidth()
-        · DSL 内支持 UIView / FlexItem / for-in / if / 可选 view / 数字间距 / Spacer(值)
+        · DSL 内支持 UIView / FlexItem / for-in / if / 可选 view / 数字间距 / Spacer(值) / N.minSpacing / N.maxSpacing / Spacer()
         """))
         let showHot = true
         let optionalView: UIView? = nil
@@ -2973,6 +2975,104 @@ class WrapDemoVC: UIViewController {
             self?.animateLayout()
         })
         stack.addView(w)
+    }
+
+    // MARK: ⑤-4 弹性间距：minSpacing / maxSpacing / Spacer()
+
+    private func section5d_ElasticSpacing(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑤-4 弹性间距：DSL 里的 3.minSpacing / 3.maxSpacing / Spacer()，以及对应的 view.flex 属性
+        · 数字 / Spacer(值)：固定间距
+        · N.minSpacing（flex.minSpacing）：间距 ≥ N；平时取 clamp(spacing, N)，fill 时拉伸撑满，空间不足时压缩到 N
+        · N.maxSpacing（flex.maxSpacing）：0 ≤ 间距 ≤ N；空间不足时先压缩间距，再压缩内容
+        · Spacer()（flex.isFlexibleSpace）：纯弹性空白，占满本行剩余空间；同一行多个时等宽
+        · 多个弹性间距相对首选值的伸缩量相同；分行时按最小间距计算
+        """))
+
+        // a. Spacer()：一行多个等宽，把内容推向两端 / 中间
+        stack.addView(note("a. Spacer() × 2：左 / 中 / 右，两个 Spacer 等宽"))
+        stack.addView(wrapBox(WrapStackView(insets: .all(10)) {
+            tag("左", .systemBlue)
+            Spacer()
+            tag("中间", .systemGreen)
+            Spacer()
+            tag("右", .systemOrange)
+        }))
+
+        // b. minSpacing + fill：间距拉伸撑满，内容不被拉伸
+        stack.addView(note("b. justify = fill + 10.minSpacing / 30.minSpacing：两个间距在最小值基础上拉伸相同的量"))
+        stack.addView(wrapBox(WrapStackView(justify: .start, insets: .all(10)) {
+            tag("A", .systemPurple)
+            10.minSpacing
+            tag("B", .systemPurple)
+            30.minSpacing
+            tag("C", .systemPurple)
+        }))
+
+        // c. maxSpacing：空间不足时先压缩间距
+        stack.addView(note("c. spacing = 40 + 40.maxSpacing：拖动宽度，放不下时间距先被压缩（最小到 0），仍放不下才换行"))
+        let compress = wrapBox(WrapStackView(spacing: 40, insets: .all(10)) {
+            tag("Swift UI", .systemTeal)
+            40.maxSpacing
+            tag("Auto Layout", .systemTeal)
+            40.maxSpacing
+            tag("Wrap", .systemTeal)
+        })
+        let holder = UIView()
+        holder.addSubview(compress)
+        compress.translatesAutoresizingMaskIntoConstraints = false
+        let widthCons = compress.widthAnchor.constraint(equalToConstant: 320)
+        NSLayoutConstraint.activate([
+            compress.topAnchor.constraint(equalTo: holder.topAnchor),
+            compress.bottomAnchor.constraint(equalTo: holder.bottomAnchor),
+            compress.leadingAnchor.constraint(equalTo: holder.leadingAnchor),
+            widthCons,
+            compress.trailingAnchor.constraint(lessThanOrEqualTo: holder.trailingAnchor),
+        ])
+        stack.addView(slider("容器宽度", min: 180, max: 340, value: 320) { [weak self] v in
+            widthCons.constant = v
+            self?.animateLayout()
+        })
+        stack.addView(holder)
+
+        // d. Spacer() 与 flex 共存：剩余空间归 flex view，Spacer 收缩为 0
+        stack.addView(note("d. Spacer() + flex(1)：剩余空间优先给 flex view，Spacer 收缩为最小值"))
+        stack.addView(wrapBox(WrapStackView(insets: .all(10)) {
+            tag("Spacer 前", .systemGray)
+            Spacer()
+            tag("flex 1", .systemGreen).flex.flex(1)
+            tag("尾", .systemGray)
+        }))
+
+        // e. 通过 view.flex 动态切换间距类型
+        stack.addView(note("e. 用 view.flex 动态切换 \"A\" 后面的间距类型（自动重新布局）"))
+        let a = tag("A", .systemPink)
+        let w = wrapBox(WrapStackView(spacing: 8, insets: .all(10)) {
+            a
+            tag("B", .systemPink)
+            tag("C", .systemPink)
+        })
+        let info = note("")
+        let kinds = ["固定 8", "min 24", "max 4", "Spacer()", "Spacer(min:40)"]
+        let apply: (Int) -> Void = { [weak self, weak info] i in
+            // 先重置，再设置当前类型
+            a.flex.isFlexibleSpace = false
+            a.flex.minSpacing = 0
+            a.flex.maxSpacing = 0
+            switch i {
+            case 1: a.flex.minSpacing = 24
+            case 2: a.flex.maxSpacing = 4
+            case 3: a.flex.isFlexibleSpace = true
+            case 4: a.flex.isFlexibleSpace = true; a.flex.minSpacing = 40
+            default: break
+            }
+            info?.text = "A 后面：\(kinds[i])   flex.minSpacing=\(Int(a.flex.minSpacing))  flex.maxSpacing=\(Int(a.flex.maxSpacing))  isFlexibleSpace=\(a.flex.isFlexibleSpace)"
+            self?.animateLayout()
+        }
+        stack.addView(segment(kinds) { apply($0) })
+        stack.addView(w)
+        stack.addView(info)
+        apply(0)
     }
 
     // MARK: ⑤-2 布局完成后动态修改 view.flex
@@ -3402,7 +3502,9 @@ class WrapDemoVC: UIViewController {
            修改已有宽高时用 flex.width(x).updateSize()，否则会追加一条新的宽度约束导致冲突。
         7. 嵌套 WrapStackView 时，内层按最宽的单个子 view 参与外层分行；需要占满剩余宽度时给内层 flex。
         8. cell 自动算高时设置 preferredMaxLayoutWidth，避免首次没有宽度。
-        9. DSL 中数字 / Spacer(值) = 前一个 view 后面的间距；Spacer() 弹性空白不支持。
+        9. DSL 中数字 / Spacer(值) / N.minSpacing / N.maxSpacing / Spacer() 都作用于前一个 view 后面的间距（写在第一个 view 之前会被忽略）；
+           Spacer() 占满本行剩余空间且多个等宽，行内有 flex view 时 Spacer 收缩为最小值；
+           space 模式下若行内有 min/max 间距：spaceBetween 按 fill 处理，spaceAround / spaceEvenly 按居中处理。
         10. isWrapEnabled = false 时强制单行，放不下的 view 会按抗压缩优先级被压缩。
         11. exclusiveLine 只在 WrapStackView 中生效（StackView 忽略）；独占的 view 前后都换行，
             行内仍按 justifyContent 排列，想撑满整行可配合 justify(.fill) + flex(1)。

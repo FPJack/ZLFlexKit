@@ -321,7 +321,7 @@ open class WrapStackView: UIView {
             }
 
             if let prev = current.last {
-                let gap = spacing(after: prev)
+                let gap = minGap(after: prev)
                 if used + gap + w > maxWidth + 0.5 {
                     lines.append(current)
                     current = [view]
@@ -395,6 +395,37 @@ open class WrapStackView: UIView {
         return s > 0 ? s : max(0, spacing)
     }
 
+    /// view 后面的间距类型
+    private enum Gap {
+        /// 固定间距（spacing / 数字 / Spacer(值)）
+        case fixed(CGFloat)
+        /// 弹性间距（minSpacing / maxSpacing）：min ≤ 间距 ≤ max，平时取 preferred，空间不足时压缩、需要撑满时拉伸
+        case elastic(min: CGFloat, max: CGFloat?, preferred: CGFloat)
+        /// 纯弹性空白（Spacer() / isFlexibleSpace）：占满剩余空间，同一行多个时等宽
+        case flexible(min: CGFloat)
+    }
+
+    private func gap(after view: UIView) -> Gap {
+        let f = view.flex
+        let minV = max(0, f._minSpacing)
+        let maxV: CGFloat? = f._maxSpacing > 0 ? max(f._maxSpacing, minV) : nil
+        if f.isFlexibleSpace { return .flexible(min: minV) }
+        if f._minSpacing > 0 || f._maxSpacing > 0 {
+            let preferred = min(max(spacing(after: view), minV), maxV ?? .greatestFiniteMagnitude)
+            return .elastic(min: minV, max: maxV, preferred: preferred)
+        }
+        return .fixed(spacing(after: view))
+    }
+
+    /// 分行测量使用的最小间距（弹性间距按下限计算，放得下时再由约束拉伸）
+    private func minGap(after view: UIView) -> CGFloat {
+        switch gap(after: view) {
+        case .fixed(let v):            return v
+        case .elastic(let m, _, _):    return m
+        case .flexible(let m):         return m
+        }
+    }
+
     /// 单独设置了 alignSelf 用它，否则跟随容器 alignment
     private func crossAlign(of view: UIView) -> FlexItemCrossAlign {
         view.flex.explicitAlignSelf ?? alignment
@@ -464,10 +495,44 @@ open class WrapStackView: UIView {
         // 此时 justifyContent 的分布方式不再起作用（等价于 fill）；fillEqually 忽略 flex，保持行内等宽
         let flexViews = justifyContent == .fillEqually ? [] :
             views.filter { $0.flex.flex > 0 && !fixedWidthViews.contains(ObjectIdentifier($0)) }
-        let justify: Justify = flexViews.isEmpty ? justifyContent : .fill
 
-        let isSpaceMode = [.spaceBetween, .spaceAround, .spaceEvenly].contains(justify) && count > 1
+        // 本行各 view 之间的间距类型（最后一个 view 后面的间距不在本行内，不参与）
+        let gaps: [Gap] = (0..<max(0, count - 1)).map { gap(after: views[$0]) }
+        let hasFlexibleGap = gaps.contains { if case .flexible = $0 { return true }; return false }
+        let hasElasticGap  = gaps.contains { if case .elastic = $0 { return true }; return false }
+        /// 可无上限拉伸的弹性间距（只有 minSpacing）：fill 模式下由它撑满整行
+        let hasStretchableGap = gaps.contains { if case .elastic(_, nil, _) = $0 { return true }; return false }
+        let spaceModes: [Justify] = [.spaceBetween, .spaceAround, .spaceEvenly]
+
+        var justify: Justify = justifyContent
+        if !flexViews.isEmpty {
+            justify = .fill                                   // flex view 吃掉剩余空间
+        } else if hasFlexibleGap, justify != .fillEqually {
+            justify = .fill                                   // Spacer() 吃掉剩余空间
+        } else if hasElasticGap, spaceModes.contains(justify) {
+            // space 模式下有弹性间距：between 两端贴边由弹性间距撑满；around / evenly 居中
+            justify = justify == .spaceBetween ? .fill : .center
+        }
+
+        let isSpaceMode = spaceModes.contains(justify) && count > 1
         var firstGap: UILayoutGuide?
+
+        // 弹性间距的"首选值"优先级：低于 UILabel hugging(250) → 需要撑满时间距先拉伸、内容不被拉伸；
+        // 行内有 flex view 时要高于 flex view 的 hugging(249) → 剩余空间优先给 flex view
+        let preferPriority = UILayoutPriority(flexViews.isEmpty ? 240 : 260)
+        // 多个弹性间距：相对首选值的拉伸 / 压缩量相等（优先级略高于首选值，保证均匀变化；触到上下限的不再跟随）
+        let evenStretchPriority = UILayoutPriority(preferPriority.rawValue + 5)
+        var elasticGaps: [(guide: UILayoutGuide, preferred: CGFloat)] = []
+        var flexibleGaps: [UILayoutGuide] = []
+
+        /// 连接 prev 与 view 的间距 guide
+        func gapGuide(_ prev: UIView, _ pm: NSDirectionalEdgeInsets,
+                      _ view: UIView, _ m: NSDirectionalEdgeInsets) -> UILayoutGuide {
+            let g = hGuide()
+            cons.append(g.leadingAnchor.constraint(equalTo: prev.trailingAnchor, constant: pm.trailing))
+            cons.append(g.trailingAnchor.constraint(equalTo: view.leadingAnchor, constant: -m.leading))
+            return g
+        }
 
         for (i, view) in views.enumerated() {
             let m = view.flex.margin
@@ -482,20 +547,55 @@ open class WrapStackView: UIView {
             guard i > 0 else { continue }
             let prev = views[i - 1]
             let pm = prev.flex.margin
-            let gap = spacing(after: prev)
+            let gapValue = spacing(after: prev)
             if isSpaceMode {
-                let sg = hGuide()
-                cons.append(sg.leadingAnchor.constraint(equalTo: prev.trailingAnchor, constant: pm.trailing))
-                cons.append(sg.trailingAnchor.constraint(equalTo: view.leadingAnchor, constant: -m.leading))
-                cons.append(sg.widthAnchor.constraint(greaterThanOrEqualToConstant: gap))
+                let sg = gapGuide(prev, pm, view, m)
+                cons.append(sg.widthAnchor.constraint(greaterThanOrEqualToConstant: gapValue))
                 if let fg = firstGap {
                     cons.append(sg.widthAnchor.constraint(equalTo: fg.widthAnchor))
                 } else {
                     firstGap = sg
                 }
-            } else {
+                continue
+            }
+
+            switch gaps[i - 1] {
+            case .fixed(let v):
                 cons.append(view.leadingAnchor.constraint(equalTo: prev.trailingAnchor,
-                                                          constant: pm.trailing + gap + m.leading))
+                                                          constant: pm.trailing + v + m.leading))
+            case let .elastic(minV, maxV, preferred):
+                let sg = gapGuide(prev, pm, view, m)
+                cons.append(sg.widthAnchor.constraint(greaterThanOrEqualToConstant: minV))
+                if let maxV = maxV {
+                    cons.append(sg.widthAnchor.constraint(lessThanOrEqualToConstant: maxV))
+                }
+                elasticGaps.append((sg, preferred))
+                let prefer = sg.widthAnchor.constraint(equalToConstant: preferred)
+                prefer.priority = preferPriority
+                cons.append(prefer)
+            case .flexible(let minV):
+                let sg = gapGuide(prev, pm, view, m)
+                cons.append(sg.widthAnchor.constraint(greaterThanOrEqualToConstant: minV))
+                flexibleGaps.append(sg)
+            }
+        }
+
+        // Spacer()：同一行多个时等宽
+        if let f0 = flexibleGaps.first {
+            flexibleGaps.dropFirst().forEach { cons.append($0.widthAnchor.constraint(equalTo: f0.widthAnchor)) }
+            // 有 flex view / fillEqually 时剩余空间归 view，Spacer 收缩到最小
+            if !flexViews.isEmpty || justify == .fillEqually {
+                let collapse = f0.widthAnchor.constraint(equalToConstant: 0)
+                collapse.priority = UILayoutPriority(500)
+                cons.append(collapse)
+            }
+        }
+        // 弹性间距：width_i - preferred_i == width_0 - preferred_0
+        if let s0 = elasticGaps.first {
+            for s in elasticGaps.dropFirst() {
+                let c = s.guide.widthAnchor.constraint(equalTo: s0.guide.widthAnchor, constant: s.preferred - s0.preferred)
+                c.priority = evenStretchPriority
+                cons.append(c)
             }
         }
 
@@ -512,9 +612,13 @@ open class WrapStackView: UIView {
             cons.append(centered)
         case .fill:
             cons.append(zeroLead)
+            // 有可无限伸展的东西（flex view / Spacer / 只有下限的弹性间距）时撑满整行；
+            // 只有 maxSpacing 这类有上限的间距时不强制撑满，避免拉伸 view 本身；
             // 有固定宽度的 view 即使设置了 flex 也不拉伸（固定宽度优先），避免与撑满整行冲突
-            if !flexViews.isEmpty {
+            if !flexViews.isEmpty || hasFlexibleGap || hasStretchableGap {
                 cons.append(zeroTrail)
+            }
+            if !flexViews.isEmpty {
                 addFlexGrow(flexViews, cons: &cons)
             }
         case .fillEqually:
@@ -579,8 +683,12 @@ open class WrapStackView: UIView {
 
 extension WrapStackView {
 
-    /// DSL 追加子 view。支持 UIView / FlexItem / 可选 / if / for-in；
-    /// 数字 = 设置前一个 view 后面的间距；Spacer 只支持 Spacer(值)，其余忽略
+    /// DSL 追加子 view。支持 UIView / FlexItem / 可选 / if / for-in；以下写法作用于前一个 view 后面的间距：
+    /// - 数字 / Spacer(值)：固定间距
+    /// - 3.minSpacing / Spacer(min:)：最小间距（可拉伸，空间不足时压缩到最小值）
+    /// - 3.maxSpacing / Spacer(max:)：最大间距（可压缩到 0，最多拉伸到最大值）
+    /// - Spacer()：纯弹性空白，占满本行剩余空间，同一行多个时等宽
+    /// 写在第一个 view 之前的间距没有作用对象，会被忽略
     @discardableResult
     public func addViews(@StackViewBuilder builder: () -> [StackViewDSL]) -> Self {
         addViews(with: builder)
@@ -599,8 +707,13 @@ extension WrapStackView {
                 allViews.last?.flex.spacing = CGFloat(v)
             } else if let v = component as? Float {
                 allViews.last?.flex.spacing = CGFloat(v)
-            } else if let spacer = component as? Spacer, case .value(let v) = spacer {
-                allViews.last?.flex.spacing = CGFloat(v)
+            } else if let spacer = component as? Spacer {
+                switch spacer {
+                case .normal:          allViews.last?.flex.isFlexibleSpace = true
+                case .min(let v):      allViews.last?.flex.minSpacing = CGFloat(v)
+                case .max(let v):      allViews.last?.flex.maxSpacing = CGFloat(v)
+                case .value(let v):    allViews.last?.flex.spacing = CGFloat(v)
+                }
             }
         }
         setNeedsRelayout()
