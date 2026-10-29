@@ -17,7 +17,7 @@ public enum FlexItemCrossAlign: Int {
 }
 
 
-/// 能承载 FlexItem 的非 StackView 容器（如 WrapStackView）。
+/// 能承载 FlexItem 的非 StackView 容器（如 WStackView）。
 /// StackView 仍走原有的 stackView / markedUpdateConstraints 路径，不受影响
 public protocol FlexContainer: AnyObject {
     /// 子 view 的 FlexItem 布局属性（flex / margin / spacing / alignSelf / 尺寸等）发生变化
@@ -56,7 +56,7 @@ public  class FlexItem: NSObject {
     public weak var stackView: StackView?
     
     
-    /// 所在的非 StackView 容器（如 WrapStackView），由容器在添加 / 移除子 view 时设置
+    /// 所在的非 StackView 容器（如 WStackView），由容器在添加 / 移除子 view 时设置
     public weak var container: FlexContainer?
     
     
@@ -234,11 +234,11 @@ public  class FlexItem: NSObject {
     }
     
     
-    /// 是否独占一行（仅 WrapStackView 生效）：前后都会换行，该 view 单独占据一行
+    /// 是否独占一行（仅 WStackView 生效）：前后都会换行，该 view 单独占据一行
     public var exclusiveLine: Bool = false {
         didSet {
             guard exclusiveLine != oldValue else { return }
-            notifyContainer()          // 只有 WrapStackView 使用，StackView 不读取该属性
+            notifyContainer()          // 只有 WStackView 使用，StackView 不读取该属性
         }
     }
     
@@ -416,7 +416,7 @@ public  class FlexItem: NSObject {
     }
     
     
-    /// 设置是否独占一行（仅 WrapStackView 生效）
+    /// 设置是否独占一行（仅 WStackView 生效）
     @discardableResult
     public func exclusiveLine(_ exclusive: Bool = true) -> Self {
         self.exclusiveLine = exclusive
@@ -637,7 +637,7 @@ public extension FlexItem {
     
     
     
-    /// 设置是否独占一行（仅 WrapStackView 生效）
+    /// 设置是否独占一行（仅 WStackView 生效）
     @objc(exclusiveLine)
     @available(swift, obsoleted: 1, renamed: "exclusiveLine(_:)")
     var exclusiveLineObjc: (_ exclusive: Bool) -> FlexItem {

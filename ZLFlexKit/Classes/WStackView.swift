@@ -1,5 +1,5 @@
 //
-//  WrapStackView.swift
+//  WStackView.swift
 //  ZLFlexKit
 //
 //  自动换行的弹性布局容器（水平主轴，放不下自动换到下一行）
@@ -17,8 +17,8 @@
 
 import UIKit
 
-@objc(ZLWrapStackView)
-open class WrapStackView: UIView {
+@objc(ZLWStackView)
+open class WStackView: UIView {
 
     // MARK: - Public properties
 
@@ -37,9 +37,19 @@ open class WrapStackView: UIView {
         didSet { if oldValue != spacing { setNeedsRelayout() } }
     }
 
-    /// 行与行之间的间距
+    /// 行与行之间的间距（space 系列行分布模式下为最小行间距）
     @objc public var lineSpacing: CGFloat = 0 {
         didSet { if oldValue != lineSpacing { setNeedsRelayout() } }
+    }
+
+    /// 多行在垂直方向上的分布方式（类似 CSS align-content），默认 .start。
+    /// 只有容器高度大于内容高度（高度由外部约束确定）时才有可见效果；高度由内容撑开时各模式表现一致
+    /// - start / center / end：整体靠上 / 居中 / 靠下
+    /// - spaceBetween / spaceAround / spaceEvenly：多余高度分配到行间（lineSpacing 为最小行间距）；只有一行时分别按 start / center / center 处理
+    /// - fill：多余高度平均加到每一行（行被拉伸，行内 view 按 alignment 在拉伸后的行内对齐；alignment = .fill 的 view 保持内容高度并靠行顶部）
+    /// - fillEqually：所有行等高（高度由内容撑开时都等于最高的那一行）
+    @objc public var lineJustifyContent: Justify = .start {
+        didSet { if oldValue != lineJustifyContent { setNeedsRelayout() } }
     }
 
     /// 内边距
@@ -92,6 +102,10 @@ open class WrapStackView: UIView {
 
     /// 行高收紧优先级：略高于 UILabel 默认 hugging(250)，低于 compression(750)
     private let lineHugPriority = UILayoutPriority(260)
+    /// 行分布的"无多余空间时收紧"优先级：低于行高收紧 → 有多余高度时由分布 guide 吸收，行保持内容高度
+    private let lineDistributionHugPriority = UILayoutPriority(240)
+    /// lineJustifyContent = .fill 时 alignment = .fill 的 view 贴行底的优先级（行被拉伸时让步）
+    private let lineStretchFillPriority = UILayoutPriority(255)
 
     // MARK: - Init
 
@@ -108,6 +122,7 @@ open class WrapStackView: UIView {
                             align: FlexItemCrossAlign? = nil,
                             spacing: CGFloat? = nil,
                             lineSpacing: CGFloat? = nil,
+                            lineJustify: Justify? = nil,
                             insets: EdgeInsets? = nil,
                             @StackViewBuilder builder: () -> [StackViewDSL]) {
         self.init(frame: .zero)
@@ -115,6 +130,7 @@ open class WrapStackView: UIView {
         if let align = align { alignment = align }
         if let spacing = spacing { self.spacing = spacing }
         if let lineSpacing = lineSpacing { self.lineSpacing = lineSpacing }
+        if let lineJustify = lineJustify { lineJustifyContent = lineJustify }
         if let insets = insets { self.insets = insets.directionalEdgeInsets }
         addViews(with: builder)
     }
@@ -203,7 +219,7 @@ open class WrapStackView: UIView {
         // 分行变化会改变自身高度：让父视图重新布局；嵌套在外层 Wrap 中时通知外层重新分行检查
         if rebuilt {
 //            superview?.setNeedsLayout()
-            (superview as? WrapStackView)?.setNeedsLineCheck()
+            (superview as? WStackView)?.setNeedsLineCheck()
         }
     }
 
@@ -348,7 +364,7 @@ open class WrapStackView: UIView {
         var minW: CGFloat = 0
         var maxW = CGFloat.greatestFiniteMagnitude
         for c in view.constraints where c.isActive
-            && !WrapStackView.isContentSizeConstraint(c)
+            && !WStackView.isContentSizeConstraint(c)
             && c.firstItem === view && c.secondItem == nil
             && c.firstAttribute == .width
             && c.priority.rawValue >= UILayoutPriority.defaultHigh.rawValue {
@@ -364,8 +380,8 @@ open class WrapStackView: UIView {
         if let fixed = fixed {
             fixedWidthViews.insert(ObjectIdentifier(view))
             width = fixed
-        } else if let nested = view as? WrapStackView {
-            // 嵌套的 WrapStackView 本身可以换行：按最小内容宽度（最宽的单个子 view）参与分行
+        } else if let nested = view as? WStackView {
+            // 嵌套的 WStackView 本身可以换行：按最小内容宽度（最宽的单个子 view）参与分行
             width = nested.minContentWidth
         } else if view.intrinsicContentSize.width > 0 {
             width = view.intrinsicContentSize.width
@@ -445,33 +461,143 @@ open class WrapStackView: UIView {
             return
         }
 
+        let n = lines.count
+        let mode = effectiveLineJustify(lineCount: n)
+        let isSpaceMode = [Justify.spaceBetween, .spaceAround, .spaceEvenly].contains(mode)
+
+        /// 只占垂直方向的辅助 guide（水平方向固定避免歧义）
+        func vGuide() -> UILayoutGuide {
+            let g = makeGuide()
+            cons.append(g.leadingAnchor.constraint(equalTo: leadingAnchor))
+            cons.append(g.widthAnchor.constraint(equalToConstant: 0))
+            cons.append(g.heightAnchor.constraint(greaterThanOrEqualToConstant: 0))
+            return g
+        }
+        func low(_ c: NSLayoutConstraint) {
+            c.priority = lineDistributionHugPriority
+            cons.append(c)
+        }
+
+        // 首行上方 / 末行下方的空白（容器有多余高度时按 lineJustifyContent 分配）
+        let topGap = vGuide()
+        let bottomGap = vGuide()
+        cons.append(topGap.topAnchor.constraint(equalTo: topAnchor, constant: insets.top))
+        cons.append(bottomGap.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -insets.bottom))
+
+        var lineGuides: [UILayoutGuide] = []
+        var lineGaps: [UILayoutGuide] = []      // space 模式：行间距 guide
+        var lineExtras: [UILayoutGuide] = []    // fill 模式：每行被拉伸的多余高度
+
         var prevLine: UILayoutGuide?
         for (index, line) in lines.enumerated() {
             let g = makeGuide()
             cons.append(g.leadingAnchor.constraint(equalTo: leadingAnchor, constant: insets.leading))
             cons.append(g.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -insets.trailing))
             if let prev = prevLine {
-                cons.append(g.topAnchor.constraint(equalTo: prev.bottomAnchor, constant: lineSpacing))
+                if isSpaceMode {
+                    let sg = vGuide()
+                    cons.append(sg.topAnchor.constraint(equalTo: prev.bottomAnchor))
+                    cons.append(sg.bottomAnchor.constraint(equalTo: g.topAnchor))
+                    cons.append(sg.heightAnchor.constraint(greaterThanOrEqualToConstant: lineSpacing))
+                    lineGaps.append(sg)
+                } else {
+                    cons.append(g.topAnchor.constraint(equalTo: prev.bottomAnchor, constant: lineSpacing))
+                }
             } else {
-                cons.append(g.topAnchor.constraint(equalTo: topAnchor, constant: insets.top))
+                cons.append(g.topAnchor.constraint(equalTo: topGap.bottomAnchor))
             }
-            if index == lines.count - 1 {
-                cons.append(g.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -insets.bottom))
+            if index == n - 1 {
+                cons.append(bottomGap.topAnchor.constraint(equalTo: g.bottomAnchor))
             }
-            // 行高收紧到本行最高的 view
-            let hug = g.heightAnchor.constraint(equalToConstant: 0)
-            hug.priority = lineHugPriority
-            cons.append(hug)
 
-            layoutLine(line, in: g, cons: &cons)
+            var natural: UILayoutGuide?
+            if mode == .fill {
+                // 行 = 内容高度(natural) + 多余高度(extra)，各行 extra 相等
+                let ng = makeGuide()
+                cons.append(ng.leadingAnchor.constraint(equalTo: g.leadingAnchor))
+                cons.append(ng.widthAnchor.constraint(equalToConstant: 0))
+                cons.append(ng.topAnchor.constraint(equalTo: g.topAnchor))
+                let hug = ng.heightAnchor.constraint(equalToConstant: 0)
+                hug.priority = lineHugPriority
+                cons.append(hug)
+                let extra = vGuide()
+                cons.append(extra.topAnchor.constraint(equalTo: ng.bottomAnchor))
+                cons.append(extra.bottomAnchor.constraint(equalTo: g.bottomAnchor))
+                lineExtras.append(extra)
+                natural = ng
+            } else {
+                // 行高收紧到本行最高的 view
+                let hug = g.heightAnchor.constraint(equalToConstant: 0)
+                hug.priority = lineHugPriority
+                cons.append(hug)
+            }
+
+            layoutLine(line, in: g, natural: natural, cons: &cons)
+            lineGuides.append(g)
             prevLine = g
+        }
+
+        // 行分布：容器高度由内容撑开时，所有 low 约束都能满足 → 与默认布局一致；
+        // 容器高度由外部确定且更高时，多余高度按模式分配
+        let zeroTop = topGap.heightAnchor.constraint(equalToConstant: 0)
+        let zeroBottom = bottomGap.heightAnchor.constraint(equalToConstant: 0)
+        let centered = topGap.heightAnchor.constraint(equalTo: bottomGap.heightAnchor)
+        if let g0 = lineGaps.first {
+            lineGaps.dropFirst().forEach { cons.append($0.heightAnchor.constraint(equalTo: g0.heightAnchor)) }
+            low(g0.heightAnchor.constraint(equalToConstant: lineSpacing))
+        }
+
+        switch mode {
+        case .start:
+            cons.append(zeroTop)
+            low(zeroBottom)
+        case .end:
+            cons.append(zeroBottom)
+            low(zeroTop)
+        case .center:
+            cons.append(centered)
+            low(zeroTop)
+        case .fill:
+            cons.append(zeroTop)
+            cons.append(zeroBottom)
+            if let e0 = lineExtras.first {
+                lineExtras.dropFirst().forEach { cons.append($0.heightAnchor.constraint(equalTo: e0.heightAnchor)) }
+                low(e0.heightAnchor.constraint(equalToConstant: 0))
+            }
+        case .fillEqually:
+            cons.append(zeroTop)
+            cons.append(zeroBottom)
+            if let l0 = lineGuides.first {
+                lineGuides.dropFirst().forEach { cons.append($0.heightAnchor.constraint(equalTo: l0.heightAnchor)) }
+            }
+        case .spaceBetween:
+            cons.append(zeroTop)
+            cons.append(zeroBottom)
+        case .spaceAround, .spaceEvenly:
+            // 行间距 = lineSpacing + e；around 两端 e/2，evenly 两端 e
+            cons.append(centered)
+            if let g0 = lineGaps.first {
+                let k: CGFloat = mode == .spaceAround ? 0.5 : 1
+                cons.append(topGap.heightAnchor.constraint(equalTo: g0.heightAnchor, multiplier: k, constant: -lineSpacing * k))
+            }
         }
 
         NSLayoutConstraint.activate(cons)
         installedConstraints = cons
     }
 
-    private func layoutLine(_ views: [UIView], in line: UILayoutGuide, cons: inout [NSLayoutConstraint]) {
+    /// 只有一行时 space 系列没有行间可分配：between 按 start，around / evenly 按 center
+    private func effectiveLineJustify(lineCount: Int) -> Justify {
+        guard lineCount <= 1 else { return lineJustifyContent }
+        switch lineJustifyContent {
+        case .spaceBetween:              return .start
+        case .spaceAround, .spaceEvenly: return .center
+        default:                         return lineJustifyContent
+        }
+    }
+
+    private func layoutLine(_ views: [UIView], in line: UILayoutGuide, natural: UILayoutGuide?,
+                            cons: inout [NSLayoutConstraint]) {
         guard let first = views.first, let last = views.last else { return }
         let count = views.count
 
@@ -542,7 +668,7 @@ open class WrapStackView: UIView {
             cap.priority = UILayoutPriority(999)
             cons.append(cap)
 
-            addCrossAxis(view, margin: m, in: line, cons: &cons)
+            addCrossAxis(view, margin: m, in: line, natural: natural, cons: &cons)
 
             guard i > 0 else { continue }
             let prev = views[i - 1]
@@ -657,10 +783,16 @@ open class WrapStackView: UIView {
         }
     }
 
+    /// - natural: lineJustifyContent = .fill 时本行的内容高度 guide（行被拉伸，内容高度单独计算）
     private func addCrossAxis(_ view: UIView, margin m: NSDirectionalEdgeInsets,
-                              in line: UILayoutGuide, cons: inout [NSLayoutConstraint]) {
+                              in line: UILayoutGuide, natural: UILayoutGuide?,
+                              cons: inout [NSLayoutConstraint]) {
         let top = view.topAnchor
         let bottom = view.bottomAnchor
+        if let natural = natural {
+            // 内容高度 ≥ 本行每个 view 的高度（含上下 margin）
+            cons.append(natural.heightAnchor.constraint(greaterThanOrEqualTo: view.heightAnchor, constant: m.top + m.bottom))
+        }
         switch crossAlign(of: view) {
         case .start:
             cons.append(top.constraint(equalTo: line.topAnchor, constant: m.top))
@@ -670,7 +802,17 @@ open class WrapStackView: UIView {
             cons.append(bottom.constraint(equalTo: line.bottomAnchor, constant: -m.bottom))
         case .fill:
             cons.append(top.constraint(equalTo: line.topAnchor, constant: m.top))
-            cons.append(bottom.constraint(equalTo: line.bottomAnchor, constant: -m.bottom))
+            if natural != nil {
+                // 行被拉伸时不跟随拉伸（否则内容高度与行高互相依赖），保持内容高度靠行顶部
+                cons.append(bottom.constraint(lessThanOrEqualTo: line.bottomAnchor, constant: -m.bottom))
+//                cons.append(bottom.constraint(equalTo: line.bottomAnchor, constant: -m.bottom))
+
+                let stretch = bottom.constraint(equalTo: line.bottomAnchor, constant: -m.bottom)
+                stretch.priority = lineStretchFillPriority
+                cons.append(stretch)
+            } else {
+                cons.append(bottom.constraint(equalTo: line.bottomAnchor, constant: -m.bottom))
+            }
         case .center:
             cons.append(top.constraint(greaterThanOrEqualTo: line.topAnchor, constant: m.top))
             cons.append(bottom.constraint(lessThanOrEqualTo: line.bottomAnchor, constant: -m.bottom))
@@ -681,7 +823,7 @@ open class WrapStackView: UIView {
 
 // MARK: - DSL
 
-extension WrapStackView {
+extension WStackView {
 
     /// DSL 追加子 view。支持 UIView / FlexItem / 可选 / if / for-in；以下写法作用于前一个 view 后面的间距：
     /// - 数字 / Spacer(值)：固定间距
@@ -729,7 +871,7 @@ extension WrapStackView {
 
 // MARK: - 独占一行
 
-extension WrapStackView {
+extension WStackView {
     /// 设置某个子 view 是否独占一行（等价于 view.flex.exclusiveLine = exclusive，自动重新布局）
     @objc(setExclusiveLine:forView:)
     open func setExclusiveLine(_ exclusive: Bool, for view: UIView?) {
@@ -746,11 +888,12 @@ extension WrapStackView {
 
 // MARK: - 链式配置（方法名避开同名属性）
 
-extension WrapStackView {
+extension WStackView {
     @discardableResult public func justify(_ v: Justify) -> Self { justifyContent = v; return self }
     @discardableResult public func align(_ v: FlexItemCrossAlign) -> Self { alignment = v; return self }
     @discardableResult public func gap(_ v: NumberConvertible) -> Self { spacing = v.cgFloat; return self }
     @discardableResult public func lineGap(_ v: NumberConvertible) -> Self { lineSpacing = v.cgFloat; return self }
+    @discardableResult public func lineJustify(_ v: Justify) -> Self { lineJustifyContent = v; return self }
     @discardableResult public func insets(_ v: EdgeInsets) -> Self { insets = v.directionalEdgeInsets; return self }
     @discardableResult public func wrap(_ v: Bool) -> Self { isWrapEnabled = v; return self }
     @discardableResult public func maxLayoutWidth(_ v: NumberConvertible) -> Self { preferredMaxLayoutWidth = v.cgFloat; return self }
@@ -758,7 +901,7 @@ extension WrapStackView {
 
 // MARK: - FlexContainer
 
-extension WrapStackView: FlexContainer {
+extension WStackView: FlexContainer {
     /// 子 view 的 FlexItem 属性变化 → 标记重新布局（同一 runloop 内多次修改只重建一次）
     public func flexItemDidChange(_ item: FlexItem) {
         setNeedsRelayout()
