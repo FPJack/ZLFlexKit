@@ -804,8 +804,8 @@ open class WStackView: UIView {
             cons.append(top.constraint(equalTo: line.topAnchor, constant: m.top))
             if natural != nil {
                 // 行被拉伸时不跟随拉伸（否则内容高度与行高互相依赖），保持内容高度靠行顶部
-                cons.append(bottom.constraint(lessThanOrEqualTo: line.bottomAnchor, constant: -m.bottom))
-//                cons.append(bottom.constraint(equalTo: line.bottomAnchor, constant: -m.bottom))
+//                cons.append(bottom.constraint(lessThanOrEqualTo: line.bottomAnchor, constant: -m.bottom))
+                cons.append(bottom.constraint(equalTo: line.bottomAnchor, constant: -m.bottom))
 
                 let stretch = bottom.constraint(equalTo: line.bottomAnchor, constant: -m.bottom)
                 stretch.priority = lineStretchFillPriority
