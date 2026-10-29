@@ -466,6 +466,15 @@ public class LayoutBox: NSObject {
         addConstraint(view?.heightAnchor.constraint(equalToConstant: height.cgFloat),id: id)
         return self
     }
+    @discardableResult
+    public func heightRatio(_ ratio: NumberConvertible,id: String? = nil) -> Self {
+        if  let heightAnchor = view?.superview?.heightAnchor {
+            _ = withSuperview { box , sv  in
+                self.addConstraint(self.view?.heightAnchor.constraint(equalTo: heightAnchor, multiplier: ratio.cgFloat),id: id)
+            }
+        }
+        return self
+    }
     
     /// 设置高度相等
     @discardableResult
@@ -494,6 +503,15 @@ public class LayoutBox: NSObject {
         addConstraint(view?.widthAnchor.constraint(equalToConstant: width.cgFloat),id: id)
         return self
     }
+    @discardableResult
+    public func widthRatio(_ ratio: NumberConvertible,id: String? = nil) -> Self {
+        if  let widthAnchor = view?.superview?.widthAnchor {
+            _ = withSuperview { box , sv  in
+                self.addConstraint(self.view?.widthAnchor.constraint(equalTo: widthAnchor, multiplier: ratio.cgFloat),id: id)
+            }
+        }
+        return self
+    }
     
     /// 设置宽度相等
     @discardableResult
@@ -513,12 +531,16 @@ public class LayoutBox: NSObject {
     ///获取最新添加的约束
     public var latestConstraint: NSLayoutConstraint? {
        let storage = consStorge
-       return storage.tempConstraints.last?.constraint
+        return storage.tempConstraints.last?.constraint ?? storage.constraints.last?.constraint
     }
     
     ///根据id获取约束对象
     public func constraints(withID id: String) -> [NSLayoutConstraint]? {
-        view?.constraints.filter { $0.identifier == id }
+       var temps = consStorge.tempConstraints.filter {  $0.constraint.identifier == id}
+       let cons = consStorge.constraints.filter {  $0.constraint.identifier == id}
+       temps.append(contentsOf: cons)
+      return temps.map {  $0.constraint}
+//        view?.constraints.filter { $0.identifier == id }
     }
     ///根据id删除约束对象
     public func removeConstraints(withID id: String) {

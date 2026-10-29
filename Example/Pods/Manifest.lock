@@ -1,7 +1,7 @@
 PODS:
   - RxSwift (6.9.0)
   - SnapKit (5.6.0)
-  - ZLFlexKit (1.2.0)
+  - ZLFlexKit (1.3.0)
 
 DEPENDENCIES:
   - RxSwift
@@ -20,7 +20,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   RxSwift: 31649ace6aceeb422e16ff71c60804f9c3281ed9
   SnapKit: e01d52ebb8ddbc333eefe2132acf85c8227d9c25
-  ZLFlexKit: e6a048e4678f4d02e8aed74c5915a5c1d825a0e7
+  ZLFlexKit: f7c131d26c3faef092266ddb09308a3f4df3f4a3
 
 PODFILE CHECKSUM: e5659661794e3d6acb5617ab1ccb77ad63cb360a
 

@@ -3234,8 +3234,8 @@ class WrapDemoVC: UIViewController {
             apply { f in
                 switch i {
                 case 0: f.view?.box.clear()      // 清掉 width/height 约束，回到内容宽度
-                case 4: f.height(44).updateSize()
-                default: f.width([60, 160, 260][i - 1]).updateSize()   // updateSize：更新已有宽度约束，避免重复添加
+                case 4: f.height(44)
+                default: f.width([60, 160, 260][i - 1]) // updateSize：更新已有宽度约束，避免重复添加
                 }
             }
         }.then { $0.isMomentary = true })

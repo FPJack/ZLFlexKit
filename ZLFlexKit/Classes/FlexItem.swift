@@ -289,58 +289,111 @@ public  class FlexItem: NSObject {
     /// 单独设置过的 alignSelf，未设置时为 nil（跟随容器的 alignment）
     public var explicitAlignSelf: FlexItemCrossAlign? { _alignSelf }
     
-    
+    static let flex_h_id = "flex_h_id"
     /// view的高度，默认为0，表示自适应
     public var height: CGFloat = -1 {
         didSet {
-            view?.box.height(height)
-            notifyContainer()
+            if let cons = view?.box.constraints(withID: FlexItem.flex_h_id)?.first {
+                cons.constant = height
+            }else {
+                view?.box.height(height,id: FlexItem.flex_h_id)
+                notifyContainer()
+            }
+
         }
     }
     
-    
+    static let flex_w_id = "flex_w_id"
     /// view的宽度，
     public var width: CGFloat = 0 {
         didSet {
-            view?.box.width(width)
-            notifyContainer()
+            if let cons = view?.box.constraints(withID: FlexItem.flex_w_id)?.first {
+                cons.constant = width
+            }else {
+                view?.box.width(width,id: FlexItem.flex_w_id)
+                notifyContainer()
+            }
         }
     }
     
     
-    
+    static let flex_min_w_id = "flex_min_w_id"
     /// view的最小宽度
     public var minWidth: CGFloat = 0 {
         didSet {
-            view?.box.minWidth(minWidth)
-            notifyContainer()
+            if let cons = view?.box.constraints(withID: FlexItem.flex_min_w_id)?.first {
+                cons.constant = minWidth
+            }else {
+                view?.box.minWidth(minWidth).id(FlexItem.flex_min_w_id)
+                notifyContainer()
+            }
         }
     }
     
-    
+    static let flex_max_w_id = "flex_max_w_id"
     /// view的最大宽度
     public var maxWidth: CGFloat = 0 {
         didSet {
-            view?.box.maxWidth(maxWidth)
-            notifyContainer()
+            if let cons = view?.box.constraints(withID: FlexItem.flex_max_w_id)?.first {
+                cons.constant = maxWidth
+            }else {
+                view?.box.maxWidth(maxWidth).id(FlexItem.flex_max_w_id)
+                notifyContainer()
+            }
+            
         }
     }
     
-    
+    static let flex_min_h_id = "flex_min_h_id"
     ///  view的最小高度
     public var minHeight: CGFloat = 0 {
         didSet {
-            view?.box.minHeight(minHeight)
+            if let cons = view?.box.constraints(withID: FlexItem.flex_min_h_id)?.first {
+                cons.constant = minHeight
+            } else {
+                view?.box.minHeight(minHeight).id(FlexItem.flex_min_h_id)
+                notifyContainer()
+            }
             notifyContainer()
         }
     }
     
-    
+    static let flex_max_h_id = "flex_max_h_id"
+
     /// view的最大高度
     public var maxHeight: CGFloat = 0 {
         didSet {
-            view?.box.maxHeight(maxHeight)
-            notifyContainer()
+            if let cons = view?.box.constraints(withID: FlexItem.flex_max_h_id)?.first {
+                cons.constant = maxHeight
+            } else {
+                view?.box.maxHeight(maxHeight).id(FlexItem.flex_max_h_id)
+                notifyContainer()
+            }
+        }
+    }
+    
+    
+    static let flex_w_radio_id = "flex_w_radio_id"
+    public var widthRatio: CGFloat = 0 {
+        didSet {
+            if let cons = view?.box.constraints(withID: FlexItem.flex_w_radio_id)?.first {
+                cons.constant = widthRatio
+            }else {
+                view?.box.widthRatio(widthRatio,id: FlexItem.flex_w_radio_id)
+                notifyContainer()
+            }
+        }
+    }
+    
+    static let flex_h_radio_id = "flex_h_radio_id"
+    public var heightRatio: CGFloat = 0 {
+        didSet {
+            if let cons = view?.box.constraints(withID: FlexItem.flex_h_radio_id)?.first {
+                cons.constant = heightRatio
+            }else {
+                view?.box.heightRatio(heightRatio,id: FlexItem.flex_h_radio_id)
+                notifyContainer()
+            }
         }
     }
     
@@ -348,7 +401,8 @@ public  class FlexItem: NSObject {
     /// view的大小，width和height同时设置时生效
     public var size: CGSize = .zero {
         didSet {
-            view?.box.size(w: size.width, h: size.height)
+            view?.box.width(size.width)
+            view?.box.height(size.height)
             notifyContainer()
         }
     }
@@ -453,6 +507,18 @@ public  class FlexItem: NSObject {
         return self
     }
     
+    @discardableResult
+    public func heightRatio(_ ratio: NumberConvertible) -> Self {
+        self.heightRatio = ratio.cgFloat
+        return self
+    }
+    
+    @discardableResult
+    public func widthRatio(_ ratio: NumberConvertible) -> Self {
+        self.widthRatio = ratio.cgFloat
+        return self
+    }
+    
     
     ///  设置view的宽度，默认为0，表示自适应
     /// - Parameter width: <#width description#>
@@ -532,20 +598,20 @@ public  class FlexItem: NSObject {
     
     /// 更新宽高约束 self.width(30).height(40).updateSize()，查询有没有设置宽高，已经设置了进行更新，没有则添加宽高
     /// - Returns:
-    @discardableResult
-    public func updateSize() -> Self{
-        self.view?.box.update()
-        return self
-    }
-    
-    
-    /// 删除宽高约束,后面再设置宽高约束会重新添加
-    /// - Returns: <#description#>
-    @discardableResult
-    public func remakeSize() -> Self{
-        self.view?.box.remake()
-        return self
-    }
+//    @discardableResult
+//    public func updateSize() -> Self{
+//        self.view?.box.update()
+//        return self
+//    }
+//    
+//    
+//    /// 删除宽高约束,后面再设置宽高约束会重新添加
+//    /// - Returns: <#description#>
+//    @discardableResult
+//    public func remakeSize() -> Self{
+//        self.view?.box.remake()
+//        return self
+//    }
 
     
     
