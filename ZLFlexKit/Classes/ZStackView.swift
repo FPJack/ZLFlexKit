@@ -8,50 +8,10 @@
 
 import UIKit
 
-// MARK: - DSL
-
-public protocol ZStackViewDSL {
-    func getZStackView() -> UIView?
-}
-
-extension UIView: ZStackViewDSL {
-    public func getZStackView() -> UIView? { self }
-}
-
 /// 允许直接放 view.box，例如：red.box.top(16).leading(16).size(w: 80, h: 60)
-extension LayoutBox: ZStackViewDSL {
-    public func getZStackView() -> UIView? { view }
-}
-
-/// 允许可选类型，nil 自动忽略
-extension Optional: ZStackViewDSL where Wrapped: ZStackViewDSL {
-    public func getZStackView() -> UIView? {
-        switch self {
-        case .some(let value): return value.getZStackView()
-        case .none:            return nil
-        }
-    }
-}
-
-@resultBuilder
-public struct ZStackViewBuilder {
-    public static func buildBlock(_ components: [ZStackViewDSL]...) -> [ZStackViewDSL] {
-        components.flatMap { $0 }
-    }
-    public static func buildExpression(_ expression: ZStackViewDSL) -> [ZStackViewDSL] {
-        [expression]
-    }
-    public static func buildOptional(_ component: [ZStackViewDSL]?) -> [ZStackViewDSL] {
-        component ?? []
-    }
-    public static func buildEither(first component: [ZStackViewDSL]) -> [ZStackViewDSL] {
-        component
-    }
-    public static func buildEither(second component: [ZStackViewDSL]) -> [ZStackViewDSL] {
-        component
-    }
-    public static func buildArray(_ components: [[ZStackViewDSL]]) -> [ZStackViewDSL] {
-        components.flatMap { $0 }
+extension LayoutBox: StackViewDSL {
+    public func getDslView() -> UIView? {
+        view
     }
 }
 
@@ -109,7 +69,7 @@ open class ZStackView: UIView {
     ///
     /// - Parameter insets: 内边距，可选，默认 .zero
     public convenience init(insets: EdgeInsets = .zero,
-                            @ZStackViewBuilder builder: () -> [ZStackViewDSL]) {
+                            @StackViewBuilder builder: () -> [StackViewDSL]) {
         self.init(frame: .zero)
         self.insets = insets
         addViews(builder: builder)
@@ -117,9 +77,9 @@ open class ZStackView: UIView {
 
     /// DSL 追加子视图
     @discardableResult
-    public func addViews(@ZStackViewBuilder builder: () -> [ZStackViewDSL]) -> Self {
+    public func addViews(@StackViewBuilder builder: () -> [StackViewDSL]) -> Self {
         builder().forEach { component in
-            if let view = component.getZStackView() {
+            if let view = component.getDslView() {
                 addSubview(view)
             }
         }
