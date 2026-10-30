@@ -406,7 +406,6 @@ public  class FlexItem: NSObject {
                 view?.box.heightRatio(heightRatio, id: FlexItem.flex_h_radio_id)
             }
             notifyContainer()
-            exclusiveLine
         }
     }
     
