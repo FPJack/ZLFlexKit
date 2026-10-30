@@ -409,13 +409,24 @@ public  class FlexItem: NSObject {
         }
     }
     
+    static let flex_w_h_ratio_id = "flex_w_h_ratio_id"
+    /// 宽高比 = width / height（multiplier 只读，修改时删除旧约束后重建）
+    public var aspectRatio: CGFloat = 0 {
+        didSet {
+            guard oldValue != aspectRatio else { return }
+            view?.box.removeConstraints(withID: FlexItem.flex_w_h_ratio_id)
+            if aspectRatio > 0 {
+                view?.box.aspectRatio(aspectRatio, id: FlexItem.flex_w_h_ratio_id)
+            }
+            notifyContainer()
+        }
+    }
+    
     
     /// view的大小，width和height同时设置时生效
     public var size: CGSize = .zero {
         didSet {
-            view?.box.width(size.width)
-            view?.box.height(size.height)
-            notifyContainer()
+            width(size.width).height(size.height)
         }
     }
     
@@ -589,6 +600,13 @@ public  class FlexItem: NSObject {
     @discardableResult
     public func maxHeight(_ height: NumberConvertible) -> Self {
         self.maxHeight = height.cgFloat
+        return self
+    }
+    
+    /// 设置view的宽高比，width / height
+    @discardableResult
+    public func aspectRatio(_ ratio: NumberConvertible) -> Self {
+        self.aspectRatio = ratio.cgFloat
         return self
     }
     

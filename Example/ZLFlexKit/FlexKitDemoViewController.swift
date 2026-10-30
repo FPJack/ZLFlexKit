@@ -2731,6 +2731,24 @@ class WrapDemoVC: UIViewController {
             l.numberOfLines = 0
             return l
         }
+        
+        do {
+           let w = WStackView(justify: .center, align: .fill, spacing: 5, lineSpacing: 5, insets: .all(5)) {
+               tag("Swift", .systemRed).flex.widthRatio(0.3).aspectRatio(0.618)
+               tag("Swift", .systemRed).flex.widthRatio(0.3)
+               tag("Swift", .systemRed).flex.widthRatio(0.3)
+               tag("Swift", .systemRed).flex.widthRatio(0.3)
+               tag("Swift", .systemRed).flex.widthRatio(0.3).aspectRatio(0.618)
+               tag("Swift", .systemRed).flex.widthRatio(0.3)
+               tag("Swift", .systemRed).flex.widthRatio(0.3)
+               tag("Swift", .systemRed).flex.widthRatio(0.3)
+               tag("Swift", .systemRed).flex.widthRatio(0.3).aspectRatio(0.618)
+//               tag("Swift", .systemRed).flex.widthRatio(0.3)
+            }
+            w.backgroundColor = .compatGray5
+            stack.addArrangedSubview(w)
+            return
+        }
        
         
      

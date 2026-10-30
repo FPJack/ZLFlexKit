@@ -514,6 +514,14 @@ public class LayoutBox: NSObject {
         return self
     }
     
+    /// 宽高比（width / height）
+    @discardableResult
+    public func aspectRatio(_ ratio: NumberConvertible,id: String? = nil) -> Self {
+        addConstraint(view?.widthAnchor.constraint(equalTo: view!.heightAnchor, multiplier: ratio.cgFloat),id: id)
+        return self
+    }
+    
+    
     
     /// 获取最新添加的约束并设置约束标识符
     @discardableResult
