@@ -354,6 +354,13 @@ open class WStackView: UIView {
                 current = [view]
                 used = w
             }
+
+            // 后面强制换行：当前 view 留在本行，结束本行，后面的 view 从新行开始
+            if view.flex.lineBreakAfter {
+                lines.append(current)
+                current = []
+                used = 0
+            }
         }
         if !current.isEmpty { lines.append(current) }
         return lines
@@ -913,6 +920,13 @@ extension WStackView {
     @objc(isExclusiveLineForView:)
     open func isExclusiveLine(for view: UIView) -> Bool {
         view.flex.exclusiveLine
+    }
+
+    /// 设置某个子 view 之后是否强制换行（等价于 view.flex.lineBreakAfter = breakAfter，自动重新布局）
+    @objc(setLineBreakAfter:forView:)
+    open func setLineBreakAfter(_ breakAfter: Bool, for view: UIView?) {
+        guard let view = view, allViews.contains(view) else { return }
+        view.flex.lineBreakAfter = breakAfter
     }
 }
 

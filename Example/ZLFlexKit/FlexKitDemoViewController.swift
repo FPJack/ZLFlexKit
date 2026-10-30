@@ -2731,31 +2731,9 @@ class WrapDemoVC: UIViewController {
             l.numberOfLines = 0
             return l
         }
-        do {
-            let l = sectionLabel("3").flex.widthRatio(0.3)
-            let view =  WStackView (justify: .center,
-                                       align: .center,
-                                       spacing: 10,
-                                       lineSpacing: 10){
-                sectionLabel("1").flex.widthRatio(0.5)
-                sectionLabel("2").flex.widthRatio(1)
-                UISwitch()
-
-                l
-                sectionLabel("4").flex.widthRatio(0.3)
-            }
-            view.backgroundColor = .orange
-            stack.addArrangedSubview(view)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                l.widthRatio(0.95)
-        
-            }
-//            return
-        }
-//        return
+       
         
      
-
         section1_DSL(stack)
         section2_Playground(stack)
         section3_MultiLineVertical(stack)
@@ -2765,6 +2743,8 @@ class WrapDemoVC: UIViewController {
         section5d_ElasticSpacing(stack)
         section5b_DynamicFlexItem(stack)
         section5c_ExclusiveLine(stack)
+        section5e_WidthRatio(stack)
+        section5f_LineBreakAfter(stack)
         section6_Dynamic(stack)
         section7_ContentChange(stack)
         section8_NestedWrapInWrap(stack)
@@ -3362,6 +3342,159 @@ class WrapDemoVC: UIViewController {
         if let v = g.view { exclusiveToggle?(v) }
     }
 
+    // MARK: ⑤-5 widthRatio：按容器宽度比例，动态切换比例自动换行
+
+    private func section5e_WidthRatio(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑤-5 widthRatio：宽度 = 容器宽 × 比例，动态修改比例自动重新分行
+        · 写法：view.flex.widthRatio(0.5) / view.flex.widthRatio = 0.5（修改时自动删除旧约束重建）
+        · 分行时按「容器宽 × 比例」计算宽度：放得下排同一行，放不下换行；ratio = 1 独占一整行
+        · 比例视为固定宽度：fill / flex 模式下不会被拉伸
+        · ⚠️ 比例基于容器整体宽度（含 insets），有左右内边距时 ratio = 1 会被压到行宽
+        """))
+
+        let a = tag("", .systemBlue)
+        let b = tag("", .systemOrange)
+        let sw = UISwitch()
+        let c = tag("", .systemGreen)
+        let ratioViews = [a, b, c]
+
+        let w = wrapBox(WStackView(justify: .center, align: .center, spacing: 10, lineSpacing: 10) {
+            a.flex.widthRatio(0.5)
+            b.flex.widthRatio(1)
+            sw                                    // 普通 view（按自身宽度）混排
+            c.flex.widthRatio(0.3)
+        })
+
+        let info = note("")
+        let refresh = { [weak w, weak info] in
+            guard let w = w else { return }
+            for (i, v) in ratioViews.enumerated() {
+                v.text = "\(["A", "B", "C"][i]) \(Int((v.flex.widthRatio * 100).rounded()))%"
+            }
+            let widths = ratioViews.map { "\(Int($0.frame.width))" }.joined(separator: " / ")
+            info?.text = "容器宽 \(Int(w.bounds.width))，当前 \(w.numberOfLines) 行；A / B / C 实际宽：\(widths)"
+        }
+        w.linesDidChange = { _ in DispatchQueue.main.async { refresh() } }
+
+        /// 修改比例：只改 view.flex.widthRatio，不调用任何刷新方法
+        let apply: ([CGFloat]) -> Void = { [weak self] ratios in
+            for (v, r) in zip(ratioViews, ratios) { v.flex.widthRatio = r }
+            refresh()                       // 先更新文字
+            self?.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }
+
+        stack.addView(segment(["50/100/30", "30/30/30", "45/45/45", "20/60/15", "100/100/100"], selected: 0) { i in
+            let presets: [[CGFloat]] = [[0.5, 1, 0.3], [0.3, 0.3, 0.3], [0.45, 0.45, 0.45],
+                                        [0.2, 0.6, 0.15], [1, 1, 1]]
+            apply(presets[i])
+        })
+        stack.addView(slider("B 比例 %", min: 5, max: 100, value: 100) { v in
+            apply([a.flex.widthRatio, v / 100, c.flex.widthRatio])
+        })
+        stack.addView(note("""
+        预设说明：50/100/30 → A 一行、B 独占一行、开关 + C 一行；
+        30/30/30 → A + B + 开关 一行，C 换行；20/60/15 → A + B + 开关 挤在一行，C 换行；
+        拖动 B 的比例观察 A、B 何时合并到同一行
+        """))
+        stack.addView(info)
+        stack.addView(w)
+        DispatchQueue.main.async { refresh() }
+    }
+
+    // MARK: ⑤-6 lineBreakAfter：在某个 view 之后强制换行
+
+    private func section5f_LineBreakAfter(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑤-6 lineBreakAfter：在当前 view 之后强制换行
+        · 写法：view.flex.lineBreakAfter = true / .flex.lineBreakAfter()，或 wrap.setLineBreakAfter(true, for: view)
+        · 当前 view 留在本行，后面的 view 从新的一行开始（类似文本中的回车）
+        · 与 exclusiveLine 的区别：exclusiveLine 前后都换行、自己独占一行；lineBreakAfter 只在后面换行
+        · 点击任意标签切换它后面是否换行（↵ 标记 + 红框），最后一个 view 设置后不会产生空行
+        """))
+
+        let names = ["姓名", "张三", "年龄", "18", "城市", "上海", "爱好", "跑步", "游泳", "阅读"]
+        let tags = names.enumerated().map { tag($1, colors[$0 % colors.count]) }
+        // 对比用：独占一行的 view
+        let exclusive = tag("exclusiveLine：前后都换行", .systemPurple)
+
+        let w = wrapBox(WStackView(justify: .start, align: .center, spacing: 8, lineSpacing: 8, insets: .all(10)) {
+            tags[0]
+            tags[1].flex.lineBreakAfter()          // DSL 中声明：「张三」后面换行
+            tags[2]
+            tags[3].flex.lineBreakAfter()
+            tags[4]
+            tags[5]
+            exclusive.flex.exclusiveLine()
+            tags[6]
+            tags[7]
+            tags[8]
+            tags[9]
+        })
+
+        let info = note("")
+        let mark = {
+            for (i, v) in tags.enumerated() {
+                let on = v.flex.lineBreakAfter
+                v.text = names[i] + (on ? " ↵" : "")
+                v.layer.borderWidth = on ? 2 : 0
+                v.layer.borderColor = UIColor.systemRed.cgColor
+            }
+        }
+        let refresh = { [weak w, weak info] in
+            guard let w = w else { return }
+            // 按实际 frame 统计每一行有哪些 view
+            let rows = Dictionary(grouping: w.arrangedViews) { Int($0.frame.midY) }
+                .sorted { $0.key < $1.key }
+                .map { $0.value.sorted { $0.frame.minX < $1.frame.minX }
+                    .compactMap { ($0 as? UILabel)?.text?.replacingOccurrences(of: " ↵", with: "") }
+                    .map { $0.count > 4 ? "独占" : $0 }
+                    .joined(separator: " ") }
+            info?.text = "当前 \(w.numberOfLines) 行：\n" + rows.enumerated().map { "第 \($0 + 1) 行：\($1)" }.joined(separator: "\n")
+        }
+        let update = { [weak self] in
+            mark()
+            self?.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }
+
+        lineBreakToggle = { [weak w] v in
+            guard let w = w else { return }
+            w.setLineBreakAfter(!v.flex.lineBreakAfter, for: v)      // 方法形式
+            update()
+        }
+        for v in tags {
+            v.isUserInteractionEnabled = true
+            v.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(lineBreakTagTapped(_:))))
+        }
+
+        stack.addView(segment(["恢复初始换行", "每 2 个换行", "最后一个换行", "全部取消"], selected: -1) { i in
+            tags.forEach { $0.flex.lineBreakAfter = false }          // flex 属性形式
+            switch i {
+            case 0:  [tags[1], tags[3]].forEach { $0.flex.lineBreakAfter = true }
+            case 1:  tags.enumerated().forEach { $1.flex.lineBreakAfter = $0 % 2 == 1 }
+            case 2:  tags.last?.flex.lineBreakAfter = true           // 后面没有 view，不会产生空行
+            default: break
+            }
+            update()
+        }.then { $0.isMomentary = true })
+        stack.addView(segment(["开启自动换行", "关闭自动换行（只按 lineBreakAfter 换行）"], selected: 0) { i in
+            w.isWrapEnabled = i == 0
+            update()
+        })
+        stack.addView(info)
+        stack.addView(w)
+        mark()
+        DispatchQueue.main.async { refresh() }
+    }
+
+    private var lineBreakToggle: ((UIView) -> Void)?
+
+    @objc private func lineBreakTagTapped(_ g: UITapGestureRecognizer) {
+        if let v = g.view { lineBreakToggle?(v) }
+    }
+
     @objc private func dynamicTagTapped(_ g: UITapGestureRecognizer) {
         if let v = g.view { dynamicSelect?(v) }
     }
@@ -3613,6 +3746,10 @@ class WrapDemoVC: UIViewController {
         11. exclusiveLine 只在 WStackView 中生效（StackView 忽略）；独占的 view 前后都换行，
             行内仍按 justifyContent 排列，想撑满整行可配合 justify(.fill) + flex(1)。
             isWrapEnabled = false 时 exclusiveLine 依然生效（强制单行只影响普通 view）。
+        12. widthRatio 的宽度 = 容器整体宽度（含 insets）× 比例，分行按该宽度计算，视为固定宽度不参与 flex 拉伸；
+            布局后修改比例会删除旧约束重建并自动重新分行。view 加入容器前不要连续修改两次。
+        13. lineBreakAfter 只在当前 view 后面换行（当前 view 留在本行），只在 WStackView 中生效；
+            设置在最后一个 view 上不会产生空行；isWrapEnabled = false 时依然生效。
         """))
     }
 }

@@ -243,6 +243,16 @@ public  class FlexItem: NSObject {
     }
     
     
+    /// 在当前 view 之后强制换行（仅 WStackView 生效）：当前 view 留在本行，后面的 view 从新的一行开始。
+    /// 与 exclusiveLine 的区别：exclusiveLine 前后都换行、自己独占一行；lineBreakAfter 只在后面换行
+    public var lineBreakAfter: Bool = false {
+        didSet {
+            guard lineBreakAfter != oldValue else { return }
+            notifyContainer()          // 只有 WStackView 使用，StackView 不读取该属性
+        }
+    }
+    
+    
     /// view后面是否是弹性空间，弹性空间没有view，只有间距，且会占用剩余空间
     public var isFlexibleSpace: Bool = false {
         didSet {
@@ -396,6 +406,7 @@ public  class FlexItem: NSObject {
                 view?.box.heightRatio(heightRatio, id: FlexItem.flex_h_radio_id)
             }
             notifyContainer()
+            exclusiveLine
         }
     }
     
@@ -476,6 +487,14 @@ public  class FlexItem: NSObject {
     @discardableResult
     public func exclusiveLine(_ exclusive: Bool = true) -> Self {
         self.exclusiveLine = exclusive
+        return self
+    }
+    
+    
+    /// 设置是否在当前 view 之后强制换行（仅 WStackView 生效）
+    @discardableResult
+    public func lineBreakAfter(_ breakAfter: Bool = true) -> Self {
+        self.lineBreakAfter = breakAfter
         return self
     }
     
@@ -710,6 +729,15 @@ public extension FlexItem {
     @available(swift, obsoleted: 1, renamed: "exclusiveLine(_:)")
     var exclusiveLineObjc: (_ exclusive: Bool) -> FlexItem {
         { exclusive in self.exclusiveLine = exclusive; return self }
+    }
+    
+    
+    
+    /// 设置是否在当前 view 之后强制换行（仅 WStackView 生效）
+    @objc(lineBreakAfter)
+    @available(swift, obsoleted: 1, renamed: "lineBreakAfter(_:)")
+    var lineBreakAfterObjc: (_ breakAfter: Bool) -> FlexItem {
+        { breakAfter in self.lineBreakAfter = breakAfter; return self }
     }
     
     
