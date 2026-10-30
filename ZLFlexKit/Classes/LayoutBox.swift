@@ -468,12 +468,9 @@ public class LayoutBox: NSObject {
     }
     @discardableResult
     public func heightRatio(_ ratio: NumberConvertible,id: String? = nil) -> Self {
-        if  let heightAnchor = view?.superview?.heightAnchor {
-            _ = withSuperview { box , sv  in
-                self.addConstraint(self.view?.heightAnchor.constraint(equalTo: heightAnchor, multiplier: ratio.cgFloat),id: id)
-            }
+        withSuperview { box , sv  in
+            self.addConstraint(self.view?.heightAnchor.constraint(equalTo: sv.heightAnchor, multiplier: ratio.cgFloat),id: id)
         }
-        return self
     }
     
     /// 设置高度相等
@@ -505,12 +502,9 @@ public class LayoutBox: NSObject {
     }
     @discardableResult
     public func widthRatio(_ ratio: NumberConvertible,id: String? = nil) -> Self {
-        if  let widthAnchor = view?.superview?.widthAnchor {
-            _ = withSuperview { box , sv  in
-                self.addConstraint(self.view?.widthAnchor.constraint(equalTo: widthAnchor, multiplier: ratio.cgFloat),id: id)
-            }
+         withSuperview { box , sv  in
+            self.addConstraint(self.view?.widthAnchor.constraint(equalTo: sv.widthAnchor, multiplier: ratio.cgFloat),id: id)
         }
-        return self
     }
     
     /// 设置宽度相等

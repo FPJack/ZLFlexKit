@@ -2720,23 +2720,38 @@ class WrapDemoVC: UIViewController {
         view.backgroundColor = .compatBackground
         let stack = makeScrollableContainerStack()
         
-        
+        func sectionLabel(_ text: String) -> UILabel {
+            let l = UILabel()
+            l.text = text
+            l.font = .systemFont(ofSize: 12)
+            l.textColor = .systemRed
+            ///随机亚瑟
+            l.backgroundColor = UIColor(red: CGFloat.random(in: 0.8...1), green: CGFloat.random(in: 0.8...1), blue: CGFloat.random(in: 0.8...1), alpha: 1)
+            l.textAlignment = .center
+            l.numberOfLines = 0
+            return l
+        }
         do {
             
-            let view =  WStackView (justify: .start,
+            let view =  WStackView (justify: .center,
                                        align: .center,
                                        spacing: 10,
                                        lineSpacing: 10){
+                sectionLabel("1").flex.widthRatio(0.45)
+                sectionLabel("2").flex.widthRatio(0.45)
                 UISwitch()
-                Spacer()
                 UISwitch()
-                Spacer()
                 UISwitch()
-                UISwitch().flex.exclusiveLine()
+                sectionLabel("2").flex.widthRatio(0.3)
+                sectionLabel("2").flex.widthRatio(0.3)
+
+              
             }
-            
+            view.backgroundColor = .orange
             stack.addArrangedSubview(view)
+            return
         }
+        return
 
         section1_DSL(stack)
         section2_Playground(stack)

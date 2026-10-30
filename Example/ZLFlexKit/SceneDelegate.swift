@@ -93,7 +93,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return vc
         }
         // 兜底：Demo 列表 + 导航栏
-        let nav = UINavigationController(rootViewController: FlexKitDemoViewController())
+//        let nav = UINavigationController(rootViewController: FlexKitDemoViewController())
+        let nav = UINavigationController(rootViewController: ViewController())
+
         return nav
     }
 
