@@ -101,6 +101,8 @@ open class WStackView: UIView {
     private var didComputeLines = false
     /// 本次分行使用的容器总宽度（含 insets），用于计算 widthRatio 子 view 的宽度
     private var measuringContainerWidth: CGFloat = 0
+    /// maxContentWidth 缓存（增删 view / 属性变化 / 子 view 尺寸变化时失效）
+    private var cachedMaxContentWidth: CGFloat?
 
     /// 行高收紧优先级：略高于 UILabel 默认 hugging(250)，低于 compression(750)
     private let lineHugPriority = UILayoutPriority(260)
@@ -113,10 +115,31 @@ open class WStackView: UIView {
 
     public override init(frame: CGRect) {
         super.init(frame: frame)
+        commonInit()
     }
 
     required public init?(coder: NSCoder) {
         super.init(coder: coder)
+        commonInit()
+    }
+
+    /// 内容宽度只作为"首选宽度"：空间不足时让步给外部约束（例如嵌套时的"≤ 行宽"），由内部换行
+    private func commonInit() {
+        setContentCompressionResistancePriority(UILayoutPriority(UILayoutPriority.defaultLow.rawValue - 1),
+                                                for: .horizontal)
+    }
+
+    /// 宽度 = 不换行时的内容宽度（类似 CSS fit-content）。
+    /// 外部没有确定宽度时（例如嵌套在另一个 WStackView 中、或只约束了 leading）依靠它拿到非 0 宽度，
+    /// 否则"宽度为 0 → 不分行 → 没有内部约束 → 宽度仍为 0"会一直卡住
+    open override var intrinsicContentSize: CGSize {
+        CGSize(width: maxContentWidth, height: UIView.noIntrinsicMetric)
+    }
+
+    /// 内容宽度变化：清缓存并通知 Auto Layout 重新读取 intrinsicContentSize
+    private func invalidateContentWidth() {
+        cachedMaxContentWidth = nil
+        invalidateIntrinsicContentSize()
     }
 
     /// DSL 构造
@@ -175,6 +198,7 @@ open class WStackView: UIView {
     /// 只有修改了无法感知的状态（例如直接改子 view 自己的约束 constant）时才需要手动调用
     @objc open func setNeedsRelayout() {
         needsRebuild = true
+        invalidateContentWidth()
         setNeedsUpdateConstraints()
         setNeedsLayout()
 //        superview?.setNeedsLayout()
@@ -211,6 +235,12 @@ open class WStackView: UIView {
         // ② 本轮没分过行，但子 view 实际宽度变了（改文字/字体/嵌套内容变化）→ 补一次分行检查
         if !checkedBefore, childWidthsChanged() {
             needsLineCheck = true
+            // 子 view 内容变化（改文字等）可能改变不换行时的内容宽度：只有真的变了才通知
+            let oldWidth = cachedMaxContentWidth
+            cachedMaxContentWidth = nil
+            if oldWidth == nil || abs(maxContentWidth - (oldWidth ?? 0)) >= 0.5 {
+                invalidateIntrinsicContentSize()
+            }
             if rebuildIfNeeded(containerWidth: bounds.width) {
                 rebuilt = true
                 super.layoutSubviews()
@@ -221,7 +251,7 @@ open class WStackView: UIView {
         // 分行变化会改变自身高度：让父视图重新布局；嵌套在外层 Wrap 中时通知外层重新分行检查
         if rebuilt {
 //            superview?.setNeedsLayout()
-            (superview as? WStackView)?.setNeedsLineCheck()
+//            (superview as? WStackView)?.setNeedsLineCheck()
         }
     }
 
@@ -242,6 +272,7 @@ open class WStackView: UIView {
     /// 只标记"需要分行检查"：分行结果不变时不重建约束
     fileprivate func setNeedsLineCheck() {
         needsLineCheck = true
+        invalidateContentWidth()            // 嵌套的内层内容变了，本容器的内容宽度也可能变
         setNeedsLayout()
     }
 
@@ -441,6 +472,38 @@ open class WStackView: UIView {
             return measureWidth(of: v) + m.leading + m.trailing
         }.max() ?? 0
         return insets.leading + insets.trailing + widest
+    }
+
+    /// 最大内容宽度：所有子 view 不换行排成一行时的宽度（内边距 + 宽度 + margin + 最小间距）。
+    /// exclusiveLine / lineBreakAfter 造成的强制换行按各段的最大值计算。作为 intrinsicContentSize.width
+    @objc public var maxContentWidth: CGFloat {
+        if let cached = cachedMaxContentWidth { return cached }
+        var widest: CGFloat = 0
+        var used: CGFloat = 0
+        var prev: UIView?
+        for v in arrangedViews {
+            let m = v.flex.margin
+            let base = (v as? WStackView).map { nested -> CGFloat in
+                // 嵌套的 Wrap 本身没有固定宽度时，按它不换行的宽度计算
+                v.flex.widthRatio > 0 ? measureWidth(of: v) : max(measureWidth(of: v), nested.maxContentWidth)
+            } ?? measureWidth(of: v)
+            let w = base + m.leading + m.trailing
+            if v.flex.exclusiveLine {
+                widest = max(widest, used, w)
+                used = 0; prev = nil
+                continue
+            }
+            used += (prev.map { minGap(after: $0) } ?? 0) + w
+            prev = v
+            if v.flex.lineBreakAfter {
+                widest = max(widest, used)
+                used = 0; prev = nil
+            }
+        }
+        widest = max(widest, used)
+        let result = insets.leading + insets.trailing + widest
+        cachedMaxContentWidth = result
+        return result
     }
 
     private func spacing(after view: UIView) -> CGFloat {
@@ -856,6 +919,7 @@ open class WStackView: UIView {
             cons.append(view.centerYAnchor.constraint(equalTo: line.centerYAnchor, constant: (m.top - m.bottom) / 2))
         }
     }
+    
 }
 
 // MARK: - DSL
