@@ -2745,6 +2745,7 @@ class WrapDemoVC: UIViewController {
         section5c_ExclusiveLine(stack)
         section5e_WidthRatio(stack)
         section5f_LineBreakAfter(stack)
+        section5g_WrapScrollView(stack)
         section6_Dynamic(stack)
         section7_ContentChange(stack)
         section8_NestedWrapInWrap(stack)
@@ -3499,6 +3500,115 @@ class WrapDemoVC: UIViewController {
         if let v = g.view { dynamicSelect?(v) }
     }
 
+    // MARK: ⑤-7 wrapScrollView：包裹进垂直滚动的 ScrollView
+
+    private func section5g_WrapScrollView(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑤-7 wrapScrollView()：把 WStackView 包进垂直滚动的 ScrollView
+        · let scroll = wrap.wrapScrollView()，外部只约束 scroll 的位置 / 大小；WStackView 宽 = 可视宽度，高度由内容撑开
+        · 只支持垂直滚动（WStackView 只在水平方向换行）；重复调用返回同一个 ScrollView
+        · 未给 ScrollView 高度时以低优先级贴合内容高度（不滚动）；给了固定高度 / 最大高度，内容超出就能滚动
+        · 下面动态修改标签数量、间距、内边距、对齐、ScrollView 高度，观察 contentSize 与是否可滚动
+        """))
+
+        let wrap = WStackView(justify: .start, align: .center, spacing: 8, lineSpacing: 8, insets: .all(10)) {}
+        let scroll = wrap.wrapScrollView()
+        scroll.backgroundColor = .compatGray5
+        scroll.layer.cornerRadius = 8
+        scroll.layer.borderWidth = 1
+        scroll.layer.borderColor = UIColor.systemBlue.cgColor
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        assert(wrap.wrapScrollView() === scroll)              // 重复调用返回同一个
+
+        let fixedHeight = scroll.heightAnchor.constraint(equalToConstant: 200)
+        let maxHeight = scroll.heightAnchor.constraint(lessThanOrEqualToConstant: 250)
+        fixedHeight.isActive = true
+
+        var count = 0
+        let setCount: (Int) -> Void = { [weak self, weak wrap] n in
+            guard let self = self, let wrap = wrap else { return }
+            while count < n {
+                wrap.addArrangedSubview(self.tag("\(self.words[count % self.words.count]) \(count)", colors[count % colors.count]))
+                count += 1
+            }
+            while count > n, let last = wrap.allArrangedViews.last {
+                wrap.removeArrangedSubview(last)
+                count -= 1
+            }
+        }
+        setCount(30)
+
+        let info = note("")
+        let refresh = { [weak scroll, weak wrap, weak info] in
+            guard let scroll = scroll, let wrap = wrap else { return }
+            let canScroll = scroll.contentSize.height > scroll.bounds.height + 0.5
+            info?.text = """
+            ScrollView 高 \(Int(scroll.bounds.height))，contentSize \(Int(scroll.contentSize.width))×\(Int(scroll.contentSize.height))，\
+            WStackView 宽 \(Int(wrap.bounds.width))，\(wrap.numberOfLines) 行，\(wrap.arrangedViews.count) 个标签 → \(canScroll ? "✅ 可滚动" : "内容未超出，不滚动")
+            """
+        }
+        // contentSize / bounds 变化时刷新状态（观察者随 scroll 释放）
+        scrollObservations = [
+            scroll.observe(\.contentSize) { _, _ in DispatchQueue.main.async { refresh() } },
+            scroll.observe(\.bounds) { _, _ in DispatchQueue.main.async { refresh() } },
+        ]
+        let update = { [weak self] in
+            self?.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }
+
+        stack.addView(segment(["固定高度（可滚动）", "贴合内容（不滚动）", "贴合内容 ≤ 250"], selected: 0) { i in
+            fixedHeight.isActive = i == 0
+            maxHeight.isActive = i == 2
+            update()
+        })
+        stack.addView(slider("滚动区高度", min: 60, max: 400, value: 200) { v in
+            fixedHeight.constant = v
+            update()
+        })
+        stack.addView(slider("标签个数", min: 0, max: 80, value: 30) { v in
+            setCount(Int(v))
+            update()
+        })
+        stack.addView(slider("行内间距", min: 0, max: 30, value: 8) { v in
+            wrap.spacing = v
+            update()
+        })
+        stack.addView(slider("行间距", min: 0, max: 40, value: 8) { v in
+            wrap.lineSpacing = v
+            update()
+        })
+        stack.addView(slider("内边距", min: 0, max: 40, value: 10) { v in
+            wrap.insets = .init(top: v, leading: v, bottom: v, trailing: v)
+            update()
+        })
+        stack.addView(segment(["start", "center", "end", "between", "around", "evenly", "fillEq"], selected: 0) { i in
+            wrap.justifyContent = [.start, .center, .end, .spaceBetween, .spaceAround, .spaceEvenly, .fillEqually][i]
+            update()
+        })
+        stack.addView(segment(["滚到顶部", "滚到底部", "末尾追加 10 个并滚到底"], selected: -1) { i in
+            switch i {
+            case 0:
+                scroll.setContentOffset(.zero, animated: true)
+            case 1:
+                scroll.layoutIfNeeded()
+                let y = max(0, scroll.contentSize.height - scroll.bounds.height)
+                scroll.setContentOffset(CGPoint(x: 0, y: y), animated: true)
+            default:
+                setCount(count + 10)
+                scroll.layoutIfNeeded()
+                let y = max(0, scroll.contentSize.height - scroll.bounds.height)
+                scroll.setContentOffset(CGPoint(x: 0, y: y), animated: true)
+            }
+            DispatchQueue.main.async { refresh() }
+        }.then { $0.isMomentary = true })
+        stack.addView(info)
+        stack.addView(scroll)
+        DispatchQueue.main.async { refresh() }
+    }
+
+    private var scrollObservations: [NSKeyValueObservation] = []
+
     // MARK: ⑥ 动态增删
 
     private func section6_Dynamic(_ stack: StackView) {
@@ -3750,6 +3860,8 @@ class WrapDemoVC: UIViewController {
             布局后修改比例会删除旧约束重建并自动重新分行。view 加入容器前不要连续修改两次。
         13. lineBreakAfter 只在当前 view 后面换行（当前 view 留在本行），只在 WStackView 中生效；
             设置在最后一个 view 上不会产生空行；isWrapEnabled = false 时依然生效。
+        14. wrapScrollView() 只支持垂直滚动：WStackView 宽度 = ScrollView 可视宽度，高度 = contentSize.height；
+            ScrollView 必须由外部给出高度（固定高度或最大高度）才能滚动，否则会贴合内容高度。
         """))
     }
 }

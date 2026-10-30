@@ -904,6 +904,44 @@ extension WStackView {
         addArrangedSubview(item?.baseView)
         return self
     }
+    
+    /// 将 WStackView 包裹在一个垂直滚动的 ScrollView 中，返回 ScrollView（外部只需约束 ScrollView 的位置和大小）。
+    /// - WStackView 只在水平方向换行，所以只支持垂直滚动：宽度 = ScrollView 可视宽度，高度由内容撑开 = contentSize.height
+    /// - ScrollView 的 intrinsicContentSize.height = 内容高度：外部没给高度时贴合内容（不滚动）；
+    ///   给了固定高度 / 最大高度时以外部为准，内容超出即可滚动（不会反过来拉高 WStackView）
+    /// - 重复调用返回同一个 ScrollView，不会重复包裹 / 重复添加约束
+    @objc
+    @discardableResult
+    open func wrapScrollView() -> ScrollView {
+        if let existing = wrappingScrollView, superview === existing { return existing }
+
+        let scrollView = WStackScrollView()
+        scrollView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        scrollView.alwaysBounceVertical = true
+        scrollView.addSubview(self)
+        translatesAutoresizingMaskIntoConstraints = false
+
+        let content = scrollView.contentLayoutGuide
+        let frame = scrollView.frameLayoutGuide
+        // 内容区域四边 = WStackView 四边 → contentSize 由 WStackView 决定；宽度跟随可视宽度 → 只垂直滚动。
+        // 不用 "scrollView.height == WStackView.height" 这类约束贴合内容：优先级低了会被外层容器压扁，
+        // 高了又会在外部给定高度时把 WStackView 拉高，改用 intrinsicContentSize（见 WStackScrollView）
+        NSLayoutConstraint.activate([
+            topAnchor.constraint(equalTo: content.topAnchor),
+            leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            bottomAnchor.constraint(equalTo: content.bottomAnchor),
+            widthAnchor.constraint(equalTo: frame.widthAnchor),
+        ])
+        wrappingScrollView = scrollView
+        return scrollView
+    }
+
+    /// wrapScrollView() 创建的 ScrollView（弱引用，ScrollView 由视图层级持有）
+    private var wrappingScrollView: ScrollView? {
+        get { (objc_getAssociatedObject(self, &wStackScrollViewKey) as? WStackWeakBox)?.value }
+        set { objc_setAssociatedObject(self, &wStackScrollViewKey, WStackWeakBox(newValue), .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
 }
 
 // MARK: - 独占一行
@@ -954,4 +992,27 @@ extension WStackView: FlexContainer {
     public var flexDefaultAlignment: FlexItemCrossAlign { alignment }
 
     public var flexDefaultSpacing: CGFloat { max(0, spacing) }
+}
+
+// MARK: - wrapScrollView 辅助
+
+private var wStackScrollViewKey: UInt8 = 0
+
+/// wrapScrollView() 使用的 ScrollView：intrinsicContentSize.height 跟随 contentSize.height，
+/// 外部未约束高度时贴合内容（抗压缩 750，不会被外层低优先级约束压扁）
+private final class WStackScrollView: ScrollView {
+    override var contentSize: CGSize {
+        didSet {
+            if abs(oldValue.height - contentSize.height) >= 0.5 { invalidateIntrinsicContentSize() }
+        }
+    }
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: UIView.noIntrinsicMetric, height: contentSize.height)
+    }
+}
+
+private final class WStackWeakBox {
+    weak var value: ScrollView?
+    init(_ value: ScrollView?) { self.value = value }
 }
