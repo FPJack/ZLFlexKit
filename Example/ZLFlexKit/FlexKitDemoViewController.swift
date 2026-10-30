@@ -2732,26 +2732,29 @@ class WrapDemoVC: UIViewController {
             return l
         }
         do {
-            
+            let l = sectionLabel("3").flex.widthRatio(0.3)
             let view =  WStackView (justify: .center,
                                        align: .center,
                                        spacing: 10,
                                        lineSpacing: 10){
-                sectionLabel("1").flex.widthRatio(0.45)
-                sectionLabel("2").flex.widthRatio(0.45)
+                sectionLabel("1").flex.widthRatio(0.5)
+                sectionLabel("2").flex.widthRatio(1)
                 UISwitch()
-                UISwitch()
-                UISwitch()
-                sectionLabel("2").flex.widthRatio(0.3)
-                sectionLabel("2").flex.widthRatio(0.3)
 
-              
+                l
+                sectionLabel("4").flex.widthRatio(0.3)
             }
             view.backgroundColor = .orange
             stack.addArrangedSubview(view)
-            return
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                l.widthRatio(0.95)
+        
+            }
+//            return
         }
-        return
+//        return
+        
+     
 
         section1_DSL(stack)
         section2_Playground(stack)

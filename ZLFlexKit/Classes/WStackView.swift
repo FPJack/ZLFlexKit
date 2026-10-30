@@ -99,6 +99,8 @@ open class WStackView: UIView {
     private var childWidthSnapshot: [ObjectIdentifier: CGFloat] = [:]
     /// 本次 rebuildIfNeeded 是否真正执行了 computeLines
     private var didComputeLines = false
+    /// 本次分行使用的容器总宽度（含 insets），用于计算 widthRatio 子 view 的宽度
+    private var measuringContainerWidth: CGFloat = 0
 
     /// 行高收紧优先级：略高于 UILabel 默认 hugging(250)，低于 compression(750)
     private let lineHugPriority = UILayoutPriority(260)
@@ -287,7 +289,9 @@ open class WStackView: UIView {
         let available = isWrapEnabled
             ? max(0, width - insets.leading - insets.trailing)
             : .greatestFiniteMagnitude
+        measuringContainerWidth = width
         let lines = computeLines(maxWidth: available)
+        measuringContainerWidth = 0
         let signature = lines.map { $0.map(ObjectIdentifier.init) }
         guard needsRebuild || signature != lastSignature else { return false }
 
@@ -380,6 +384,10 @@ open class WStackView: UIView {
         if let fixed = fixed {
             fixedWidthViews.insert(ObjectIdentifier(view))
             width = fixed
+        } else if let ratioWidth = ratioWidth(of: view) {
+            // 相对容器宽度的比例（flex.widthRatio / box.widthRatio）：宽度 = 容器宽 × 比例，视为固定宽度
+            fixedWidthViews.insert(ObjectIdentifier(view))
+            width = ratioWidth
         } else if let nested = view as? WStackView {
             // 嵌套的 WStackView 本身可以换行：按最小内容宽度（最宽的单个子 view）参与分行
             width = nested.minContentWidth
@@ -389,6 +397,28 @@ open class WStackView: UIView {
             width = view.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).width
         }
         return min(max(width, minW), maxW)
+    }
+
+    /// 相对本容器宽度的比例宽度（view.width == container.width × multiplier + constant）。
+    /// 这类约束 secondItem 是容器、且安装在容器上（不在 view.constraints 中），需要单独识别。
+    /// 优先读 flex.widthRatio（不依赖约束是否已激活），其次扫描容器上已激活的 box.widthRatio 约束
+    private func ratioWidth(of view: UIView) -> CGFloat? {
+        let base = measuringContainerWidth > 0 ? measuringContainerWidth
+                 : (bounds.width > 0 ? bounds.width : preferredMaxLayoutWidth)
+        guard base > 0 else { return nil }
+        if view.flex.widthRatio > 0 { return base * view.flex.widthRatio }
+        for c in constraints where c.isActive
+            && c.priority.rawValue >= UILayoutPriority.defaultHigh.rawValue
+            && c.relation == .equal
+            && c.firstAttribute == .width && c.secondAttribute == .width {
+            if c.firstItem === view, c.secondItem === self {
+                return base * c.multiplier + c.constant
+            }
+            if c.firstItem === self, c.secondItem === view, c.multiplier != 0 {
+                return (base - c.constant) / c.multiplier
+            }
+        }
+        return nil
     }
 
     /// 系统根据 intrinsicContentSize 生成的约束（NSContentSizeLayoutConstraint）不是用户设置的固定宽度。

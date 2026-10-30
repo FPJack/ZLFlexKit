@@ -374,26 +374,28 @@ public  class FlexItem: NSObject {
     
     
     static let flex_w_radio_id = "flex_w_radio_id"
+    /// 宽度 = 父视图宽度 × widthRatio（multiplier 只读，修改时删除旧约束后重建）
     public var widthRatio: CGFloat = 0 {
         didSet {
-            if let cons = view?.box.constraints(withID: FlexItem.flex_w_radio_id)?.first {
-                cons.constant = widthRatio
-            }else {
-                view?.box.widthRatio(widthRatio,id: FlexItem.flex_w_radio_id)
-                notifyContainer()
+            guard oldValue != widthRatio else { return }
+            view?.box.removeConstraints(withID: FlexItem.flex_w_radio_id)
+            if widthRatio > 0 {
+                view?.box.widthRatio(widthRatio, id: FlexItem.flex_w_radio_id)
             }
+            notifyContainer()
         }
     }
     
     static let flex_h_radio_id = "flex_h_radio_id"
+    /// 高度 = 父视图高度 × heightRatio（multiplier 只读，修改时删除旧约束后重建）
     public var heightRatio: CGFloat = 0 {
         didSet {
-            if let cons = view?.box.constraints(withID: FlexItem.flex_h_radio_id)?.first {
-                cons.constant = heightRatio
-            }else {
-                view?.box.heightRatio(heightRatio,id: FlexItem.flex_h_radio_id)
-                notifyContainer()
+            guard oldValue != heightRatio else { return }
+            view?.box.removeConstraints(withID: FlexItem.flex_h_radio_id)
+            if heightRatio > 0 {
+                view?.box.heightRatio(heightRatio, id: FlexItem.flex_h_radio_id)
             }
+            notifyContainer()
         }
     }
     
@@ -603,8 +605,8 @@ public  class FlexItem: NSObject {
 //        self.view?.box.update()
 //        return self
 //    }
-//    
-//    
+//
+//
 //    /// 删除宽高约束,后面再设置宽高约束会重新添加
 //    /// - Returns: <#description#>
 //    @discardableResult
