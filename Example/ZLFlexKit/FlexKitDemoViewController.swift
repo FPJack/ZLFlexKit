@@ -3036,7 +3036,7 @@ class WrapDemoVC: UIViewController {
         stack.addView(sectionLabel("""
         ④ fill + flex / fillEqually：都是"按行"生效
         · fill：本行 flex > 0 的 view 按比例瓜分剩余空间，本行没有 flex 时按 start 排列
-        · fillEqually：本行所有 view 等宽填满（不要给子 view 固定宽度，否则约束冲突）
+        · fillEqually：本行所有 view 等宽填满，每项宽度 ≥ 本行最宽内容，放不下自动换行（不要给子 view 固定宽度，否则约束冲突）
         """))
         stack.addView(WStackView {
             tag("固定", .systemGray)
@@ -3527,6 +3527,7 @@ class WrapDemoVC: UIViewController {
         · 只支持垂直滚动（WStackView 只在水平方向换行）；重复调用返回同一个 ScrollView
         · 未给 ScrollView 高度时以低优先级贴合内容高度（不滚动）；给了固定高度 / 最大高度，内容超出就能滚动
         · 下面动态修改标签数量、间距、内边距、对齐、ScrollView 高度，观察 contentSize 与是否可滚动
+        · fillEq：行内等宽，且每项宽度 ≥ 本行最宽 item 的内容宽度（按此分行，放不下的换到下一行），保证文字显示完整
         """))
 
         let wrap = WStackView(justify: .start, align: .center, spacing: 8, lineSpacing: 8, insets: .all(10)) {}

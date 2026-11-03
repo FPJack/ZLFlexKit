@@ -89,6 +89,8 @@ open class WStackView: UIView {
     private var lastSignature: [[ObjectIdentifier]] = []
     /// 自身有固定宽度约束（width == 常量）的 view，fill 模式下不参与 flex 拉伸
     private var fixedWidthViews: Set<ObjectIdentifier> = []
+    /// 分行时测得的子 view 基准宽度（不含 margin），fillEqually 建约束时用于保证每项 ≥ 本行最宽内容
+    private var measuredWidths: [ObjectIdentifier: CGFloat] = [:]
     /// 强制重建约束（增删 view、容器属性、FlexItem 属性、isHidden 变化）
     private var needsRebuild = true
     /// 需要重新分行检查（分行结果不变则不重建）：子 view 尺寸变化、嵌套 Wrap 内容变化
@@ -353,13 +355,19 @@ open class WStackView: UIView {
 
     private func computeLines(maxWidth: CGFloat) -> [[UIView]] {
         fixedWidthViews.removeAll(keepingCapacity: true)
+        measuredWidths.removeAll(keepingCapacity: true)
+        let equal = justifyContent == .fillEqually
         var lines: [[UIView]] = []
         var current: [UIView] = []
         var used: CGFloat = 0
+        // fillEqually：本行占用 = 各 margin + 各间距 + 个数 × 本行最宽内容（等宽后每项都不小于最宽内容）
+        var marginsAndGaps: CGFloat = 0
+        var widestBase: CGFloat = 0
 
         for view in arrangedViews {
             let m = view.flex.margin
             let base = measureWidth(of: view)
+            measuredWidths[ObjectIdentifier(view)] = base
             let w = base + m.leading + m.trailing
 
             // 独占一行：结束当前行，自己单独成一行，后面的 view 从新行开始
@@ -368,22 +376,35 @@ open class WStackView: UIView {
                 lines.append([view])
                 current = []
                 used = 0
+                marginsAndGaps = 0; widestBase = 0
                 continue
             }
 
             if let prev = current.last {
                 let gap = minGap(after: prev)
-                if used + gap + w > maxWidth + 0.5 {
+                let fits: Bool
+                if equal {
+                    let mg = marginsAndGaps + gap + m.leading + m.trailing
+                    let widest = max(widestBase, base)
+                    fits = mg + CGFloat(current.count + 1) * widest <= maxWidth + 0.5
+                } else {
+                    fits = used + gap + w <= maxWidth + 0.5
+                }
+                if !fits {
                     lines.append(current)
                     current = [view]
                     used = w
+                    marginsAndGaps = m.leading + m.trailing; widestBase = base
                 } else {
                     current.append(view)
                     used += gap + w
+                    marginsAndGaps += gap + m.leading + m.trailing
+                    widestBase = max(widestBase, base)
                 }
             } else {
                 current = [view]
                 used = w
+                marginsAndGaps = m.leading + m.trailing; widestBase = base
             }
 
             // 后面强制换行：当前 view 留在本行，结束本行，后面的 view 从新行开始
@@ -391,6 +412,7 @@ open class WStackView: UIView {
                 lines.append(current)
                 current = []
                 used = 0
+                marginsAndGaps = 0; widestBase = 0
             }
         }
         if !current.isEmpty { lines.append(current) }
@@ -478,9 +500,13 @@ open class WStackView: UIView {
     /// exclusiveLine / lineBreakAfter 造成的强制换行按各段的最大值计算。作为 intrinsicContentSize.width
     @objc public var maxContentWidth: CGFloat {
         if let cached = cachedMaxContentWidth { return cached }
+        let equal = justifyContent == .fillEqually
         var widest: CGFloat = 0
         var used: CGFloat = 0
         var prev: UIView?
+        // fillEqually：一段 = 各 margin + 各间距 + 个数 × 最宽内容
+        var segMG: CGFloat = 0, segWidest: CGFloat = 0, segCount: CGFloat = 0
+        func segWidth() -> CGFloat { equal ? segMG + segCount * segWidest : used }
         for v in arrangedViews {
             let m = v.flex.margin
             let base = (v as? WStackView).map { nested -> CGFloat in
@@ -489,18 +515,24 @@ open class WStackView: UIView {
             } ?? measureWidth(of: v)
             let w = base + m.leading + m.trailing
             if v.flex.exclusiveLine {
-                widest = max(widest, used, w)
+                widest = max(widest, segWidth(), w)
                 used = 0; prev = nil
+                segMG = 0; segWidest = 0; segCount = 0
                 continue
             }
-            used += (prev.map { minGap(after: $0) } ?? 0) + w
+            let g = prev.map { minGap(after: $0) } ?? 0
+            used += g + w
+            segMG += g + m.leading + m.trailing
+            segWidest = max(segWidest, base)
+            segCount += 1
             prev = v
             if v.flex.lineBreakAfter {
-                widest = max(widest, used)
+                widest = max(widest, segWidth())
                 used = 0; prev = nil
+                segMG = 0; segWidest = 0; segCount = 0
             }
         }
-        widest = max(widest, used)
+        widest = max(widest, segWidth())
         let result = insets.leading + insets.trailing + widest
         cachedMaxContentWidth = result
         return result
@@ -851,6 +883,14 @@ open class WStackView: UIView {
             cons.append(zeroLead)
             cons.append(zeroTrail)
             views.dropFirst().forEach { cons.append($0.widthAnchor.constraint(equalTo: first.widthAnchor)) }
+            // 等宽后每项 ≥ 本行最宽内容，保证内容显示完整（分行时已按此计算，正常都能满足；
+            // 单项超过整行时让步给"不超过一行"的 cap）
+            let widest = views.compactMap { measuredWidths[ObjectIdentifier($0)] }.max() ?? 0
+            if widest > 0 {
+                let minW = first.widthAnchor.constraint(greaterThanOrEqualToConstant: widest)
+                minW.priority = UILayoutPriority(998)
+                cons.append(minW)
+            }
         case .spaceBetween:
             cons.append(zeroLead)
             if count > 1 { cons.append(zeroTrail) }
