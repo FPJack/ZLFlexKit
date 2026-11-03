@@ -1046,6 +1046,14 @@ extension WStackView {
         get { (objc_getAssociatedObject(self, &wStackScrollViewKey) as? WStackWeakBox)?.value }
         set { objc_setAssociatedObject(self, &wStackScrollViewKey, WStackWeakBox(newValue), .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
+    
+    @discardableResult
+    public func assignToPtr(_ ptr: AutoreleasingUnsafeMutablePointer<WStackView>?) -> WStackView {
+        if let ptr = ptr {
+            ptr.pointee = self
+        }
+        return self
+    }
 }
 
 // MARK: - 独占一行

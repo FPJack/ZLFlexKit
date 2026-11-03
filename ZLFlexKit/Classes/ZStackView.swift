@@ -85,4 +85,12 @@ open class ZStackView: UIView {
         }
         return self
     }
+    
+    @discardableResult
+    public func assignToPtr(_ ptr: AutoreleasingUnsafeMutablePointer<ZStackView>?) -> ZStackView {
+        if let ptr = ptr {
+            ptr.pointee = self
+        }
+        return self
+    }
 }
