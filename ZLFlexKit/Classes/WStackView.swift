@@ -57,6 +57,37 @@ open class WStackView: UIView {
         didSet { if oldValue != insets { setNeedsRelayout() } }
     }
 
+    /// 与 UIStackView.isLayoutMarginsRelativeArrangement 一致：
+    /// true 时子 view 相对 layoutMargins（directionalLayoutMargins）排列，false（默认）时相对容器边缘。
+    /// - 与 insets 叠加：实际内边距 = directionalLayoutMargins + insets
+    /// - layoutMargins / directionalLayoutMargins / preservesSuperviewLayoutMargins /
+    ///   insetsLayoutMarginsFromSafeArea 等导致边距变化时自动重新布局
+    @objc public var isLayoutMarginsRelativeArrangement: Bool = false {
+        didSet { if oldValue != isLayoutMarginsRelativeArrangement { setNeedsRelayout() } }
+    }
+
+    /// 布局实际使用的内边距：insets（+ layoutMargins，开启 isLayoutMarginsRelativeArrangement 时）
+    private var contentInsets: NSDirectionalEdgeInsets {
+        guard isLayoutMarginsRelativeArrangement else { return insets }
+        let m = directionalLayoutMargins
+        return NSDirectionalEdgeInsets(top: insets.top + m.top,
+                                       leading: insets.leading + m.leading,
+                                       bottom: insets.bottom + m.bottom,
+                                       trailing: insets.trailing + m.trailing)
+    }
+
+    /// 上一次建约束时使用的 layoutMargins，用于判断边距是否真的变化（避免布局过程中反复触发）
+    private var lastLayoutMargins: NSDirectionalEdgeInsets?
+
+    open override func layoutMarginsDidChange() {
+        super.layoutMarginsDidChange()
+        guard isLayoutMarginsRelativeArrangement else { return }
+        let m = directionalLayoutMargins
+        guard m != lastLayoutMargins else { return }
+        lastLayoutMargins = m
+        setNeedsRelayout()
+    }
+
     /// 布局前就需要确定分行时使用的宽度（例如 cell 自动算高）。
     /// 容器 bounds.width > 0 时以 bounds 为准，否则使用该值；默认 0 表示不使用
     @objc public var preferredMaxLayoutWidth: CGFloat = 0 {
@@ -301,6 +332,8 @@ open class WStackView: UIView {
     @discardableResult
     private func rebuildIfNeeded(containerWidth: CGFloat) -> Bool {
         didComputeLines = false
+        let insets = contentInsets
+        if isLayoutMarginsRelativeArrangement { lastLayoutMargins = directionalLayoutMargins }
         let width = containerWidth > 0 ? containerWidth : preferredMaxLayoutWidth
         guard width > 0 else {
             // 宽度未知：不分行，只放一个低优先级高度占位，等拿到宽度再布局
@@ -493,6 +526,7 @@ open class WStackView: UIView {
             let m = v.flex.margin
             return measureWidth(of: v) + m.leading + m.trailing
         }.max() ?? 0
+        let insets = contentInsets
         return insets.leading + insets.trailing + widest
     }
 
@@ -500,6 +534,7 @@ open class WStackView: UIView {
     /// exclusiveLine / lineBreakAfter 造成的强制换行按各段的最大值计算。作为 intrinsicContentSize.width
     @objc public var maxContentWidth: CGFloat {
         if let cached = cachedMaxContentWidth { return cached }
+        let insets = contentInsets
         let equal = justifyContent == .fillEqually
         var widest: CGFloat = 0
         var used: CGFloat = 0
@@ -582,6 +617,7 @@ open class WStackView: UIView {
     // MARK: - Build constraints
 
     private func build(lines: [[UIView]]) {
+        let insets = contentInsets
         var cons: [NSLayoutConstraint] = []
 
         guard !lines.isEmpty else {
@@ -1090,6 +1126,12 @@ extension WStackView {
     @discardableResult public func lineJustify(_ v: Justify) -> Self { lineJustifyContent = v; return self }
     @discardableResult public func insets(_ v: EdgeInsets) -> Self { insets = v.directionalEdgeInsets; return self }
     @discardableResult public func wrap(_ v: Bool) -> Self { isWrapEnabled = v; return self }
+    /// 等价于 isLayoutMarginsRelativeArrangement = v（可选同时设置 directionalLayoutMargins）
+    @discardableResult public func layoutMarginsRelative(_ v: Bool = true, margins: NSDirectionalEdgeInsets? = nil) -> Self {
+        if let margins = margins { directionalLayoutMargins = margins }
+        isLayoutMarginsRelativeArrangement = v
+        return self
+    }
     @discardableResult public func maxLayoutWidth(_ v: NumberConvertible) -> Self { preferredMaxLayoutWidth = v.cgFloat; return self }
 }
 

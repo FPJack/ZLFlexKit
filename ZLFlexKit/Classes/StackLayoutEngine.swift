@@ -23,17 +23,41 @@ final class MargeGuide: UILayoutGuide {
         view.addLayoutGuide(self)
 
         let constraints = [
-            topAnchor     .constraint(equalTo: view.topAnchor,      constant:  insets.top),
-            leadingAnchor .constraint(equalTo: view.leadingAnchor,  constant:  insets.leading),
-            bottomAnchor  .constraint(equalTo: view.bottomAnchor,   constant: -insets.bottom),
-            trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -insets.trailing),
+//            topAnchor     .constraint(equalTo: view.topAnchor,      constant:  insets.top),
+//            leadingAnchor .constraint(equalTo: view.leadingAnchor,  constant:  insets.leading),
+//            bottomAnchor  .constraint(equalTo: view.bottomAnchor,   constant: -insets.bottom),
+//            trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -insets.trailing),
+            
+            
+            
+//            topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor,      constant:  insets.top),
+//            leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor,  constant:  insets.leading),
+//            bottomAnchor.constraint(equalTo: view.layoutMarginsGuide.bottomAnchor,   constant: -insets.bottom),
+//            trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor, constant: -insets.trailing),
+            
+            
+            topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor,      constant:  0),
+            leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor,  constant:  0),
+            bottomAnchor.constraint(equalTo: view.layoutMarginsGuide.bottomAnchor,   constant: 0),
+            trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor, constant: 0),
+            
+            
         ]
         top      = constraints[0]
         leading  = constraints[1]
         bottom   = constraints[2]
         trailing = constraints[3]
         NSLayoutConstraint.activate(constraints)
+        
+        
+//        view.directionalLayoutMargins = NSDirectionalEdgeInsets(
+//            top: 10,
+//            leading: 50,
+//            bottom: 10,
+//            trailing: 20
+//        )
     }
+    
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -64,7 +88,9 @@ final class StackLayoutEngine {
     private var _bottomGuide:   LayoutGuide?
     private var _trailingGuide: LayoutGuide?
     private var _margeGuide:    MargeGuide?
-    private var isRelativeLayout: Bool = false
+    private var isRelativeLayout: Bool  {
+        stackView?.isLayoutMarginsRelativeArrangement ?? false
+    }
 
 
     private var margeGuide: UILayoutGuide {
@@ -93,7 +119,7 @@ final class StackLayoutEngine {
         guard let stackView = stackView else { return margeGuide.bottomAnchor }
         return isRelativeLayout ? margeGuide.bottomAnchor : stackView.bottomAnchor
     }
-    
+     
     private func innerCenterXAnchor() -> NSLayoutXAxisAnchor {
         guard let stackView = stackView else { return margeGuide.centerXAnchor }
         return isRelativeLayout ? margeGuide.centerXAnchor : stackView.centerXAnchor

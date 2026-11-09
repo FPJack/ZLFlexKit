@@ -158,6 +158,7 @@ private extension UIViewController {
        let view = VStackView()
             .spacing(8)
             .insets(.top(120))
+//            .insets(.top(10))
             .justify(.start)
             .align(.fill)
         
@@ -218,6 +219,24 @@ class FillDemoVC: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .compatBackground
+        
+        
+//        do  {
+//            let stackview = UIStackView()
+//            stackview.axis = .vertical
+//            stackview.spacing = 8
+//            stackview.distribution = .fill
+//            stackview.alignment = .fill
+//            stackview.box.addTo(self.view).allEdges(16)
+//            stackview.layoutMargins = .init(top: 120, left: 0, bottom: 0, right: 0)
+//            stackview.isLayoutMarginsRelativeArrangement = true
+//            stackview.addArrangedSubview(UISwitch())
+//            stackview.addArrangedSubview(UISwitch())
+//            stackview.addArrangedSubview(UISwitch())
+//            return;
+//        }
+        
+        
         let container = makeContainerStack()
 
         
@@ -738,6 +757,7 @@ class InsetsDemoVC: UIViewController {
                UIView.colored(colors[1], text: "2", size: .init(width: 0, height: 40))
                UIView.colored(colors[2], text: "3", size: .init(width: 0, height: 40))
             }
+            view.isLayoutMarginsRelativeArrangement = true
             view.backgroundColor = .compatGray5
             self.sv = view
             container.addViews {
@@ -2764,6 +2784,7 @@ class WrapDemoVC: UIViewController {
         section5e_WidthRatio(stack)
         section5f_LineBreakAfter(stack)
         section5g_WrapScrollView(stack)
+        section5h_LayoutMarginsRelative(stack)
         section6_Dynamic(stack)
         section7_ContentChange(stack)
         section8_NestedWrapInWrap(stack)
@@ -3628,6 +3649,136 @@ class WrapDemoVC: UIViewController {
 
     private var scrollObservations: [NSKeyValueObservation] = []
 
+    // MARK: ⑤-8 isLayoutMarginsRelativeArrangement
+
+    /// 在容器上画出 layoutMarginsGuide 的范围（红色边框，不参与排列）
+    private func addMarginsIndicator(to container: UIView) {
+        let indicator = UIView()
+        indicator.isUserInteractionEnabled = false
+        indicator.layer.borderWidth = 1
+        indicator.layer.borderColor = UIColor.systemRed.cgColor
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        container.insertSubview(indicator, at: 0)
+        let g = container.layoutMarginsGuide
+        // 下 / 右用低优先级：红框只做标示，不撑开容器（关闭 relative 时容器高度不受 margins 影响）
+        let bottom = indicator.bottomAnchor.constraint(equalTo: g.bottomAnchor)
+        let trailing = indicator.trailingAnchor.constraint(equalTo: g.trailingAnchor)
+        bottom.priority = .defaultLow - 1
+        trailing.priority = .defaultLow - 1
+        NSLayoutConstraint.activate([
+            indicator.topAnchor.constraint(equalTo: g.topAnchor),
+            indicator.leadingAnchor.constraint(equalTo: g.leadingAnchor),
+            bottom,
+            trailing,
+            indicator.heightAnchor.constraint(greaterThanOrEqualToConstant: 0),
+            indicator.widthAnchor.constraint(greaterThanOrEqualToConstant: 0),
+        ])
+    }
+
+    private func section5h_LayoutMarginsRelative(_ stack: StackView) {
+        stack.addView(sectionLabel("""
+        ⑤-8 isLayoutMarginsRelativeArrangement（与 UIStackView 同名属性效果一致）
+        · true：子 view 相对 layoutMargins（directionalLayoutMargins）排列；false（默认）：相对容器边缘
+        · 修改 directionalLayoutMargins / 开关属性都会自动重新布局
+        · 一层对比：上面 WStackView，下面系统 UIStackView，子 view 与设置完全相同；红框 = layoutMarginsGuide
+        · insets 与 layoutMargins 叠加：实际内边距 = margins + insets（UIStackView 没有 insets，状态栏按 "UIStackView + insets" 对比）
+        """))
+
+        let margins = NSDirectionalEdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 24)
+
+        // WStackView：3 个标签，单行
+        let wrap = WStackView(justify: .start, align: .center, spacing: 8) {
+            for i in 0..<3 { tag(words[i], colors[i % colors.count]) }
+        }
+        .layoutMarginsRelative(true, margins: margins)
+        wrapBox(wrap)
+        addMarginsIndicator(to: wrap)
+
+        // UIStackView：相同的 3 个标签、相同设置（末尾空白 view 吸收剩余宽度，避免 .fill 拉伸第一个标签）
+        let sysTags = (0..<3).map { tag(words[$0], colors[$0 % colors.count]) }
+        let filler = UIView()
+        filler.setContentHuggingPriority(.init(1), for: .horizontal)
+        let sys = UIStackView(arrangedSubviews: sysTags + [filler])
+        sys.axis = .horizontal
+        sys.spacing = 8
+        sys.alignment = .center
+        sys.backgroundColor = .compatGray5
+        sys.layer.cornerRadius = 8
+        sys.directionalLayoutMargins = margins
+        sys.isLayoutMarginsRelativeArrangement = true
+        addMarginsIndicator(to: sys)
+
+        let info = note("")
+        let refresh = { [weak wrap, weak sys, weak info] in
+            guard let wrap = wrap, let sys = sys else { return }
+            let ins = wrap.insets
+            let w = wrap.arrangedViews.map { "(\(Int($0.frame.minX)),\(Int($0.frame.minY)))" }
+            let s = sysTags.map { "(\(Int($0.frame.minX)),\(Int($0.frame.minY)))" }
+            // UIStackView 没有 insets：期望 WStackView 子 view = UIStackView 子 view + (insets.leading, insets.top)
+            let expected = sysTags.map { "(\(Int($0.frame.minX + ins.leading)),\(Int($0.frame.minY + ins.top)))" }
+            let expectedH = Int(sys.bounds.height + ins.top + ins.bottom)
+            let m = wrap.directionalLayoutMargins
+            print("wrap directionalLayoutMargins = \(m) marge \(Int(m.top)) \(Int(m.leading)) \(Int(m.bottom)) \(Int(m.trailing))")
+            info?.text = """
+            relative = \(wrap.isLayoutMarginsRelativeArrangement)，margins t\(Int(m.top)) l\(Int(m.leading)) b\(Int(m.bottom)) r\(Int(m.trailing))，\
+            insets t\(Int(ins.top)) l\(Int(ins.leading)) b\(Int(ins.bottom)) r\(Int(ins.trailing))
+            WStackView  子 view：\(w.joined(separator: " "))，高 \(Int(wrap.bounds.height))
+            UIStackView 子 view：\(s.joined(separator: " "))，高 \(Int(sys.bounds.height))
+            期望 = UIStackView + insets：\(expected.joined(separator: " "))，高 \(expectedH)
+            \(w == expected && Int(wrap.bounds.height) == expectedH ? "✅ WStackView = UIStackView + insets" : "⚠️ 不一致")
+            """
+        }
+        let update = { [weak self] in
+            self?.animateLayout()
+            DispatchQueue.main.async { refresh() }
+        }
+        // ⚠️ 不要对 directionalLayoutMargins 做"读-改-写"：getter 返回的是有效边距
+        // （设置值 + 安全区 / 父视图边距），读出来再写回去会把安全区累加进去，越拖越大。
+        // 这里自己保存设置值，每次整体赋值
+        var current = margins
+        let setMargins: (_ change: (inout NSDirectionalEdgeInsets) -> Void) -> Void = { change in
+            change(&current)
+            wrap.directionalLayoutMargins = current
+            sys.directionalLayoutMargins = current
+            update()
+        }
+
+        stack.addView(segment(["relative = false", "relative = true"], selected: 1) { i in
+            wrap.isLayoutMarginsRelativeArrangement = i == 1
+            sys.isLayoutMarginsRelativeArrangement = i == 1
+            update()
+        })
+        stack.addView(slider("左右 margins", min: 0, max: 60, value: 24) { v in
+            setMargins {
+                $0.leading = v;
+                $0.trailing = v
+            }
+        })
+        stack.addView(slider("上下 margins", min: 0, max: 40, value: 16) { v in
+            setMargins {
+                
+                $0.top = v
+                $0.bottom = v
+                print("wrap directionalLayoutMargins = \($0) marge \(v)")
+            }
+        })
+        // insets：WStackView 自己的内边距，与 layoutMargins 叠加（relative = false 时只有 insets 生效）
+        stack.addView(slider("左右 insets", min: 0, max: 40, value: 0) { v in
+            wrap.insets.leading = v
+            wrap.insets.trailing = v
+            update()
+        })
+        stack.addView(slider("上下 insets", min: 0, max: 30, value: 0) { v in
+            wrap.insets.top = v
+            wrap.insets.bottom = v
+            update()
+        })
+        stack.addView(info)
+        stack.addView(wrap)
+        stack.addView(sys)
+        DispatchQueue.main.async { refresh() }
+    }
+
     // MARK: ⑥ 动态增删
 
     private func section6_Dynamic(_ stack: StackView) {
@@ -3881,6 +4032,8 @@ class WrapDemoVC: UIViewController {
             设置在最后一个 view 上不会产生空行；isWrapEnabled = false 时依然生效。
         14. wrapScrollView() 只支持垂直滚动：WStackView 宽度 = ScrollView 可视宽度，高度 = contentSize.height；
             ScrollView 必须由外部给出高度（固定高度或最大高度）才能滚动，否则会贴合内容高度。
+        15. isLayoutMarginsRelativeArrangement = true 时子 view 相对 layoutMargins 排列（同 UIStackView），
+            实际内边距 = directionalLayoutMargins + insets；UIView 默认 layoutMargins 为 8，开启前注意先设置边距。
         """))
     }
 }

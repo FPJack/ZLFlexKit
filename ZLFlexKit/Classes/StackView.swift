@@ -77,6 +77,24 @@ open class StackView: UIView {
     }
     
     
+    /// 和UIStackView isLayoutMarginsRelativeArrangement一样效果 insetsLayoutMarginsFromSafeArea 设置layoutMarges是否沿用安全区域
+    @objc
+    public var isLayoutMarginsRelativeArrangement: Bool = false {
+        didSet {
+            if oldValue != isLayoutMarginsRelativeArrangement {
+                markedUpdateConstraints()
+            }
+        }
+    }
+    
+    @discardableResult
+    public func isLayoutMarginsRelativeArrangement(_ isRelativeLayout: Bool = true) -> Self {
+        isLayoutMarginsRelativeArrangement = isRelativeLayout
+        return self
+    }
+
+    
+    
     
     /// 当前排列的 view 数组，隐藏的 view 不包含在内
     @objc
@@ -157,7 +175,7 @@ open class StackView: UIView {
         }
     }
     
-    
+
     
     
     func markedUpdateConstraints() {
