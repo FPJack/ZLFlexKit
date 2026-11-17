@@ -79,7 +79,7 @@ open class StackView: UIView {
     
     /// 和UIStackView isLayoutMarginsRelativeArrangement一样效果 insetsLayoutMarginsFromSafeArea 设置layoutMarges是否沿用安全区域
     @objc
-    public var isLayoutMarginsRelativeArrangement: Bool = false {
+    public var isLayoutMarginsRelativeArrangement: Bool = true {
         didSet {
             if oldValue != isLayoutMarginsRelativeArrangement {
                 markedUpdateConstraints()

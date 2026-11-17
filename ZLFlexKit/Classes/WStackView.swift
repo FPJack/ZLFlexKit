@@ -62,7 +62,7 @@ open class WStackView: UIView {
     /// - 与 insets 叠加：实际内边距 = directionalLayoutMargins + insets
     /// - layoutMargins / directionalLayoutMargins / preservesSuperviewLayoutMargins /
     ///   insetsLayoutMarginsFromSafeArea 等导致边距变化时自动重新布局
-    @objc public var isLayoutMarginsRelativeArrangement: Bool = false {
+    @objc public var isLayoutMarginsRelativeArrangement: Bool = true {
         didSet { if oldValue != isLayoutMarginsRelativeArrangement { setNeedsRelayout() } }
     }
 
