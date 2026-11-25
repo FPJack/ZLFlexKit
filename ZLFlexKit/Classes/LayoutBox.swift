@@ -1006,7 +1006,8 @@ public extension UIView {
     
     /// 关联的 Layout 对象
     /// box or geo
-    @objc(zl_layout)
+//    @objc(zl_layout)
+    @objc
     var box: LayoutBox {
         if let obj = objc_getAssociatedObject(self, &zlLayoutKey) as? LayoutBox {
             return obj
