@@ -309,8 +309,6 @@ public class LayoutBox: NSObject {
     /// 依赖 superview 但调用时 view 还没有 superview 的约束，暂存到加入父视图后再生成
     private var pendingSuperviewOps: [PendingOperation] = []
     
-    // ⚠️ 【高风险】状态管理混乱：拼写错误 "lastest" 应为 "latest"
-    // 且单个布尔无法精确追踪多个待处理操作，导致 id/priority/constraint 赋给错约束
     private var latestPendingSuperviewOps = false
 
     /// 有 superview 立即执行，否则暂存
