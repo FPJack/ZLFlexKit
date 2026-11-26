@@ -31,29 +31,29 @@ extension Double:  NumberConvertible { public var doubleValue: Double { self } }
 extension CGFloat: NumberConvertible { public var doubleValue: Double { Double(self) } }
 
 fileprivate struct _ConstraintWrapper: Hashable {
-    
+
     let firstItem: AnyObject?
-    
+
     let secondItem: AnyObject?
-    
+
     var firstAttribute: NSLayoutConstraint.Attribute {
         constraint.firstAttribute
     }
-    
+
     var secondAttribute: NSLayoutConstraint.Attribute {
         constraint.secondAttribute
     }
-    
+
     var relation: NSLayoutConstraint.Relation {
         constraint.relation
     }
-    
+
     let constraint: NSLayoutConstraint
     init(_ constraint: NSLayoutConstraint) {
         self.firstItem = constraint.firstItem
         self.secondItem = constraint.secondItem
         self.constraint = constraint
-        
+
     }
     static func == (lhs: _ConstraintWrapper, rhs: _ConstraintWrapper) -> Bool {
         return lhs.firstItem === rhs.firstItem &&
@@ -191,59 +191,102 @@ private extension UIView {
 
 @objc(ZLLayout)
 public class LayoutBox: NSObject {
-    
+
+    class PendingOperation {
+        let operation: (LayoutBox, UIView) -> Void
+        var id: String?
+        var priority: UILayoutPriority?
+        var constraintRef: AutoreleasingUnsafeMutablePointer<NSLayoutConstraint>?
+
+        init(
+            _ operation: @escaping (LayoutBox, UIView) -> Void,
+            id: String? = nil,
+            priority: UILayoutPriority? = nil,
+            constraintRef: AutoreleasingUnsafeMutablePointer<NSLayoutConstraint>? = nil
+        ) {
+            self.operation = operation
+            self.id = id
+            self.priority = priority
+            self.constraintRef = constraintRef
+        }
+    }
+
     @objc
     public weak var view: UIView?
-    
+
     public func view<T: UIView>(as type: T.Type) -> T? {
         return view as? T
     }
-    
-    
-    
-    
+
+
+
+
     lazy private var consStorge: ConstraintStorage = {
         let storage = self.view?.consStorge ?? ConstraintStorage()
         return storage
     }()
-    
+
     override public init() {
         super.init()
         _ = UIView._zlSwizzleOnce
     }
-    
+
     /// 依赖 superview 但调用时 view 还没有 superview 的约束，暂存到加入父视图后再生成
-    private var pendingSuperviewOps: [(LayoutBox, UIView) -> Void] = []
+    private var pendingSuperviewOps: [PendingOperation] = []
     
+    // ⚠️ 【高风险】状态管理混乱：拼写错误 "lastest" 应为 "latest"
+    // 且单个布尔无法精确追踪多个待处理操作，导致 id/priority/constraint 赋给错约束
+    private var latestPendingSuperviewOps = false
+
     /// 有 superview 立即执行，否则暂存
     private func withSuperview(_ op: @escaping (LayoutBox, UIView) -> Void) -> Self {
         if let superview = view?.superview {
             op(self, superview)
         } else {
-            pendingSuperviewOps.append(op)
+            // 使用 [weak self] 避免循环引用
+            let weakOp: (LayoutBox, UIView) -> Void = { [weak self] box, superview in
+                if let self = self {
+                    op(self, superview)
+                }
+            }
+            pendingSuperviewOps.append(PendingOperation(weakOp))
+            latestPendingSuperviewOps = true
             // 标记需要更新约束，加入父视图后的 updateConstraints 中统一补上
             view?.setNeedsUpdateConstraints()
         }
         return self
     }
-    
+
     /// 是否有等待 superview 的约束
    fileprivate var hasPendingSuperviewConstraints: Bool { !pendingSuperviewOps.isEmpty }
-    
+
     /// view 加入父视图后调用：生成之前暂存的相对 superview 的约束
    fileprivate func applyPendingSuperviewConstraints() {
         guard let superview = view?.superview, !pendingSuperviewOps.isEmpty else { return }
         let ops = pendingSuperviewOps
         pendingSuperviewOps.removeAll()
-        ops.forEach { $0(self, superview) }
+        ops.forEach { op in
+            op.operation(self, superview)
+            if let latestConstraint = latestConstraint {
+                if let id = op.id {
+                    latestConstraint.identifier = id
+                }
+                if let priority = op.priority {
+                    latestConstraint.priority = priority
+                }
+                if let constraintRef = op.constraintRef {
+                    constraintRef.pointee = latestConstraint
+                }
+            }
+        }
     }
     
     
     
     private func addConstraint(_ constraint: NSLayoutConstraint?,id: String? = nil) {
-        
+
         guard let constraint = constraint else { return }
-        
+        latestPendingSuperviewOps = false
         if let id = id {
             constraint.identifier = id
         }
@@ -254,7 +297,8 @@ public class LayoutBox: NSObject {
         //        constraint.isActive = true
         consStorge.tempConstraints.append(_ConstraintWrapper(constraint))
         //        constraintsArray.add(constraint)
-        if let view = view {            view.setNeedsUpdateConstraints()
+        if let view = view {
+            view.setNeedsUpdateConstraints()
         }
     }
     
@@ -468,7 +512,7 @@ public class LayoutBox: NSObject {
     }
     @discardableResult
     public func heightRatio(_ ratio: NumberConvertible,id: String? = nil) -> Self {
-        withSuperview { box , sv  in
+        return withSuperview { box , sv  in
             self.addConstraint(self.view?.heightAnchor.constraint(equalTo: sv.heightAnchor, multiplier: ratio.cgFloat),id: id)
         }
     }
@@ -502,7 +546,7 @@ public class LayoutBox: NSObject {
     }
     @discardableResult
     public func widthRatio(_ ratio: NumberConvertible,id: String? = nil) -> Self {
-         withSuperview { box , sv  in
+         return withSuperview { box , sv  in
             self.addConstraint(self.view?.widthAnchor.constraint(equalTo: sv.widthAnchor, multiplier: ratio.cgFloat),id: id)
         }
     }
@@ -517,7 +561,9 @@ public class LayoutBox: NSObject {
     /// 宽高比（width / height）
     @discardableResult
     public func aspectRatio(_ ratio: NumberConvertible,id: String? = nil) -> Self {
-        addConstraint(view?.widthAnchor.constraint(equalTo: view!.heightAnchor, multiplier: ratio.cgFloat),id: id)
+        if let view = view {
+            addConstraint(view.widthAnchor.constraint(equalTo: view.heightAnchor, multiplier: ratio.cgFloat),id: id)
+        }
         return self
     }
     
@@ -526,22 +572,36 @@ public class LayoutBox: NSObject {
     /// 获取最新添加的约束并设置约束标识符
     @discardableResult
     public func id(_ id: String) -> Self {
-        latestConstraint?.identifier = id
+        if latestPendingSuperviewOps {
+            pendingSuperviewOps.last?.id = id
+        }else {
+            latestConstraint?.identifier = id
+        }
         return self
     }
 
     /// 设置最新添加的约束优先级
     @discardableResult
     public func priority(_ priority: UILayoutPriority) -> Self {
-        latestConstraint?.priority = priority
+        if latestPendingSuperviewOps {
+            pendingSuperviewOps.last?.priority = priority
+        }else {
+            latestConstraint?.priority = priority
+        }
         return self
     }
 
     /// 赋值最新添加的约束对象到指针
     @discardableResult
     public func constraint(_ ptr:  AutoreleasingUnsafeMutablePointer<NSLayoutConstraint>?) -> Self {
-        if let ptr = ptr,let latestConstraint = latestConstraint {
-            ptr.pointee = latestConstraint
+        if let ptr = ptr {
+            if latestPendingSuperviewOps {
+                pendingSuperviewOps.last?.constraintRef = ptr
+            }else {
+                if let latestConstraint = latestConstraint {
+                    ptr.pointee = latestConstraint
+                }
+            }
         }
         return self
     }
@@ -562,17 +622,16 @@ public class LayoutBox: NSObject {
     }
     ///根据id删除约束对象
     public func removeConstraints(withID id: String) {
-       consStorge.tempConstraints.filter { $0.constraint.identifier == id }
-       .forEach {
-            $0.constraint.isActive = false
-            consStorge.tempConstraints.removeAll { $0.constraint.identifier == id }
-       }
-        
-        consStorge.constraints.filter { $0.constraint.identifier == id }
-        .forEach {
-             $0.constraint.isActive = false
-             consStorge.constraints.removeAll { $0.constraint.identifier == id }
-        }
+        // 一次性收集要删除的约束，避免 O(n²) 复杂度
+        let tempToRemove = consStorge.tempConstraints.filter { $0.constraint.identifier == id }
+        let consToRemove = consStorge.constraints.filter { $0.constraint.identifier == id }
+
+        // 一次性停用所有约束
+        NSLayoutConstraint.deactivate((tempToRemove + consToRemove).map { $0.constraint })
+
+        // 一次性删除
+        consStorge.tempConstraints.removeAll { $0.constraint.identifier == id }
+        consStorge.constraints.removeAll { $0.constraint.identifier == id }
     }
     
     @discardableResult
@@ -955,9 +1014,13 @@ public extension LayoutBox {
 
     @objc(constraintRef)
     @available(swift, obsoleted: 1, renamed: "constraint(_:)")
-    var constraintRefObjc: (UnsafeMutablePointer<NSLayoutConstraint?>) -> LayoutBox {
+    var constraintRefObjc: (AutoreleasingUnsafeMutablePointer<NSLayoutConstraint>?) -> LayoutBox {
         { ptr in
-            ptr.pointee = self.latestConstraint
+            if(self.latestPendingSuperviewOps) {
+                self.pendingSuperviewOps.last?.constraintRef = ptr
+            }else {
+                self.constraint(ptr)
+            }
             return self
         }
     }
