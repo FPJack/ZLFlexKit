@@ -120,6 +120,8 @@ fileprivate class ConstraintStorage {
             }
         }
         
+       
+        
         ///新增的约束
         let addCons = updateConstraintsSet.subtracting(constraintsSet)
         constraints.append(contentsOf: addCons)
@@ -178,6 +180,12 @@ private extension UIView {
     }
     var boxTrailingAnchor: NSLayoutXAxisAnchor {
         (self as? ZStackView)?.contentTrailingAnchor ?? trailingAnchor
+    }
+    var boxLeftAnchor: NSLayoutXAxisAnchor {
+        (self as? ZStackView)?.contentLeftAnchor ?? leftAnchor
+    }
+    var boxRightAnchor: NSLayoutXAxisAnchor {
+        (self as? ZStackView)?.contentRightAnchor ?? rightAnchor
     }
     var boxCenterXAnchor: NSLayoutXAxisAnchor {
         (self as? ZStackView)?.contentCenterXAnchor ?? centerXAnchor
@@ -472,12 +480,12 @@ public class LayoutBox: NSObject {
     }
     
     // MARK: - Trailing
-    
+
     @discardableResult
     public func trailing(_ trailing: NumberConvertible,id: String? = nil) -> Self {
         return withSuperview { box, sv in box.trailingTo(sv.boxTrailingAnchor, offset: trailing, id: id) }
     }
-    
+
     @discardableResult
     public func trailingTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
@@ -485,7 +493,7 @@ public class LayoutBox: NSObject {
         }
         return self
     }
-    
+
     @discardableResult
     public func trailingGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
@@ -493,11 +501,73 @@ public class LayoutBox: NSObject {
         }
         return self
     }
-    
+
     @discardableResult
     public func trailingLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
             addConstraint(view?.trailingAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
+        }
+        return self
+    }
+
+    // MARK: - Left
+
+    @discardableResult
+    public func left(_ left: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.leftTo(sv.boxLeftAnchor, offset: left, id: id) }
+    }
+
+    @discardableResult
+    public func leftTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
+        if let anchor = anchor {
+            addConstraint(view?.leftAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
+        }
+        return self
+    }
+
+    @discardableResult
+    public func leftGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
+        if let anchor = anchor {
+            addConstraint(view?.leftAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
+        }
+        return self
+    }
+
+    @discardableResult
+    public func leftLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
+        if let anchor = anchor {
+            addConstraint(view?.leftAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
+        }
+        return self
+    }
+
+    // MARK: - Right
+
+    @discardableResult
+    public func right(_ right: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.rightTo(sv.boxRightAnchor, offset: right, id: id) }
+    }
+
+    @discardableResult
+    public func rightTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
+        if let anchor = anchor {
+            addConstraint(view?.rightAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
+        }
+        return self
+    }
+
+    @discardableResult
+    public func rightGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
+        if let anchor = anchor {
+            addConstraint(view?.rightAnchor.constraint(greaterThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
+        }
+        return self
+    }
+
+    @discardableResult
+    public func rightLessThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
+        if let anchor = anchor {
+            addConstraint(view?.rightAnchor.constraint(lessThanOrEqualTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
     }
@@ -913,7 +983,57 @@ public extension LayoutBox {
     var trailingLessThanOrToObjc: (_ anchor: NSLayoutXAxisAnchor?, _ offset: CGFloat) -> LayoutBox {
         { anchor, offset in self.trailingLessThanOrTo(anchor, offset: offset) }
     }
-    
+
+    // MARK: - Left
+    @objc(left)
+    @available(swift, obsoleted: 1, renamed: "left(_:)")
+    var leftObjc: (_ left: CGFloat) -> LayoutBox {
+        { left in self.left(left) }
+    }
+
+    @objc(leftTo)
+    @available(swift, obsoleted: 1, renamed: "leftTo(_:offset:)")
+    var leftToObjc: (_ anchor: NSLayoutXAxisAnchor?, _ offset: CGFloat) -> LayoutBox {
+        { anchor, offset in self.leftTo(anchor, offset: offset) }
+    }
+
+    @objc(leftGreaterThanOrTo)
+    @available(swift, obsoleted: 1, renamed: "leftGreaterThanOrTo(_:offset:)")
+    var leftGreaterThanOrToObjc: (_ anchor: NSLayoutXAxisAnchor?, _ offset: CGFloat) -> LayoutBox {
+        { anchor, offset in self.leftGreaterThanOrTo(anchor, offset: offset) }
+    }
+
+    @objc(leftLessThanOrTo)
+    @available(swift, obsoleted: 1, renamed: "leftLessThanOrTo(_:offset:)")
+    var leftLessThanOrToObjc: (_ anchor: NSLayoutXAxisAnchor?, _ offset: CGFloat) -> LayoutBox {
+        { anchor, offset in self.leftLessThanOrTo(anchor, offset: offset) }
+    }
+
+    // MARK: - Right
+    @objc(right)
+    @available(swift, obsoleted: 1, renamed: "right(_:)")
+    var rightObjc: (_ right: CGFloat) -> LayoutBox {
+        { right in self.right(right) }
+    }
+
+    @objc(rightTo)
+    @available(swift, obsoleted: 1, renamed: "rightTo(_:offset:)")
+    var rightToObjc: (_ anchor: NSLayoutXAxisAnchor?, _ offset: CGFloat) -> LayoutBox {
+        { anchor, offset in self.rightTo(anchor, offset: offset) }
+    }
+
+    @objc(rightGreaterThanOrTo)
+    @available(swift, obsoleted: 1, renamed: "rightGreaterThanOrTo(_:offset:)")
+    var rightGreaterThanOrToObjc: (_ anchor: NSLayoutXAxisAnchor?, _ offset: CGFloat) -> LayoutBox {
+        { anchor, offset in self.rightGreaterThanOrTo(anchor, offset: offset) }
+    }
+
+    @objc(rightLessThanOrTo)
+    @available(swift, obsoleted: 1, renamed: "rightLessThanOrTo(_:offset:)")
+    var rightLessThanOrToObjc: (_ anchor: NSLayoutXAxisAnchor?, _ offset: CGFloat) -> LayoutBox {
+        { anchor, offset in self.rightLessThanOrTo(anchor, offset: offset) }
+    }
+
     // MARK: - Height
     @objc(height)
     @available(swift, obsoleted: 1, renamed: "height(_:)")
