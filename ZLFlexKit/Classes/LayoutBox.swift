@@ -113,11 +113,22 @@ fileprivate class ConstraintStorage {
         
         let oldIntersection = constraintsSet.intersection(updateConstraintsSet)
         
-        intersection.forEach { c  in
-            oldIntersection.filter {$0 == c}.forEach {
-                $0.constraint.constant = c.constraint.constant
-                $0.constraint.priority = c.constraint.priority
-            }
+//        intersection.forEach { c  in
+//            oldIntersection.filter {$0 == c}.forEach {
+//                $0.constraint.constant = c.constraint.constant
+//                $0.constraint.priority = c.constraint.priority
+//            }
+//        }
+        
+        let oldByKey = Dictionary(
+            oldIntersection.map { ($0, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        for c in intersection {
+            guard let old = oldByKey[c] else { continue }
+            old.constraint.constant = c.constraint.constant
+            old.constraint.priority = c.constraint.priority
         }
         
        
