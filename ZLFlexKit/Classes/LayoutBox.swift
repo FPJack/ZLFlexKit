@@ -379,7 +379,7 @@ public class LayoutBox: NSObject {
         }
         return self
     }
-    
+
     @discardableResult
     public func leadingGreaterThanOrTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
@@ -529,7 +529,23 @@ public class LayoutBox: NSObject {
         latestConstraint?.identifier = id
         return self
     }
-    
+
+    /// 设置最新添加的约束优先级
+    @discardableResult
+    public func priority(_ priority: UILayoutPriority) -> Self {
+        latestConstraint?.priority = priority
+        return self
+    }
+
+    /// 赋值最新添加的约束对象到指针
+    @discardableResult
+    public func constraint(_ ptr:  AutoreleasingUnsafeMutablePointer<NSLayoutConstraint>?) -> Self {
+        if let ptr = ptr,let latestConstraint = latestConstraint {
+            ptr.pointee = latestConstraint
+        }
+        return self
+    }
+
     ///获取最新添加的约束
     public var latestConstraint: NSLayoutConstraint? {
        let storage = consStorge
@@ -924,6 +940,29 @@ public extension LayoutBox {
     var latestConstraintObjc: () -> NSLayoutConstraint? {
         { self.latestConstraint }
     }
+
+    @objc(id)
+    @available(swift, obsoleted: 1, renamed: "id(_:)")
+    var idObjc: (_ id: String) -> LayoutBox {
+        { id in self.id(id) }
+    }
+
+    @objc(priority)
+    @available(swift, obsoleted: 1, renamed: "priority(_:)")
+    var priorityObjc: (_ priority: UILayoutPriority) -> LayoutBox {
+        { priority in self.priority(priority) }
+    }
+
+    @objc(constraintRef)
+    @available(swift, obsoleted: 1, renamed: "constraint(_:)")
+    var constraintRefObjc: (UnsafeMutablePointer<NSLayoutConstraint?>) -> LayoutBox {
+        { ptr in
+            ptr.pointee = self.latestConstraint
+            return self
+        }
+    }
+
+
     
     @objc(heightTo)
     @available(swift, obsoleted: 1, renamed: "heightTo(_:)")
@@ -1006,7 +1045,6 @@ public extension UIView {
     
     /// 关联的 Layout 对象
     /// box or geo
-//    @objc(zl_layout)
     @objc
     var box: LayoutBox {
         if let obj = objc_getAssociatedObject(self, &zlLayoutKey) as? LayoutBox {
