@@ -176,6 +176,22 @@ private extension ZStackView {
     var contentCenterYAnchor:  NSLayoutYAxisAnchor { insetsGuide.centerYAnchor }
     var contentWidthAnchor:    NSLayoutDimension   { insetsGuide.widthAnchor }
     var contentHeightAnchor:   NSLayoutDimension   { insetsGuide.heightAnchor }
+
+    // Safe Area Anchors
+    var contentSafeTopAnchor:      NSLayoutYAxisAnchor { safeAreaLayoutGuide.topAnchor }
+    var contentSafeBottomAnchor:   NSLayoutYAxisAnchor { safeAreaLayoutGuide.bottomAnchor }
+    var contentSafeLeadingAnchor:  NSLayoutXAxisAnchor { safeAreaLayoutGuide.leadingAnchor }
+    var contentSafeTrailingAnchor: NSLayoutXAxisAnchor { safeAreaLayoutGuide.trailingAnchor }
+    var contentSafeLeftAnchor:     NSLayoutXAxisAnchor { safeAreaLayoutGuide.leftAnchor }
+    var contentSafeRightAnchor:    NSLayoutXAxisAnchor { safeAreaLayoutGuide.rightAnchor }
+
+    // Layout Margins Anchors
+    var contentMarginTopAnchor:      NSLayoutYAxisAnchor { layoutMarginsGuide.topAnchor }
+    var contentMarginBottomAnchor:   NSLayoutYAxisAnchor { layoutMarginsGuide.bottomAnchor }
+    var contentMarginLeadingAnchor:  NSLayoutXAxisAnchor { layoutMarginsGuide.leadingAnchor }
+    var contentMarginTrailingAnchor: NSLayoutXAxisAnchor { layoutMarginsGuide.trailingAnchor }
+    var contentMarginLeftAnchor:     NSLayoutXAxisAnchor { layoutMarginsGuide.leftAnchor }
+    var contentMarginRightAnchor:    NSLayoutXAxisAnchor { layoutMarginsGuide.rightAnchor }
 }
 
 /// LayoutBox 相对父视图布局时使用：父视图是 ZStackView 时取 insetsGuide 锚点，否则取自身锚点
@@ -203,6 +219,46 @@ private extension UIView {
     }
     var boxCenterYAnchor: NSLayoutYAxisAnchor {
         (self as? ZStackView)?.contentCenterYAnchor ?? centerYAnchor
+    }
+
+    // Safe Area Anchors
+    var boxSafeTopAnchor: NSLayoutYAxisAnchor {
+        safeAreaLayoutGuide.topAnchor
+    }
+    var boxSafeBottomAnchor: NSLayoutYAxisAnchor {
+        safeAreaLayoutGuide.bottomAnchor
+    }
+    var boxSafeLeadingAnchor: NSLayoutXAxisAnchor {
+        safeAreaLayoutGuide.leadingAnchor
+    }
+    var boxSafeTrailingAnchor: NSLayoutXAxisAnchor {
+        safeAreaLayoutGuide.trailingAnchor
+    }
+    var boxSafeLeftAnchor: NSLayoutXAxisAnchor {
+        safeAreaLayoutGuide.leftAnchor
+    }
+    var boxSafeRightAnchor: NSLayoutXAxisAnchor {
+        safeAreaLayoutGuide.rightAnchor
+    }
+
+    // Layout Margins Anchors
+    var boxMarginTopAnchor: NSLayoutYAxisAnchor {
+        layoutMarginsGuide.topAnchor
+    }
+    var boxMarginBottomAnchor: NSLayoutYAxisAnchor {
+        layoutMarginsGuide.bottomAnchor
+    }
+    var boxMarginLeadingAnchor: NSLayoutXAxisAnchor {
+        layoutMarginsGuide.leadingAnchor
+    }
+    var boxMarginTrailingAnchor: NSLayoutXAxisAnchor {
+        layoutMarginsGuide.trailingAnchor
+    }
+    var boxMarginLeftAnchor: NSLayoutXAxisAnchor {
+        layoutMarginsGuide.leftAnchor
+    }
+    var boxMarginRightAnchor: NSLayoutXAxisAnchor {
+        layoutMarginsGuide.rightAnchor
     }
 }
 
@@ -438,6 +494,7 @@ public class LayoutBox: NSObject {
     @discardableResult
     public func leadingTo(_ anchor: NSLayoutXAxisAnchor?, offset: NumberConvertible = 0,id: String? = nil) -> Self {
         if let anchor = anchor {
+            
             addConstraint(view?.leadingAnchor.constraint(equalTo: anchor, constant: offset.cgFloat),id: id)
         }
         return self
@@ -582,7 +639,75 @@ public class LayoutBox: NSObject {
         }
         return self
     }
-    
+
+    // MARK: - Safe Area
+
+    @discardableResult
+    public func safeTop(_ top: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.topTo(sv.boxSafeTopAnchor, offset: top, id: id) }
+    }
+
+    @discardableResult
+    public func safeBottom(_ bottom: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.bottomTo(sv.boxSafeBottomAnchor, offset: bottom, id: id) }
+    }
+
+    @discardableResult
+    public func safeLeading(_ leading: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.leadingTo(sv.boxSafeLeadingAnchor, offset: leading, id: id) }
+    }
+
+    @discardableResult
+    public func safeTrailing(_ trailing: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.trailingTo(sv.boxSafeTrailingAnchor, offset: trailing, id: id) }
+    }
+
+    // MARK: - Layout Margins
+
+    @discardableResult
+    public func marginTop(_ top: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.topTo(sv.boxMarginTopAnchor, offset: top, id: id) }
+    }
+
+    @discardableResult
+    public func marginBottom(_ bottom: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.bottomTo(sv.boxMarginBottomAnchor, offset: bottom, id: id) }
+    }
+
+    @discardableResult
+    public func marginLeading(_ leading: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.leadingTo(sv.boxMarginLeadingAnchor, offset: leading, id: id) }
+    }
+
+    @discardableResult
+    public func marginTrailing(_ trailing: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.trailingTo(sv.boxMarginTrailingAnchor, offset: trailing, id: id) }
+    }
+
+    // MARK: - Safe Left/Right
+
+    @discardableResult
+    public func safeLeft(_ left: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.leftTo(sv.boxSafeLeftAnchor, offset: left, id: id) }
+    }
+
+    @discardableResult
+    public func safeRight(_ right: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.rightTo(sv.boxSafeRightAnchor, offset: right, id: id) }
+    }
+
+    // MARK: - Margin Left/Right
+
+    @discardableResult
+    public func marginLeft(_ left: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.leftTo(sv.boxMarginLeftAnchor, offset: left, id: id) }
+    }
+
+    @discardableResult
+    public func marginRight(_ right: NumberConvertible,id: String? = nil) -> Self {
+        return withSuperview { box, sv in box.rightTo(sv.boxMarginRightAnchor, offset: right, id: id) }
+    }
+
     // MARK: - Height
     
     /// 设置高度
@@ -1043,6 +1168,82 @@ public extension LayoutBox {
     @available(swift, obsoleted: 1, renamed: "rightLessThanOrTo(_:offset:)")
     var rightLessThanOrToObjc: (_ anchor: NSLayoutXAxisAnchor?, _ offset: CGFloat) -> LayoutBox {
         { anchor, offset in self.rightLessThanOrTo(anchor, offset: offset) }
+    }
+
+    // MARK: - Safe Area
+    @objc(safeTop)
+    @available(swift, obsoleted: 1, renamed: "safeTop(_:)")
+    var safeTopObjc: (_ top: CGFloat) -> LayoutBox {
+        { top in self.safeTop(top) }
+    }
+
+    @objc(safeBottom)
+    @available(swift, obsoleted: 1, renamed: "safeBottom(_:)")
+    var safeBottomObjc: (_ bottom: CGFloat) -> LayoutBox {
+        { bottom in self.safeBottom(bottom) }
+    }
+
+    @objc(safeLeading)
+    @available(swift, obsoleted: 1, renamed: "safeLeading(_:)")
+    var safeLeadingObjc: (_ leading: CGFloat) -> LayoutBox {
+        { leading in self.safeLeading(leading) }
+    }
+
+    @objc(safeTrailing)
+    @available(swift, obsoleted: 1, renamed: "safeTrailing(_:)")
+    var safeTrailingObjc: (_ trailing: CGFloat) -> LayoutBox {
+        { trailing in self.safeTrailing(trailing) }
+    }
+
+    // MARK: - Layout Margins
+    @objc(marginTop)
+    @available(swift, obsoleted: 1, renamed: "marginTop(_:)")
+    var marginTopObjc: (_ top: CGFloat) -> LayoutBox {
+        { top in self.marginTop(top) }
+    }
+
+    @objc(marginBottom)
+    @available(swift, obsoleted: 1, renamed: "marginBottom(_:)")
+    var marginBottomObjc: (_ bottom: CGFloat) -> LayoutBox {
+        { bottom in self.marginBottom(bottom) }
+    }
+
+    @objc(marginLeading)
+    @available(swift, obsoleted: 1, renamed: "marginLeading(_:)")
+    var marginLeadingObjc: (_ leading: CGFloat) -> LayoutBox {
+        { leading in self.marginLeading(leading) }
+    }
+
+    @objc(marginTrailing)
+    @available(swift, obsoleted: 1, renamed: "marginTrailing(_:)")
+    var marginTrailingObjc: (_ trailing: CGFloat) -> LayoutBox {
+        { trailing in self.marginTrailing(trailing) }
+    }
+
+    // MARK: - Safe Left/Right
+    @objc(safeLeft)
+    @available(swift, obsoleted: 1, renamed: "safeLeft(_:)")
+    var safeLeftObjc: (_ left: CGFloat) -> LayoutBox {
+        { left in self.safeLeft(left) }
+    }
+
+    @objc(safeRight)
+    @available(swift, obsoleted: 1, renamed: "safeRight(_:)")
+    var safeRightObjc: (_ right: CGFloat) -> LayoutBox {
+        { right in self.safeRight(right) }
+    }
+
+    // MARK: - Margin Left/Right
+    @objc(marginLeft)
+    @available(swift, obsoleted: 1, renamed: "marginLeft(_:)")
+    var marginLeftObjc: (_ left: CGFloat) -> LayoutBox {
+        { left in self.marginLeft(left) }
+    }
+
+    @objc(marginRight)
+    @available(swift, obsoleted: 1, renamed: "marginRight(_:)")
+    var marginRightObjc: (_ right: CGFloat) -> LayoutBox {
+        { right in self.marginRight(right) }
     }
 
     // MARK: - Height
